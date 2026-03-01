@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "@rwdocs/core": "^0.1.10",
-    "express": "^4.21.0",
+    "express": "^5.0.0",
     "express-promise-router": "^4.1.0"
   },
   "peerDependencies": {
@@ -42,7 +42,7 @@
   "devDependencies": {
     "@backstage/backend-plugin-api": "^1.0.0",
     "@backstage/cli": "^0.35.0",
-    "@types/express": "^4.17.0",
+    "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "prettier": "^3.4.2",
     "typescript": "^5.7.0"
