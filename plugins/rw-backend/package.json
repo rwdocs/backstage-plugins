@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@backstage/backend-plugin-api": "^1.0.0",
-    "@backstage/cli": "^0.29.0",
+    "@backstage/cli": "^0.35.0",
     "@types/express": "^4.17.0",
     "prettier": "^3.4.2",
     "typescript": "^5.7.0"
