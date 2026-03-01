@@ -13,6 +13,11 @@
       "matchPackageNames": ["react-router-dom"],
       "allowedVersions": "<7.0.0",
       "description": "Backstage requires react-router-dom v6"
+    },
+    {
+      "matchPackageNames": ["express", "@types/express"],
+      "allowedVersions": "<5.0.0",
+      "description": "Backstage backend API is built on Express v4"
     }
   ]
 }
