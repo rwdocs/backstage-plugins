@@ -32,7 +32,7 @@
     "postpack": "backstage-cli package postpack"
   },
   "dependencies": {
-    "@rwdocs/core": "^0.1.9",
+    "@rwdocs/core": "^0.1.10",
     "express": "^4.21.0",
     "express-promise-router": "^4.1.0"
   },
