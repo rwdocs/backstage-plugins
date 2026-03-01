@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Type-check
+        run: npx tsc --project tsconfig.json
+
+      - name: Build frontend
+        run: yarn workspace @rwdocs/backstage-plugin-rw run build
+
+      - name: Build backend
+        run: yarn workspace @rwdocs/backstage-plugin-rw-backend run build
+
+      - name: Lint
+        run: make lint
+
+      - name: Format check
+        run: prettier --check "plugins/*/src/**"
