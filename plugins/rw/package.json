@@ -42,8 +42,8 @@
     "react-router-dom": "^6.0.0"
   },
   "devDependencies": {
-    "@backstage/cli": "^0.29.0",
-    "@backstage/core-components": "^0.16.0",
+    "@backstage/cli": "^0.35.0",
+    "@backstage/core-components": "^0.18.0",
     "@backstage/core-plugin-api": "^1.0.0",
     "@backstage/frontend-plugin-api": "^0.14.0",
     "@backstage/plugin-catalog-react": "^2.0.0",
