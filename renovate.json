@@ -2,5 +2,17 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": ["react", "react-dom", "@types/react"],
+      "allowedVersions": "<19.0.0",
+      "description": "Backstage requires React 18"
+    },
+    {
+      "matchPackageNames": ["react-router-dom"],
+      "allowedVersions": "<7.0.0",
+      "description": "Backstage requires react-router-dom v6"
+    }
   ]
 }
