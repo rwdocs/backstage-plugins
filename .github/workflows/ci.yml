@@ -33,7 +33,9 @@ jobs:
         run: yarn workspace @rwdocs/backstage-plugin-rw-backend run build
 
       - name: Lint
-        run: make lint
+        run: |
+          yarn workspace @rwdocs/backstage-plugin-rw run lint
+          yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
 
       - name: Format check
-        run: prettier --check "plugins/*/src/**"
+        run: npx prettier --check "plugins/*/src/**"
