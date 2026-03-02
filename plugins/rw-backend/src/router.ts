@@ -1,5 +1,6 @@
 import Router from "express-promise-router";
 import type { HttpAuthService, LoggerService } from "@backstage/backend-plugin-api";
+import { InputError, NotFoundError } from "@backstage/errors";
 import { createSite, type RwSite, type SiteConfig } from "@rwdocs/core";
 
 export interface S3Options {
@@ -46,42 +47,30 @@ export async function createRouter(options: RouterOptions) {
   });
 
   router.get("/pages/", async (_req, res) => {
-    try {
-      const page = await site.renderPage("");
-      res.json(page);
-    } catch (err) {
-      handlePageError(err, "/", res, logger);
-    }
+    const page = await renderPageOrThrow(site, "");
+    res.json(page);
   });
 
   router.get("/pages/:path(*)", async (req, res) => {
     const pagePath = req.params.path || "";
     if (pagePath.split("/").includes("..")) {
-      res.status(400).json({ error: "Invalid path" });
-      return;
+      throw new InputError("Invalid path");
     }
-    try {
-      const page = await site.renderPage(pagePath);
-      res.json(page);
-    } catch (err) {
-      handlePageError(err, `/${pagePath}`, res, logger);
-    }
+    const page = await renderPageOrThrow(site, pagePath);
+    res.json(page);
   });
 
   return router;
 }
 
-function handlePageError(
-  err: unknown,
-  path: string,
-  res: import("express").Response,
-  logger: LoggerService,
-) {
-  const message = err instanceof Error ? err.message : String(err);
-  if (message.includes("Content not found")) {
-    res.status(404).json({ error: "Page not found", path });
-  } else {
-    logger.error(`Failed to render page ${path}: ${message}`);
-    res.status(500).json({ error: "Internal server error" });
+async function renderPageOrThrow(site: RwSite, pagePath: string) {
+  try {
+    return await site.renderPage(pagePath);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes("Content not found")) {
+      throw new NotFoundError(`Page not found: /${pagePath}`);
+    }
+    throw err;
   }
 }
