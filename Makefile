@@ -1,4 +1,4 @@
-all: typecheck lint format build
+all: typecheck lint test format build
 
 install:
 	yarn install
@@ -13,6 +13,9 @@ typecheck: install
 lint: install
 	yarn workspace @rwdocs/backstage-plugin-rw run lint
 	yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
+
+test: install
+	yarn workspace @rwdocs/backstage-plugin-rw-backend run test
 
 format: install
 	yarn workspace @rwdocs/backstage-plugin-rw run format

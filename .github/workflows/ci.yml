@@ -31,6 +31,9 @@ jobs:
           yarn workspace @rwdocs/backstage-plugin-rw run lint
           yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
 
+      - name: Test
+        run: yarn workspace @rwdocs/backstage-plugin-rw-backend run test
+
       - name: Format check
         run: |
           yarn workspace @rwdocs/backstage-plugin-rw run format:check
