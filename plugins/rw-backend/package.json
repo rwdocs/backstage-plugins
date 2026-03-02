@@ -32,6 +32,7 @@
     "test": "backstage-cli package test",
     "clean": "backstage-cli package clean",
     "format": "prettier --write src/",
+    "format:check": "prettier --check src/",
     "prepack": "backstage-cli package prepack",
     "postpack": "backstage-cli package postpack"
   },

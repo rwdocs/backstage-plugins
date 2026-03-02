@@ -26,16 +26,18 @@ jobs:
       - name: Type-check
         run: npx tsc --project tsconfig.json
 
-      - name: Build frontend
-        run: yarn workspace @rwdocs/backstage-plugin-rw run build
-
-      - name: Build backend
-        run: yarn workspace @rwdocs/backstage-plugin-rw-backend run build
-
       - name: Lint
         run: |
           yarn workspace @rwdocs/backstage-plugin-rw run lint
           yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
 
       - name: Format check
-        run: npx prettier --check "plugins/*/src/**"
+        run: |
+          yarn workspace @rwdocs/backstage-plugin-rw run format:check
+          yarn workspace @rwdocs/backstage-plugin-rw-backend run format:check
+
+      - name: Build frontend
+        run: yarn workspace @rwdocs/backstage-plugin-rw run build
+
+      - name: Build backend
+        run: yarn workspace @rwdocs/backstage-plugin-rw-backend run build
