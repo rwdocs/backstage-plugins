@@ -18,6 +18,10 @@ format: install
 	yarn workspace @rwdocs/backstage-plugin-rw run format
 	yarn workspace @rwdocs/backstage-plugin-rw-backend run format
 
+format\:check: install
+	yarn workspace @rwdocs/backstage-plugin-rw run format:check
+	yarn workspace @rwdocs/backstage-plugin-rw-backend run format:check
+
 clean:
 	yarn workspace @rwdocs/backstage-plugin-rw run clean
 	yarn workspace @rwdocs/backstage-plugin-rw-backend run clean
