@@ -33,6 +33,7 @@ const rwEntityContent = EntityContentBlueprint.make({
   params: {
     path: "docs",
     title: "Documentation",
+    group: "documentation",
     loader: () => import("./components/RwDocsViewer").then((m) => <m.RwDocsViewer />),
   },
 });
