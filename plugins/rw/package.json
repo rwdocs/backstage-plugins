@@ -8,7 +8,10 @@
     "./package.json": "./package.json"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "main": "dist/index.cjs.js",
+    "module": "dist/index.esm.js",
+    "types": "dist/index.d.ts"
   },
   "backstage": {
     "role": "frontend-plugin",
@@ -22,9 +25,11 @@
     "dist"
   ],
   "scripts": {
+    "start": "backstage-cli package start",
     "build": "backstage-cli package build",
+    "lint": "backstage-cli package lint",
+    "test": "backstage-cli package test",
     "clean": "backstage-cli package clean",
-    "lint": "tsc --noEmit",
     "format": "prettier --write src/",
     "prepack": "backstage-cli package prepack",
     "postpack": "backstage-cli package postpack"
@@ -49,6 +54,7 @@
     "@backstage/plugin-catalog-react": "^2.0.0",
     "@types/jest": "^30.0.0",
     "@types/react": "^18.0.0",
+    "jest": "^30.0.0",
     "prettier": "^3.4.2",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",

@@ -1,16 +1,20 @@
-all: build lint format
+all: typecheck lint format build
 
-build:
+install:
 	yarn install
-	npx tsc --project tsconfig.json
+
+build: install
 	yarn workspace @rwdocs/backstage-plugin-rw run build
 	yarn workspace @rwdocs/backstage-plugin-rw-backend run build
 
-lint:
+typecheck: install
+	npx tsc --project tsconfig.json
+
+lint: install
 	yarn workspace @rwdocs/backstage-plugin-rw run lint
 	yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
 
-format:
+format: install
 	yarn workspace @rwdocs/backstage-plugin-rw run format
 	yarn workspace @rwdocs/backstage-plugin-rw-backend run format
 

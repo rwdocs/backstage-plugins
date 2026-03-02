@@ -12,13 +12,16 @@ Backstage plugin pair for embedding RW documentation sites. Yarn 4.12.0 workspac
 ## Commands
 
 ```bash
-# Full build + lint + format
+# Full build + typecheck + lint + format
 make all
 
-# Build all plugins (install deps, type-check, backstage-cli build)
+# Build all plugins (install deps, backstage-cli build)
 make build
 
-# Lint (TypeScript strict mode via tsc --noEmit)
+# Type-check (tsc --noEmit across all plugins)
+make typecheck
+
+# Lint (ESLint via backstage-cli package lint)
 make lint
 
 # Format (Prettier, printWidth: 100)
@@ -33,7 +36,7 @@ yarn workspace @rwdocs/backstage-plugin-rw run lint
 yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
 ```
 
-No test framework is configured.
+Tests use `backstage-cli package test` (Jest). No tests have been written yet.
 
 ## Architecture
 
