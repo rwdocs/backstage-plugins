@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { useApi } from "@backstage/core-plugin-api";
 import { ErrorPanel } from "@backstage/core-components";
+import { useTheme } from "@mui/material/styles";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { rwApiRef } from "../api/RwClient";
 import { mountRw } from "@rwdocs/viewer";
@@ -10,6 +11,7 @@ import "@rwdocs/viewer/embed.css";
 export function RwDocsViewer() {
   const ref = useRef<HTMLDivElement>(null);
   const rwApi = useApi(rwApiRef);
+  const theme = useTheme();
   const [error, setError] = useState<Error | null>(null);
 
   const location = useLocation();
@@ -44,6 +46,7 @@ export function RwDocsViewer() {
           initialPath,
           basePath: base,
           fetchFn: rwApi.getFetch(),
+          colorScheme: theme.palette.mode,
           onNavigate: (rwPath: string) => {
             const browserPath = rwPath === "/" ? base : `${base}${rwPath}`;
             if (window.location.pathname !== browserPath) {
@@ -62,9 +65,9 @@ export function RwDocsViewer() {
       instanceRef.current?.destroy();
       instanceRef.current = null;
     };
-    // Intentionally mount once — back/forward sync is handled by the effect below
+    // Re-mount when API or theme changes — back/forward sync is handled by the effect below
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rwApi]);
+  }, [rwApi, theme.palette.mode]);
 
   // Sync external navigation (browser back/forward) to the RW app
   useEffect(() => {

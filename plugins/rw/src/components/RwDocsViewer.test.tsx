@@ -63,6 +63,23 @@ describe("RwDocsViewer", () => {
     expect(typeof options.onNavigate).toBe("function");
   });
 
+  it("passes colorScheme matching the Backstage theme to mountRw", async () => {
+    const mockApi = createMockRwApi();
+
+    await renderInTestApp(
+      <TestApiProvider apis={[[rwApiRef, mockApi]]}>
+        <RwDocsViewer />
+      </TestApiProvider>,
+    );
+
+    await waitFor(() => {
+      expect(mockMountRw).toHaveBeenCalledTimes(1);
+    });
+
+    const [, options] = mockMountRw.mock.calls[0];
+    expect(options.colorScheme).toBe("light");
+  });
+
   it("shows ErrorPanel when getBaseUrl rejects", async () => {
     const mockApi = createMockRwApi({
       getBaseUrl: jest.fn().mockRejectedValue(new Error("discovery failed")),
