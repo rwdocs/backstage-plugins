@@ -7372,12 +7372,12 @@ __metadata:
   linkType: hard
 
 "@rwdocs/viewer@npm:^0.1.10":
-  version: 0.1.10
-  resolution: "@rwdocs/viewer@npm:0.1.10"
+  version: 0.1.11
+  resolution: "@rwdocs/viewer@npm:0.1.11"
   dependencies:
     "@fontsource/jetbrains-mono": "npm:^5.2.8"
     "@fontsource/roboto": "npm:^5.2.9"
-  checksum: 10c0/c84d5671d8fa65b7968af7b0fcb68e5919ffa655d77360c0cd72ac5aa5d9facb5c99c5eaef4721f64ccb9705a1cd1bbaf9eba0cee6108b10f649c13576206bda
+  checksum: 10c0/d672d9e7729af67355b6a04ea0a93c78588e6d77305ff83a0c9b26ad7664b824e69a33c06af18718a0aec7f573acd04421f755a6cc85966edd60c783dd34bd3f
   languageName: node
   linkType: hard
 
