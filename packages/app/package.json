@@ -1,0 +1,25 @@
+{
+  "name": "app",
+  "version": "0.0.0",
+  "private": true,
+  "bundled": true,
+  "backstage": {
+    "role": "frontend"
+  },
+  "scripts": {
+    "start": "backstage-cli package start",
+    "build": "backstage-cli package build",
+    "clean": "backstage-cli package clean"
+  },
+  "dependencies": {
+    "@backstage/cli": "^0.35.0",
+    "@backstage/frontend-defaults": "^0.4.0",
+    "@rwdocs/backstage-plugin-rw": "workspace:*",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^6.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
