@@ -3,7 +3,9 @@
   "include": [
     "plugins/rw/src",
     "plugins/rw-backend/src",
-    "plugins/rw-backend/config.d.ts"
+    "plugins/rw-backend/config.d.ts",
+    "packages/app/src",
+    "packages/backend/src"
   ],
   "compilerOptions": {
     "outDir": "dist-types",
