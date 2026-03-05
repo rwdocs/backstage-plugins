@@ -18,7 +18,7 @@
     "@backstage/plugin-app-react": "^0.2.0",
     "@backstage/plugin-catalog": "^1.33.1",
     "@backstage/plugin-user-settings": "^0.9.0",
-    "@backstage/theme": "^0.6.0",
+    "@backstage/theme": "^0.7.0",
     "@rwdocs/backstage-plugin-rw": "workspace:*",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
