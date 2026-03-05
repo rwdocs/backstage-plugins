@@ -29,3 +29,6 @@ format\:check: install
 clean:
 	yarn workspace @rwdocs/backstage-plugin-rw run clean
 	yarn workspace @rwdocs/backstage-plugin-rw-backend run clean
+
+dev: install
+	yarn workspace backend run start & yarn workspace app run start & wait
