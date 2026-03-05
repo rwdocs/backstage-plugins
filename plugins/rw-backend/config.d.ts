@@ -1,5 +1,5 @@
 export interface Config {
-  /** @deepVisibility backend */
+  /** @visibility backend */
   rw?: {
     /** Local directory containing documentation source files. */
     projectDir?: string;
