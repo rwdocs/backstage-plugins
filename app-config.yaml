@@ -1,0 +1,22 @@
+app:
+  title: RW Docs Dev
+  baseUrl: http://localhost:3000
+
+backend:
+  baseUrl: http://localhost:7007
+  listen:
+    port: 7007
+  auth:
+    dangerouslyDisableDefaultAuthPolicy: true
+  database:
+    client: better-sqlite3
+    connection: ':memory:'
+  cors:
+    origin: http://localhost:3000
+
+auth:
+  providers:
+    guest: {}
+
+rw:
+  projectDir: ${RW_PROJECT_DIR}
