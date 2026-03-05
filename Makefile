@@ -15,7 +15,8 @@ lint: install
 	yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
 
 test: install
-	yarn workspace @rwdocs/backstage-plugin-rw-backend run test
+	yarn workspace @rwdocs/backstage-plugin-rw run test --watchAll=false
+	yarn workspace @rwdocs/backstage-plugin-rw-backend run test --watchAll=false
 
 format: install
 	yarn workspace @rwdocs/backstage-plugin-rw run format
