@@ -2,6 +2,8 @@ import { createApp } from '@backstage/frontend-defaults';
 import { createFrontendModule } from '@backstage/frontend-plugin-api';
 import { ThemeBlueprint } from '@backstage/plugin-app-react';
 import { UnifiedThemeProvider, themes } from '@backstage/theme';
+import catalogPlugin from '@backstage/plugin-catalog/alpha';
+import userSettingsPlugin from '@backstage/plugin-user-settings/alpha';
 import rwPlugin from '@rwdocs/backstage-plugin-rw';
 
 const lightTheme = ThemeBlueprint.make({
@@ -38,7 +40,7 @@ const themeModule = createFrontendModule({
 });
 
 const app = createApp({
-  features: [themeModule, rwPlugin],
+  features: [themeModule, catalogPlugin, userSettingsPlugin, rwPlugin],
 });
 
 export default app.createRoot();
