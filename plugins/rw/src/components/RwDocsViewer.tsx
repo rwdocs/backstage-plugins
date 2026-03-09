@@ -88,5 +88,5 @@ export function RwDocsViewer() {
     return <ErrorPanel error={error} />;
   }
 
-  return <div ref={ref} className="rw-root" style={{ height: "100%" }} />;
+  return <div ref={ref} className="rw-root" style={{ height: "100vh" }} />;
 }

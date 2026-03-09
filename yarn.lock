@@ -7946,7 +7946,7 @@ __metadata:
     "@backstage/cli": "npm:^0.35.0"
     "@backstage/errors": "npm:^1.2.7"
     "@jest/environment-jsdom-abstract": "npm:^30.2.0"
-    "@rwdocs/core": "npm:^0.1.11"
+    "@rwdocs/core": "npm:^0.1.12"
     "@types/express": "npm:^4.17.0"
     "@types/jest": "npm:^30.0.0"
     "@types/jsdom": "npm:^28"
@@ -7973,7 +7973,7 @@ __metadata:
     "@backstage/frontend-plugin-api": "npm:^0.14.0"
     "@backstage/plugin-catalog-react": "npm:^2.0.0"
     "@backstage/test-utils": "npm:^1.7.0"
-    "@rwdocs/viewer": "npm:^0.1.11"
+    "@rwdocs/viewer": "npm:^0.1.12"
     "@testing-library/dom": "npm:^10.0.0"
     "@testing-library/jest-dom": "npm:^6.0.0"
     "@testing-library/react": "npm:^16.0.0"
@@ -7997,34 +7997,34 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@rwdocs/core-darwin-arm64@npm:0.1.11":
-  version: 0.1.11
-  resolution: "@rwdocs/core-darwin-arm64@npm:0.1.11"
+"@rwdocs/core-darwin-arm64@npm:0.1.12":
+  version: 0.1.12
+  resolution: "@rwdocs/core-darwin-arm64@npm:0.1.12"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@rwdocs/core-linux-x64-gnu@npm:0.1.11":
-  version: 0.1.11
-  resolution: "@rwdocs/core-linux-x64-gnu@npm:0.1.11"
+"@rwdocs/core-linux-x64-gnu@npm:0.1.12":
+  version: 0.1.12
+  resolution: "@rwdocs/core-linux-x64-gnu@npm:0.1.12"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@rwdocs/core-linux-x64-musl@npm:0.1.11":
-  version: 0.1.11
-  resolution: "@rwdocs/core-linux-x64-musl@npm:0.1.11"
+"@rwdocs/core-linux-x64-musl@npm:0.1.12":
+  version: 0.1.12
+  resolution: "@rwdocs/core-linux-x64-musl@npm:0.1.12"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@rwdocs/core@npm:^0.1.11":
-  version: 0.1.11
-  resolution: "@rwdocs/core@npm:0.1.11"
+"@rwdocs/core@npm:^0.1.12":
+  version: 0.1.12
+  resolution: "@rwdocs/core@npm:0.1.12"
   dependencies:
-    "@rwdocs/core-darwin-arm64": "npm:0.1.11"
-    "@rwdocs/core-linux-x64-gnu": "npm:0.1.11"
-    "@rwdocs/core-linux-x64-musl": "npm:0.1.11"
+    "@rwdocs/core-darwin-arm64": "npm:0.1.12"
+    "@rwdocs/core-linux-x64-gnu": "npm:0.1.12"
+    "@rwdocs/core-linux-x64-musl": "npm:0.1.12"
   dependenciesMeta:
     "@rwdocs/core-darwin-arm64":
       optional: true
@@ -8032,17 +8032,17 @@ __metadata:
       optional: true
     "@rwdocs/core-linux-x64-musl":
       optional: true
-  checksum: 10c0/47fca525208e9a610b85ecd78c84e9d02d7aadf512ca13a1ce2c6faf5df410875b3115d7550571b08328b79cbb482c066e22bfeda174b47812e801e3ee0f71c7
+  checksum: 10c0/e1c6c1987f95f9a182f33051d45361ec5b41ffa1b01ed0185373f318ccb4718ab4d36c10e14757afa4f4436bb173d54dfd487b1d5fa6b89d76f2b9407bd764c5
   languageName: node
   linkType: hard
 
-"@rwdocs/viewer@npm:^0.1.11":
-  version: 0.1.11
-  resolution: "@rwdocs/viewer@npm:0.1.11"
+"@rwdocs/viewer@npm:^0.1.12":
+  version: 0.1.12
+  resolution: "@rwdocs/viewer@npm:0.1.12"
   dependencies:
     "@fontsource/jetbrains-mono": "npm:^5.2.8"
     "@fontsource/roboto": "npm:^5.2.9"
-  checksum: 10c0/d672d9e7729af67355b6a04ea0a93c78588e6d77305ff83a0c9b26ad7664b824e69a33c06af18718a0aec7f573acd04421f755a6cc85966edd60c783dd34bd3f
+  checksum: 10c0/d3b5cc357490b40cb710fb3051298aadcae5e8fee1a283f93d1c2ce312b3dcf0b710b2f7f92ffeb425545cd07075be578f27f8f2872abd65d199ed7830822d92
   languageName: node
   linkType: hard
 
@@ -11684,7 +11684,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:^4.0.0, chalk@npm:^4.1.0, chalk@npm:^4.1.1, chalk@npm:^4.1.2":
+"chalk@npm:4.1.2, chalk@npm:^4.0.0, chalk@npm:^4.1.0, chalk@npm:^4.1.1, chalk@npm:^4.1.2":
   version: 4.1.2
   resolution: "chalk@npm:4.1.2"
   dependencies:
@@ -12203,6 +12203,23 @@ __metadata:
   dependencies:
     source-map: "npm:^0.6.1"
   checksum: 10c0/d30cec83a320d20d7e9482a4d011fa84319a0a8f9107acb632c48493d608be3a2b879608866d9edba2ce304ee52bc798138c26ad16eda6fbe7ec5e7bec99a683
+  languageName: node
+  linkType: hard
+
+"concurrently@npm:^9.2.1":
+  version: 9.2.1
+  resolution: "concurrently@npm:9.2.1"
+  dependencies:
+    chalk: "npm:4.1.2"
+    rxjs: "npm:7.8.2"
+    shell-quote: "npm:1.8.3"
+    supports-color: "npm:8.1.1"
+    tree-kill: "npm:1.2.2"
+    yargs: "npm:17.7.2"
+  bin:
+    conc: dist/bin/concurrently.js
+    concurrently: dist/bin/concurrently.js
+  checksum: 10c0/da37f239f82eb7ac24f5ddb56259861e5f1d6da2ade7602b6ea7ad3101b13b5ccec02a77b7001402d1028ff2fdc38eed55644b32853ad5abf30e057002a963aa
   languageName: node
   linkType: hard
 
@@ -22936,6 +22953,8 @@ __metadata:
 "root-workspace-0b6124@workspace:.":
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
+  dependencies:
+    concurrently: "npm:^9.2.1"
   languageName: unknown
   linkType: soft
 
@@ -22971,7 +22990,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rxjs@npm:^7.5.5":
+"rxjs@npm:7.8.2, rxjs@npm:^7.5.5":
   version: 7.8.2
   resolution: "rxjs@npm:7.8.2"
   dependencies:
@@ -23330,7 +23349,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"shell-quote@npm:^1.7.3, shell-quote@npm:^1.8.3":
+"shell-quote@npm:1.8.3, shell-quote@npm:^1.7.3, shell-quote@npm:^1.8.3":
   version: 1.8.3
   resolution: "shell-quote@npm:1.8.3"
   checksum: 10c0/bee87c34e1e986cfb4c30846b8e6327d18874f10b535699866f368ade11ea4ee45433d97bf5eada22c4320c27df79c3a6a7eb1bf3ecfc47f2c997d9e5e2672fd
@@ -24134,6 +24153,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"supports-color@npm:8.1.1, supports-color@npm:^8.0.0, supports-color@npm:^8.1.1":
+  version: 8.1.1
+  resolution: "supports-color@npm:8.1.1"
+  dependencies:
+    has-flag: "npm:^4.0.0"
+  checksum: 10c0/ea1d3c275dd604c974670f63943ed9bd83623edc102430c05adb8efc56ba492746b6e95386e7831b872ec3807fd89dd8eb43f735195f37b5ec343e4234cc7e89
+  languageName: node
+  linkType: hard
+
 "supports-color@npm:^5.3.0":
   version: 5.5.0
   resolution: "supports-color@npm:5.5.0"
@@ -24149,15 +24177,6 @@ __metadata:
   dependencies:
     has-flag: "npm:^4.0.0"
   checksum: 10c0/afb4c88521b8b136b5f5f95160c98dee7243dc79d5432db7efc27efb219385bbc7d9427398e43dd6cc730a0f87d5085ce1652af7efbe391327bc0a7d0f7fc124
-  languageName: node
-  linkType: hard
-
-"supports-color@npm:^8.0.0, supports-color@npm:^8.1.1":
-  version: 8.1.1
-  resolution: "supports-color@npm:8.1.1"
-  dependencies:
-    has-flag: "npm:^4.0.0"
-  checksum: 10c0/ea1d3c275dd604c974670f63943ed9bd83623edc102430c05adb8efc56ba492746b6e95386e7831b872ec3807fd89dd8eb43f735195f37b5ec343e4234cc7e89
   languageName: node
   linkType: hard
 
@@ -24621,6 +24640,15 @@ __metadata:
   peerDependencies:
     tslib: 2
   checksum: 10c0/079f0f0163b68ee2eedc65cab1de6fb121487eba9ae135c106a8bc5e4ab7906ae0b57d86016e4a7da8c0ee906da1eae8c6a1490cd6e2a5e5ccbca321e1f959ca
+  languageName: node
+  linkType: hard
+
+"tree-kill@npm:1.2.2":
+  version: 1.2.2
+  resolution: "tree-kill@npm:1.2.2"
+  bin:
+    tree-kill: cli.js
+  checksum: 10c0/7b1b7c7f17608a8f8d20a162e7957ac1ef6cd1636db1aba92f4e072dc31818c2ff0efac1e3d91064ede67ed5dc57c565420531a8134090a12ac10cf792ab14d2
   languageName: node
   linkType: hard
 
@@ -26055,6 +26083,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"yargs@npm:17.7.2, yargs@npm:^17.1.1, yargs@npm:^17.7.2":
+  version: 17.7.2
+  resolution: "yargs@npm:17.7.2"
+  dependencies:
+    cliui: "npm:^8.0.1"
+    escalade: "npm:^3.1.1"
+    get-caller-file: "npm:^2.0.5"
+    require-directory: "npm:^2.1.1"
+    string-width: "npm:^4.2.3"
+    y18n: "npm:^5.0.5"
+    yargs-parser: "npm:^21.1.1"
+  checksum: 10c0/ccd7e723e61ad5965fffbb791366db689572b80cca80e0f96aad968dfff4156cd7cd1ad18607afe1046d8241e6fb2d6c08bf7fa7bfb5eaec818735d8feac8f05
+  languageName: node
+  linkType: hard
+
 "yargs@npm:^16.2.0":
   version: 16.2.0
   resolution: "yargs@npm:16.2.0"
@@ -26067,21 +26110,6 @@ __metadata:
     y18n: "npm:^5.0.5"
     yargs-parser: "npm:^20.2.2"
   checksum: 10c0/b1dbfefa679848442454b60053a6c95d62f2d2e21dd28def92b647587f415969173c6e99a0f3bab4f1b67ee8283bf735ebe3544013f09491186ba9e8a9a2b651
-  languageName: node
-  linkType: hard
-
-"yargs@npm:^17.1.1, yargs@npm:^17.7.2":
-  version: 17.7.2
-  resolution: "yargs@npm:17.7.2"
-  dependencies:
-    cliui: "npm:^8.0.1"
-    escalade: "npm:^3.1.1"
-    get-caller-file: "npm:^2.0.5"
-    require-directory: "npm:^2.1.1"
-    string-width: "npm:^4.2.3"
-    y18n: "npm:^5.0.5"
-    yargs-parser: "npm:^21.1.1"
-  checksum: 10c0/ccd7e723e61ad5965fffbb791366db689572b80cca80e0f96aad968dfff4156cd7cd1ad18607afe1046d8241e6fb2d6c08bf7fa7bfb5eaec818735d8feac8f05
   languageName: node
   linkType: hard
 

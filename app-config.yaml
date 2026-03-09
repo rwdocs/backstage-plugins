@@ -13,6 +13,7 @@ backend:
     connection: ':memory:'
   cors:
     origin: http://localhost:3000
+    credentials: true
 
 auth:
   providers:
