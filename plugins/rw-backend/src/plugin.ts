@@ -23,6 +23,8 @@ export const rwPlugin = createBackendPlugin({
             region: s3Config.getOptionalString("region"),
             endpoint: s3Config.getOptionalString("endpoint"),
             bucketRootPath: s3Config.getOptionalString("bucketRootPath"),
+            accessKeyId: s3Config.getOptionalString("accessKeyId"),
+            secretAccessKey: s3Config.getOptionalString("secretAccessKey"),
           };
         }
 

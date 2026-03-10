@@ -9,6 +9,8 @@ export interface S3Options {
   region?: string;
   endpoint?: string;
   bucketRootPath?: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
 }
 
 export interface DiagramsOptions {

@@ -17,6 +17,13 @@ export interface Config {
       endpoint?: string;
       /** Root path within the bucket. */
       bucketRootPath?: string;
+      /** AWS access key ID. */
+      accessKeyId?: string;
+      /**
+       * AWS secret access key.
+       * @visibility secret
+       */
+      secretAccessKey?: string;
     };
     /** Diagram rendering configuration. */
     diagrams?: {
