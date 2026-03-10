@@ -10,26 +10,8 @@ permissions:
   id-token: write
 
 jobs:
-  check-ci:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Verify CI passed for this commit
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          sha="${{ github.sha }}"
-          conclusion=$(gh api "repos/${{ github.repository }}/commits/${sha}/check-runs" \
-            --jq '.check_runs[] | select(.name == "ci") | .conclusion' \
-            | head -1)
-          if [ "$conclusion" != "success" ]; then
-            echo "::error::CI has not passed for commit ${sha} (status: ${conclusion:-pending})"
-            exit 1
-          fi
-
   release:
-    needs: check-ci
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v6
 
@@ -45,6 +27,19 @@ jobs:
 
       - name: Type-check
         run: npx tsc --project tsconfig.json
+
+      - name: Lint
+        run: |
+          yarn workspace @rwdocs/backstage-plugin-rw run lint
+          yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
+
+      - name: Test
+        run: yarn workspace @rwdocs/backstage-plugin-rw-backend run test
+
+      - name: Format check
+        run: |
+          yarn workspace @rwdocs/backstage-plugin-rw run format:check
+          yarn workspace @rwdocs/backstage-plugin-rw-backend run format:check
 
       - name: Build frontend
         run: yarn workspace @rwdocs/backstage-plugin-rw run build
