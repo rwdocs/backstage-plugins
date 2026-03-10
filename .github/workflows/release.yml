@@ -52,22 +52,11 @@ jobs:
       - name: Build backend
         run: yarn workspace @rwdocs/backstage-plugin-rw-backend run build
 
-      - name: Dry-run publish (catch errors early)
-        run: |
-          yarn workspace @rwdocs/backstage-plugin-rw npm publish --dry-run
-          yarn workspace @rwdocs/backstage-plugin-rw-backend npm publish --dry-run
-        env:
-          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Publish frontend to npm
-        run: yarn workspace @rwdocs/backstage-plugin-rw npm publish
-        env:
-          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: yarn workspace @rwdocs/backstage-plugin-rw npm publish --provenance
 
       - name: Publish backend to npm
-        run: yarn workspace @rwdocs/backstage-plugin-rw-backend npm publish
-        env:
-          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: yarn workspace @rwdocs/backstage-plugin-rw-backend npm publish --provenance
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

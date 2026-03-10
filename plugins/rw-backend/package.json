@@ -2,6 +2,11 @@
   "name": "@rwdocs/backstage-plugin-rw-backend",
   "version": "0.1.0",
   "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rwdocs/backstage-plugins.git",
+    "directory": "plugins/rw-backend"
+  },
   "main": "src/index.ts",
   "types": "src/index.ts",
   "exports": {
