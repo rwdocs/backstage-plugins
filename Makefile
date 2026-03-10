@@ -26,6 +26,11 @@ format\:check: install
 	yarn workspace @rwdocs/backstage-plugin-rw run format:check
 	yarn workspace @rwdocs/backstage-plugin-rw-backend run format:check
 
+version:
+	@test -n "$(VERSION)" || (echo "Usage: make version VERSION=0.2.0" && exit 1)
+	yarn workspace @rwdocs/backstage-plugin-rw version $(VERSION)
+	yarn workspace @rwdocs/backstage-plugin-rw-backend version $(VERSION)
+
 clean:
 	yarn workspace @rwdocs/backstage-plugin-rw run clean
 	yarn workspace @rwdocs/backstage-plugin-rw-backend run clean
