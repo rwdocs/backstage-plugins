@@ -65,9 +65,14 @@ export function RwDocsViewer() {
       instanceRef.current?.destroy();
       instanceRef.current = null;
     };
-    // Re-mount when API or theme changes — back/forward sync is handled by the effect below
+    // Re-mount when API changes — theme and navigation sync are handled by effects below
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rwApi, theme.palette.mode]);
+  }, [rwApi]);
+
+  // Sync Backstage theme to the RW viewer
+  useEffect(() => {
+    instanceRef.current?.setColorScheme(theme.palette.mode);
+  }, [theme.palette.mode]);
 
   // Sync external navigation (browser back/forward) to the RW app
   useEffect(() => {

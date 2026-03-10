@@ -18,5 +18,12 @@ export interface Config {
       /** Root path within the bucket. */
       bucketRootPath?: string;
     };
+    /** Diagram rendering configuration. */
+    diagrams?: {
+      /** Kroki server URL for rendering diagrams. */
+      krokiUrl?: string;
+      /** Diagram rendering DPI. */
+      dpi?: number;
+    };
   };
 }

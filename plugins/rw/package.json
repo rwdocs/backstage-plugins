@@ -36,7 +36,7 @@
     "postpack": "backstage-cli package postpack"
   },
   "dependencies": {
-    "@rwdocs/viewer": "^0.1.12"
+    "@rwdocs/viewer": "^0.1.14"
   },
   "peerDependencies": {
     "@backstage/core-components": "^0.18.0",

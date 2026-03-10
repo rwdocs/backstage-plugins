@@ -1,5 +1,5 @@
 import { coreServices, createBackendPlugin } from "@backstage/backend-plugin-api";
-import { createRouter, type S3Options } from "./router";
+import { createRouter, type S3Options, type DiagramsOptions } from "./router";
 
 export const rwPlugin = createBackendPlugin({
   pluginId: "rw",
@@ -30,11 +30,20 @@ export const rwPlugin = createBackendPlugin({
           throw new Error("Either rw.projectDir or rw.s3 must be configured");
         }
 
+        let diagrams: DiagramsOptions | undefined;
+        const diagramsConfig = config.getOptionalConfig("rw.diagrams");
+        if (diagramsConfig) {
+          diagrams = {
+            krokiUrl: diagramsConfig.getOptionalString("krokiUrl"),
+            dpi: diagramsConfig.getOptionalNumber("dpi"),
+          };
+        }
+
         const linkPrefix = config.getOptionalString("rw.linkPrefix");
         if (linkPrefix) {
           logger.info(`Using link prefix: ${linkPrefix}`);
         }
-        const router = await createRouter({ logger, httpAuth, projectDir, s3, linkPrefix });
+        const router = await createRouter({ logger, httpAuth, projectDir, s3, linkPrefix, diagrams });
         httpRouter.use(router);
         httpRouter.addAuthPolicy({
           path: "/health",

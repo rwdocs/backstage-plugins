@@ -11,19 +11,25 @@ export interface S3Options {
   bucketRootPath?: string;
 }
 
+export interface DiagramsOptions {
+  krokiUrl?: string;
+  dpi?: number;
+}
+
 export interface RouterOptions {
   logger: LoggerService;
   httpAuth: HttpAuthService;
   projectDir?: string;
   s3?: S3Options;
   linkPrefix?: string;
+  diagrams?: DiagramsOptions;
 }
 
 export async function createRouter(options: RouterOptions) {
-  const { logger, projectDir, s3, linkPrefix } = options;
+  const { logger, projectDir, s3, linkPrefix, diagrams } = options;
   const router = Router();
 
-  const config: SiteConfig = { projectDir, s3, linkPrefix };
+  const config: SiteConfig = { projectDir, s3, linkPrefix, diagrams };
   logger.info(
     s3
       ? `Creating RW site from S3 (${s3.bucket}/${s3.entity})`

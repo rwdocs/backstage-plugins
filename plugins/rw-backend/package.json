@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@backstage/errors": "^1.2.7",
-    "@rwdocs/core": "^0.1.12",
+    "@rwdocs/core": "^0.1.14",
     "express": "^4.21.0",
     "express-promise-router": "^4.1.0"
   },
