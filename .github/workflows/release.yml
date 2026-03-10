@@ -18,8 +18,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           sha="${{ github.sha }}"
-          conclusion=$(gh api "repos/${{ github.repository }}/commits/${sha}/check-suites" \
-            --jq '.check_suites[] | select(.app.slug == "github-actions") | .conclusion' \
+          conclusion=$(gh api "repos/${{ github.repository }}/commits/${sha}/check-runs" \
+            --jq '.check_runs[] | select(.name == "ci") | .conclusion' \
             | head -1)
           if [ "$conclusion" != "success" ]; then
             echo "::error::CI has not passed for commit ${sha} (status: ${conclusion:-pending})"
