@@ -26,7 +26,11 @@ describe("RwDocsViewer", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockMountRw.mockReturnValue({ destroy: mockDestroy, navigateTo: jest.fn(), setColorScheme: jest.fn() });
+    mockMountRw.mockReturnValue({
+      destroy: mockDestroy,
+      navigateTo: jest.fn(),
+      setColorScheme: jest.fn(),
+    });
   });
 
   it("renders a container element", async () => {

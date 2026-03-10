@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  check-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify CI passed for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="${{ github.sha }}"
+          conclusion=$(gh api "repos/${{ github.repository }}/commits/${sha}/check-suites" \
+            --jq '.check_suites[] | select(.app.slug == "github-actions") | .conclusion' \
+            | head -1)
+          if [ "$conclusion" != "success" ]; then
+            echo "::error::CI has not passed for commit ${sha} (status: ${conclusion:-pending})"
+            exit 1
+          fi
+
+  release:
+    needs: check-ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build frontend
+        run: yarn workspace @rwdocs/backstage-plugin-rw run build
+
+      - name: Build backend
+        run: yarn workspace @rwdocs/backstage-plugin-rw-backend run build
+
+      - name: Dry-run publish (catch errors early)
+        run: |
+          yarn workspace @rwdocs/backstage-plugin-rw npm publish --dry-run
+          yarn workspace @rwdocs/backstage-plugin-rw-backend npm publish --dry-run
+        env:
+          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish frontend to npm
+        run: yarn workspace @rwdocs/backstage-plugin-rw npm publish
+        env:
+          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish backend to npm
+        run: yarn workspace @rwdocs/backstage-plugin-rw-backend npm publish
+        env:
+          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true

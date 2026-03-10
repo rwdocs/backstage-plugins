@@ -43,7 +43,14 @@ export const rwPlugin = createBackendPlugin({
         if (linkPrefix) {
           logger.info(`Using link prefix: ${linkPrefix}`);
         }
-        const router = await createRouter({ logger, httpAuth, projectDir, s3, linkPrefix, diagrams });
+        const router = await createRouter({
+          logger,
+          httpAuth,
+          projectDir,
+          s3,
+          linkPrefix,
+          diagrams,
+        });
         httpRouter.use(router);
         httpRouter.addAuthPolicy({
           path: "/health",
