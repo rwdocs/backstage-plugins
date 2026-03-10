@@ -43,6 +43,9 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      - name: Type-check
+        run: npx tsc --project tsconfig.json
+
       - name: Build frontend
         run: yarn workspace @rwdocs/backstage-plugin-rw run build
 
