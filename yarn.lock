@@ -2392,8 +2392,8 @@ __metadata:
   linkType: hard
 
 "@backstage/plugin-auth-backend@npm:^0.27.0":
-  version: 0.27.0
-  resolution: "@backstage/plugin-auth-backend@npm:0.27.0"
+  version: 0.27.1
+  resolution: "@backstage/plugin-auth-backend@npm:0.27.1"
   dependencies:
     "@backstage/backend-plugin-api": "npm:^1.7.0"
     "@backstage/catalog-model": "npm:^1.7.6"
@@ -2419,7 +2419,7 @@ __metadata:
     uuid: "npm:^11.0.0"
     zod: "npm:^4.3.5"
     zod-validation-error: "npm:^5.0.0"
-  checksum: 10c0/298a5fddb7fb394cdbe46af1e727e0910dd06b324db3369f4b38e6d53aab7eae2bf9d76065d8c5f2790b55b4d9d13dca64eef96e947b683159ecbb3faafaddc0
+  checksum: 10c0/a7113f545c3bb518dbc2c0959a4b86a72e0ce66850ada91c0f029f33ed3fa36eafef58144b978397dd1b0c4eba96c4e223817c33e4df087367de7995e882a9b3
   languageName: node
   linkType: hard
 
@@ -2910,27 +2910,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@backstage/theme@npm:^0.6.0":
-  version: 0.6.8
-  resolution: "@backstage/theme@npm:0.6.8"
-  dependencies:
-    "@emotion/react": "npm:^11.10.5"
-    "@emotion/styled": "npm:^11.10.5"
-    "@mui/material": "npm:^5.12.2"
-  peerDependencies:
-    "@material-ui/core": ^4.12.2
-    "@types/react": ^17.0.0 || ^18.0.0
-    react: ^17.0.0 || ^18.0.0
-    react-dom: ^17.0.0 || ^18.0.0
-    react-router-dom: ^6.3.0
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-  checksum: 10c0/547cfc64fe328e422dc5968b0c0a4f589332e345b02c3993b33cb0987c5259f97040ea6e86675fee1d7964a574fdb6f96e9f915479cb1c160e23d227b12d1eeb
-  languageName: node
-  linkType: hard
-
-"@backstage/theme@npm:^0.7.2":
+"@backstage/theme@npm:^0.7.0, @backstage/theme@npm:^0.7.2":
   version: 0.7.2
   resolution: "@backstage/theme@npm:0.7.2"
   dependencies:
@@ -10437,7 +10417,7 @@ __metadata:
     "@backstage/plugin-app-react": "npm:^0.2.0"
     "@backstage/plugin-catalog": "npm:^1.33.1"
     "@backstage/plugin-user-settings": "npm:^0.9.0"
-    "@backstage/theme": "npm:^0.6.0"
+    "@backstage/theme": "npm:^0.7.0"
     "@rwdocs/backstage-plugin-rw": "workspace:*"
     "@types/react": "npm:^18.0.0"
     "@types/react-dom": "npm:^18.0.0"
