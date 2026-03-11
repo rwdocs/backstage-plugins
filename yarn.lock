@@ -8037,12 +8037,12 @@ __metadata:
   linkType: hard
 
 "@rwdocs/viewer@npm:^0.1.15":
-  version: 0.1.15
-  resolution: "@rwdocs/viewer@npm:0.1.15"
+  version: 0.1.17
+  resolution: "@rwdocs/viewer@npm:0.1.17"
   dependencies:
     "@fontsource/jetbrains-mono": "npm:^5.2.8"
     "@fontsource/roboto": "npm:^5.2.9"
-  checksum: 10c0/20194ca7508db831f106ae758732b76ead12b4b87e153d68b11cff987e137f15e496785df22a8bc582fb9aad3a221f80890cad586e450a389c8e2b125438a6a7
+  checksum: 10c0/4861071e82644788661623d4d8cedf7e290bd902b6916ed9aa50d2dc3ca3f734450e0e6e71654f2693397c8f07682090570a88e86a64de36f9cbe0a99d26b15d
   languageName: node
   linkType: hard
 
