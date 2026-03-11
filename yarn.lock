@@ -7946,7 +7946,7 @@ __metadata:
     "@backstage/cli": "npm:^0.35.0"
     "@backstage/errors": "npm:^1.2.7"
     "@jest/environment-jsdom-abstract": "npm:^30.2.0"
-    "@rwdocs/core": "npm:^0.1.15"
+    "@rwdocs/core": "npm:^0.1.17"
     "@types/express": "npm:^4.17.0"
     "@types/jest": "npm:^30.0.0"
     "@types/jsdom": "npm:^28"
@@ -7973,7 +7973,7 @@ __metadata:
     "@backstage/frontend-plugin-api": "npm:^0.14.0"
     "@backstage/plugin-catalog-react": "npm:^2.0.0"
     "@backstage/test-utils": "npm:^1.7.0"
-    "@rwdocs/viewer": "npm:^0.1.15"
+    "@rwdocs/viewer": "npm:^0.1.17"
     "@testing-library/dom": "npm:^10.0.0"
     "@testing-library/jest-dom": "npm:^6.0.0"
     "@testing-library/react": "npm:^16.0.0"
@@ -7997,34 +7997,34 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@rwdocs/core-darwin-arm64@npm:0.1.15":
-  version: 0.1.15
-  resolution: "@rwdocs/core-darwin-arm64@npm:0.1.15"
+"@rwdocs/core-darwin-arm64@npm:0.1.17":
+  version: 0.1.17
+  resolution: "@rwdocs/core-darwin-arm64@npm:0.1.17"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@rwdocs/core-linux-x64-gnu@npm:0.1.15":
-  version: 0.1.15
-  resolution: "@rwdocs/core-linux-x64-gnu@npm:0.1.15"
+"@rwdocs/core-linux-x64-gnu@npm:0.1.17":
+  version: 0.1.17
+  resolution: "@rwdocs/core-linux-x64-gnu@npm:0.1.17"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@rwdocs/core-linux-x64-musl@npm:0.1.15":
-  version: 0.1.15
-  resolution: "@rwdocs/core-linux-x64-musl@npm:0.1.15"
+"@rwdocs/core-linux-x64-musl@npm:0.1.17":
+  version: 0.1.17
+  resolution: "@rwdocs/core-linux-x64-musl@npm:0.1.17"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@rwdocs/core@npm:^0.1.15":
-  version: 0.1.15
-  resolution: "@rwdocs/core@npm:0.1.15"
+"@rwdocs/core@npm:^0.1.17":
+  version: 0.1.17
+  resolution: "@rwdocs/core@npm:0.1.17"
   dependencies:
-    "@rwdocs/core-darwin-arm64": "npm:0.1.15"
-    "@rwdocs/core-linux-x64-gnu": "npm:0.1.15"
-    "@rwdocs/core-linux-x64-musl": "npm:0.1.15"
+    "@rwdocs/core-darwin-arm64": "npm:0.1.17"
+    "@rwdocs/core-linux-x64-gnu": "npm:0.1.17"
+    "@rwdocs/core-linux-x64-musl": "npm:0.1.17"
   dependenciesMeta:
     "@rwdocs/core-darwin-arm64":
       optional: true
@@ -8032,17 +8032,17 @@ __metadata:
       optional: true
     "@rwdocs/core-linux-x64-musl":
       optional: true
-  checksum: 10c0/0863b8a72b845610eeb72d4e77aa6b1ad40972d80dbc561a63f33efd322735f441d52598e9f43d128422c8244a3fe021ddb73ad3dc156b9bb6b7a0ff7c6f628d
+  checksum: 10c0/67651179a0d29c5d8d33b187b9d466d499fcda9ae5e8343a5b02b1fcd15d92f1e5bd8a02d14db6d6841dc0e0bfd24791e984e6d412cb684d706e795b21cb5eed
   languageName: node
   linkType: hard
 
-"@rwdocs/viewer@npm:^0.1.15":
-  version: 0.1.15
-  resolution: "@rwdocs/viewer@npm:0.1.15"
+"@rwdocs/viewer@npm:^0.1.17":
+  version: 0.1.17
+  resolution: "@rwdocs/viewer@npm:0.1.17"
   dependencies:
     "@fontsource/jetbrains-mono": "npm:^5.2.8"
     "@fontsource/roboto": "npm:^5.2.9"
-  checksum: 10c0/20194ca7508db831f106ae758732b76ead12b4b87e153d68b11cff987e137f15e496785df22a8bc582fb9aad3a221f80890cad586e450a389c8e2b125438a6a7
+  checksum: 10c0/4861071e82644788661623d4d8cedf7e290bd902b6916ed9aa50d2dc3ca3f734450e0e6e71654f2693397c8f07682090570a88e86a64de36f9cbe0a99d26b15d
   languageName: node
   linkType: hard
 
