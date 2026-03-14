@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useApi } from "@backstage/core-plugin-api";
 import { useEntity } from "@backstage/plugin-catalog-react";
+import { getCompoundEntityRef } from "@backstage/catalog-model";
 import { ErrorPanel, Progress } from "@backstage/core-components";
 import { rwApiRef } from "../api/RwClient";
 import { parseAnnotation } from "./parseAnnotation";
@@ -15,8 +16,9 @@ export function RwEntityDocsViewer() {
   const [error, setError] = useState<Error | null>(null);
 
   const annotationValue = entity.metadata.annotations?.[ANNOTATION_KEY];
+  const { namespace, kind, name } = getCompoundEntityRef(entity);
   const selfEntityRef =
-    `${entity.metadata.namespace ?? "default"}/${entity.kind}/${entity.metadata.name}`.toLowerCase();
+    `${namespace}/${kind}/${name}`.toLocaleLowerCase("en-US");
   const parsed = parseAnnotation(annotationValue, selfEntityRef);
   const entityRef = parsed?.entityRef;
   const scope = parsed?.scope;

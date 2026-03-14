@@ -1,3 +1,5 @@
+import { parseEntityRef } from "@backstage/catalog-model";
+
 export interface ParsedAnnotation {
   entityRef: string;
   scope: string | undefined;
@@ -9,21 +11,30 @@ export function parseAnnotation(
 ): ParsedAnnotation | undefined {
   if (!value) return undefined;
 
-  const colonIndex = value.indexOf(":");
+  const hashIndex = value.indexOf("#");
   let entity: string;
   let scope: string | undefined;
 
-  if (colonIndex === -1) {
+  if (hashIndex === -1) {
     entity = value;
     scope = undefined;
   } else {
-    entity = value.slice(0, colonIndex);
-    scope = value.slice(colonIndex + 1);
+    entity = value.slice(0, hashIndex);
+    scope = value.slice(hashIndex + 1) || undefined;
   }
 
   if (entity === ".") {
-    entity = selfEntityRef;
+    return { entityRef: selfEntityRef, scope };
   }
 
-  return { entityRef: entity, scope };
+  try {
+    const ref = parseEntityRef(entity);
+    return {
+      entityRef:
+        `${ref.namespace}/${ref.kind}/${ref.name}`.toLocaleLowerCase("en-US"),
+      scope,
+    };
+  } catch {
+    return undefined;
+  }
 }

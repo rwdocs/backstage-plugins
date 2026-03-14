@@ -74,7 +74,7 @@ describe("RwEntityDocsViewer", () => {
 
   it("resolves base URL for explicit entity ref annotation", async () => {
     const mockApi = createMockRwApi();
-    const entity = makeEntity({ "rwdocs.org/ref": "default/component/other-docs" });
+    const entity = makeEntity({ "rwdocs.org/ref": "component:default/other-docs" });
 
     await renderInTestApp(
       <TestApiProvider apis={[[rwApiRef, mockApi]]}>
