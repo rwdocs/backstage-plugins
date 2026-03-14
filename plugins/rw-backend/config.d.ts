@@ -16,6 +16,7 @@ export interface Config {
     /**
      * Entity ref for the standalone /docs page.
      * Format: "namespace/kind/name"
+     * @visibility frontend
      */
     rootEntity?: string;
     /** Maximum number of cached RwSite instances. Default: 20. */
