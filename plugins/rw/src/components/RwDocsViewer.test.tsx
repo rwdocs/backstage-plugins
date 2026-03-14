@@ -16,6 +16,9 @@ const mockMountRw = mountRw as jest.MockedFunction<typeof mountRw>;
 function createMockRwApi(overrides?: Partial<RwApi>): RwApi {
   return {
     getBaseUrl: jest.fn().mockResolvedValue("http://localhost:7007/api/rw"),
+    getSiteBaseUrl: jest.fn().mockImplementation((entityRef: string) =>
+      Promise.resolve(`http://localhost:7007/api/rw/site/${entityRef}`),
+    ),
     getFetch: jest.fn().mockReturnValue(jest.fn()),
     ...overrides,
   };
