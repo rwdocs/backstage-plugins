@@ -4,6 +4,7 @@ import {
   type SiteConfig,
   type DiagramsConfig,
 } from '@rwdocs/core';
+import { toEntityPath } from './entityPath';
 
 export interface S3SharedConfig {
   bucket: string;
@@ -17,6 +18,7 @@ export interface S3SharedConfig {
 export interface HubOptions {
   s3?: S3SharedConfig;
   projectDir?: string;
+  /** Entity ref in any format accepted by parseEntityRef. Normalized internally. */
   entity?: string;
   linkPrefix?: string;
   diagrams?: DiagramsConfig;
@@ -29,7 +31,10 @@ export class Hub {
   private readonly maxSize: number;
 
   constructor(options: HubOptions) {
-    this.options = options;
+    this.options = {
+      ...options,
+      entity: options.entity ? toEntityPath(options.entity) : undefined,
+    };
     this.maxSize = options.cacheSize ?? 20;
   }
 

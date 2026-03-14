@@ -161,5 +161,19 @@ describe("Hub", () => {
 
       expect(result).toBeUndefined();
     });
+
+    it("normalizes entity ref passed in constructor", () => {
+      const site = mockSite();
+      mockCreateSite.mockReturnValue(site);
+
+      const hub = new Hub({
+        projectDir: "/path/to/docs",
+        entity: "Component:default/arch",
+      });
+
+      const result = hub.getSite("component/default/arch");
+
+      expect(result).toBe(site);
+    });
   });
 });

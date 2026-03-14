@@ -1,12 +1,7 @@
 import { coreServices, createBackendPlugin } from "@backstage/backend-plugin-api";
-import { parseEntityRef } from "@backstage/catalog-model";
 import { createRouter } from "./router";
 import { Hub, type HubOptions } from "./hub";
-
-function toEntityPath(entityRef: string): string {
-  const ref = parseEntityRef(entityRef);
-  return `${ref.kind}/${ref.namespace}/${ref.name}`.toLocaleLowerCase("en-US");
-}
+import { toEntityPath } from "./entityPath";
 
 export const rwPlugin = createBackendPlugin({
   pluginId: "rw",
@@ -20,8 +15,7 @@ export const rwPlugin = createBackendPlugin({
       },
       async init({ httpRouter, httpAuth, logger, config }) {
         const projectDir = config.getOptionalString("rw.projectDir");
-        const entityRaw = config.getOptionalString("rw.entity");
-        const entity = entityRaw ? toEntityPath(entityRaw) : undefined;
+        const entity = config.getOptionalString("rw.entity");
         const linkPrefix = config.getOptionalString("rw.linkPrefix");
         const cacheSize = config.getOptionalNumber("rw.cacheSize");
 
@@ -71,7 +65,7 @@ export const rwPlugin = createBackendPlugin({
         if (s3) {
           logger.info(`Hub: S3 mode (bucket: ${s3.bucket}, cache size: ${cacheSize ?? 20})`);
         } else {
-          logger.info(`Hub: local mode (${projectDir}, entity: ${entity})`);
+          logger.info(`Hub: local mode (${projectDir}, entity: ${entity ? toEntityPath(entity) : entity})`);
         }
 
         const router = await createRouter({ logger, httpAuth, hub });
