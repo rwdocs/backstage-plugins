@@ -48,7 +48,11 @@ export class Hub {
     const cached = this.cache.get(entityRef);
     if (cached) return cached;
 
-    const site = createSite({ projectDir: this.options.projectDir });
+    const site = createSite({
+      projectDir: this.options.projectDir,
+      linkPrefix: this.options.linkPrefix,
+      diagrams: this.options.diagrams,
+    });
     this.cache.set(entityRef, site);
     return site;
   }

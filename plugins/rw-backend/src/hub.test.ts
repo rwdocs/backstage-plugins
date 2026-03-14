@@ -135,6 +135,8 @@ describe("Hub", () => {
       const hub = new Hub({
         projectDir: "/path/to/docs",
         entity: "default/component/arch",
+        linkPrefix: "/docs",
+        diagrams: { krokiUrl: "http://kroki:8080" },
       });
 
       const result = hub.getSite("default/component/arch");
@@ -142,6 +144,8 @@ describe("Hub", () => {
       expect(result).toBe(site);
       expect(mockCreateSite).toHaveBeenCalledWith({
         projectDir: "/path/to/docs",
+        linkPrefix: "/docs",
+        diagrams: { krokiUrl: "http://kroki:8080" },
       });
     });
 
