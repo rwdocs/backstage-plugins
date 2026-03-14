@@ -18,7 +18,7 @@ export function RwEntityDocsViewer() {
   const annotationValue = entity.metadata.annotations?.[ANNOTATION_KEY];
   const { namespace, kind, name } = getCompoundEntityRef(entity);
   const selfEntityRef =
-    `${namespace}/${kind}/${name}`.toLocaleLowerCase("en-US");
+    `${kind}/${namespace}/${name}`.toLocaleLowerCase("en-US");
   const parsed = parseAnnotation(annotationValue, selfEntityRef);
   const entityRef = parsed?.entityRef;
   const scope = parsed?.scope;

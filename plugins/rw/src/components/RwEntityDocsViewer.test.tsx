@@ -68,7 +68,7 @@ describe("RwEntityDocsViewer", () => {
     );
 
     await waitFor(() => {
-      expect(mockApi.getSiteBaseUrl).toHaveBeenCalledWith("default/component/my-service");
+      expect(mockApi.getSiteBaseUrl).toHaveBeenCalledWith("component/default/my-service");
     });
   });
 
@@ -85,7 +85,7 @@ describe("RwEntityDocsViewer", () => {
     );
 
     await waitFor(() => {
-      expect(mockApi.getSiteBaseUrl).toHaveBeenCalledWith("default/component/other-docs");
+      expect(mockApi.getSiteBaseUrl).toHaveBeenCalledWith("component/default/other-docs");
     });
   });
 

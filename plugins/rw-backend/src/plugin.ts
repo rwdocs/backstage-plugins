@@ -5,7 +5,7 @@ import { Hub, type HubOptions } from "./hub";
 
 function toEntityPath(entityRef: string): string {
   const ref = parseEntityRef(entityRef);
-  return `${ref.namespace}/${ref.kind}/${ref.name}`.toLocaleLowerCase("en-US");
+  return `${ref.kind}/${ref.namespace}/${ref.name}`.toLocaleLowerCase("en-US");
 }
 
 export const rwPlugin = createBackendPlugin({

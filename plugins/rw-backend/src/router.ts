@@ -18,8 +18,8 @@ export async function createRouter(options: RouterOptions) {
     res.json({ status: "ok" });
   });
 
-  router.use("/site/:namespace/:kind/:name", (req, _res, next) => {
-    const entityRef = `${req.params.namespace}/${req.params.kind}/${req.params.name}`;
+  router.use("/site/:kind/:namespace/:name", (req, _res, next) => {
+    const entityRef = `${req.params.kind}/${req.params.namespace}/${req.params.name}`;
     const site = hub.getSite(entityRef);
     if (!site) {
       throw new NotFoundError(`No documentation site found for entity: ${entityRef}`);
@@ -28,11 +28,11 @@ export async function createRouter(options: RouterOptions) {
     next();
   });
 
-  router.get("/site/:namespace/:kind/:name/config", (_req, res) => {
+  router.get("/site/:kind/:namespace/:name/config", (_req, res) => {
     res.json({ liveReloadEnabled: false });
   });
 
-  router.get("/site/:namespace/:kind/:name/navigation", (req, res) => {
+  router.get("/site/:kind/:namespace/:name/navigation", (req, res) => {
     const site: RwSite = (req as any).rwSite;
     const scopeParam = req.query.scope;
     const scope = typeof scopeParam === "string" ? scopeParam : undefined;
@@ -40,13 +40,13 @@ export async function createRouter(options: RouterOptions) {
     res.json(nav);
   });
 
-  router.get("/site/:namespace/:kind/:name/pages/", async (req, res) => {
+  router.get("/site/:kind/:namespace/:name/pages/", async (req, res) => {
     const site: RwSite = (req as any).rwSite;
     const page = await renderPageOrThrow(site, "");
     res.json(page);
   });
 
-  router.get("/site/:namespace/:kind/:name/pages/:path(*)", async (req, res) => {
+  router.get("/site/:kind/:namespace/:name/pages/:path(*)", async (req, res) => {
     const site: RwSite = (req as any).rwSite;
     const pagePath = req.params.path || "";
     if (pagePath.split("/").includes("..")) {

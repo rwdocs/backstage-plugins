@@ -27,14 +27,14 @@ describe("Hub", () => {
         s3: { bucket: "my-bucket", region: "us-east-1" },
       });
 
-      const result = hub.getSite("default/component/arch");
+      const result = hub.getSite("component/default/arch");
 
       expect(result).toBe(site);
       expect(mockCreateSite).toHaveBeenCalledWith({
         s3: {
           bucket: "my-bucket",
           region: "us-east-1",
-          entity: "default/component/arch",
+          entity: "component/default/arch",
         },
       });
     });
@@ -47,8 +47,8 @@ describe("Hub", () => {
         s3: { bucket: "my-bucket" },
       });
 
-      const first = hub.getSite("default/component/arch");
-      const second = hub.getSite("default/component/arch");
+      const first = hub.getSite("component/default/arch");
+      const second = hub.getSite("component/default/arch");
 
       expect(first).toBe(second);
       expect(mockCreateSite).toHaveBeenCalledTimes(1);
@@ -63,8 +63,8 @@ describe("Hub", () => {
         s3: { bucket: "my-bucket" },
       });
 
-      const first = hub.getSite("default/component/arch");
-      const second = hub.getSite("default/component/billing");
+      const first = hub.getSite("component/default/arch");
+      const second = hub.getSite("component/default/billing");
 
       expect(first).toBe(site1);
       expect(second).toBe(site2);
@@ -109,7 +109,7 @@ describe("Hub", () => {
         diagrams: { krokiUrl: "http://kroki:8080" },
       });
 
-      hub.getSite("default/component/arch");
+      hub.getSite("component/default/arch");
 
       expect(mockCreateSite).toHaveBeenCalledWith({
         s3: {
@@ -119,7 +119,7 @@ describe("Hub", () => {
           bucketRootPath: "docs",
           accessKeyId: "key",
           secretAccessKey: "secret",
-          entity: "default/component/arch",
+          entity: "component/default/arch",
         },
         linkPrefix: "/docs",
         diagrams: { krokiUrl: "http://kroki:8080" },
@@ -134,12 +134,12 @@ describe("Hub", () => {
 
       const hub = new Hub({
         projectDir: "/path/to/docs",
-        entity: "default/component/arch",
+        entity: "component/default/arch",
         linkPrefix: "/docs",
         diagrams: { krokiUrl: "http://kroki:8080" },
       });
 
-      const result = hub.getSite("default/component/arch");
+      const result = hub.getSite("component/default/arch");
 
       expect(result).toBe(site);
       expect(mockCreateSite).toHaveBeenCalledWith({
@@ -154,10 +154,10 @@ describe("Hub", () => {
 
       const hub = new Hub({
         projectDir: "/path/to/docs",
-        entity: "default/component/arch",
+        entity: "component/default/arch",
       });
 
-      const result = hub.getSite("default/component/other");
+      const result = hub.getSite("component/default/other");
 
       expect(result).toBeUndefined();
     });

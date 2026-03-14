@@ -23,7 +23,7 @@ describe("createRouter", () => {
 
     const hub = new Hub({
       projectDir: "/test/docs",
-      entity: "default/component/test",
+      entity: "component/default/test",
     });
 
     const router = await createRouter({
@@ -46,7 +46,7 @@ describe("createRouter", () => {
     jest.clearAllMocks();
   });
 
-  const prefix = "/site/default/component/test";
+  const prefix = "/site/component/default/test";
 
   describe("GET /health", () => {
     it("returns ok", async () => {
@@ -122,7 +122,7 @@ describe("createRouter", () => {
 
   describe("unknown entity ref", () => {
     it("returns 404 for non-existent entity", async () => {
-      const res = await request(app).get("/site/default/component/unknown/config");
+      const res = await request(app).get("/site/component/default/unknown/config");
       expect(res.status).toBe(404);
     });
   });

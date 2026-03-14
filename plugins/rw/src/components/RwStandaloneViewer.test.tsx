@@ -62,7 +62,7 @@ describe("RwStandaloneViewer", () => {
     );
 
     await waitFor(() => {
-      expect(mockApi.getSiteBaseUrl).toHaveBeenCalledWith("default/component/main-docs"); // parsed from "component:default/main-docs"
+      expect(mockApi.getSiteBaseUrl).toHaveBeenCalledWith("component/default/main-docs"); // parsed from "component:default/main-docs"
     });
   });
 

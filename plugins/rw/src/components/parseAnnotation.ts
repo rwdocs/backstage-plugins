@@ -31,7 +31,7 @@ export function parseAnnotation(
     const ref = parseEntityRef(entity);
     return {
       entityRef:
-        `${ref.namespace}/${ref.kind}/${ref.name}`.toLocaleLowerCase("en-US"),
+        `${ref.kind}/${ref.namespace}/${ref.name}`.toLocaleLowerCase("en-US"),
       scope,
     };
   } catch {

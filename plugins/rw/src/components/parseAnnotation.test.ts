@@ -2,17 +2,17 @@ import { parseAnnotation } from "./parseAnnotation";
 
 describe("parseAnnotation", () => {
   it("parses self-ref with no scope", () => {
-    expect(parseAnnotation(".", "default/component/my-service")).toEqual({
-      entityRef: "default/component/my-service",
+    expect(parseAnnotation(".", "component/default/my-service")).toEqual({
+      entityRef: "component/default/my-service",
       scope: undefined,
     });
   });
 
   it("parses explicit entity ref with no scope", () => {
     expect(
-      parseAnnotation("component:default/arch", "default/component/my-service"),
+      parseAnnotation("component:default/arch", "component/default/my-service"),
     ).toEqual({
-      entityRef: "default/component/arch",
+      entityRef: "component/default/arch",
       scope: undefined,
     });
   });
@@ -21,17 +21,17 @@ describe("parseAnnotation", () => {
     expect(
       parseAnnotation(
         "component:default/arch#domains/billing",
-        "default/component/my-service",
+        "component/default/my-service",
       ),
     ).toEqual({
-      entityRef: "default/component/arch",
+      entityRef: "component/default/arch",
       scope: "domains/billing",
     });
   });
 
   it("parses self-ref with scope", () => {
-    expect(parseAnnotation(".#domains/billing", "default/component/my-service")).toEqual({
-      entityRef: "default/component/my-service",
+    expect(parseAnnotation(".#domains/billing", "component/default/my-service")).toEqual({
+      entityRef: "component/default/my-service",
       scope: "domains/billing",
     });
   });
@@ -40,36 +40,36 @@ describe("parseAnnotation", () => {
     expect(
       parseAnnotation(
         "component:default/arch#domains/billing/systems/wallets",
-        "default/component/x",
+        "component/default/x",
       ),
     ).toEqual({
-      entityRef: "default/component/arch",
+      entityRef: "component/default/arch",
       scope: "domains/billing/systems/wallets",
     });
   });
 
   it("uses default namespace when not specified", () => {
-    expect(parseAnnotation("component:arch", "default/component/x")).toEqual({
-      entityRef: "default/component/arch",
+    expect(parseAnnotation("component:arch", "component/default/x")).toEqual({
+      entityRef: "component/default/arch",
       scope: undefined,
     });
   });
 
   it("returns undefined for empty string", () => {
-    expect(parseAnnotation("", "default/component/x")).toBeUndefined();
+    expect(parseAnnotation("", "component/default/x")).toBeUndefined();
   });
 
   it("returns undefined for undefined input", () => {
-    expect(parseAnnotation(undefined, "default/component/x")).toBeUndefined();
+    expect(parseAnnotation(undefined, "component/default/x")).toBeUndefined();
   });
 
   it("returns undefined for malformed entity ref", () => {
-    expect(parseAnnotation(":::", "default/component/x")).toBeUndefined();
+    expect(parseAnnotation(":::", "component/default/x")).toBeUndefined();
   });
 
   it("treats empty hash as no scope", () => {
-    expect(parseAnnotation("component:default/arch#", "default/component/x")).toEqual({
-      entityRef: "default/component/arch",
+    expect(parseAnnotation("component:default/arch#", "component/default/x")).toEqual({
+      entityRef: "component/default/arch",
       scope: undefined,
     });
   });

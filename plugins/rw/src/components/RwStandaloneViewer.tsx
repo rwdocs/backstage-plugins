@@ -28,7 +28,7 @@ export function RwStandaloneViewer() {
       return undefined;
     }
     const entityPath =
-      `${ref.namespace}/${ref.kind}/${ref.name}`.toLocaleLowerCase("en-US");
+      `${ref.kind}/${ref.namespace}/${ref.name}`.toLocaleLowerCase("en-US");
 
     rwApi
       .getSiteBaseUrl(entityPath)
