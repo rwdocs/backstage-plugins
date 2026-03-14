@@ -34,15 +34,18 @@ export function RwDocsViewer({ apiBaseUrl, initialScope }: RwDocsViewerProps) {
   const rwNavigatingRef = useRef(false);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current) {
+      return undefined;
+    }
 
     try {
       const base = basePathRef.current;
-      const initialPath = initialScope
-        ? `/${initialScope}`
-        : subPath
-          ? `/${subPath}`
-          : "/";
+      let initialPath = "/";
+      if (initialScope) {
+        initialPath = `/${initialScope}`;
+      } else if (subPath) {
+        initialPath = `/${subPath}`;
+      }
 
       instanceRef.current = mountRw(ref.current, {
         apiBaseUrl,

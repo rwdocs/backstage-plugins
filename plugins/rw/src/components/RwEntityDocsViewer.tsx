@@ -18,18 +18,17 @@ export function RwEntityDocsViewer() {
   const selfEntityRef =
     `${entity.metadata.namespace ?? "default"}/${entity.kind}/${entity.metadata.name}`.toLowerCase();
   const parsed = parseAnnotation(annotationValue, selfEntityRef);
+  const entityRef = parsed?.entityRef;
+  const scope = parsed?.scope;
 
   useEffect(() => {
-    if (!parsed) {
+    if (!entityRef) {
       setError(new Error(`Entity is missing the "${ANNOTATION_KEY}" annotation`));
       return;
     }
 
-    rwApi
-      .getSiteBaseUrl(parsed.entityRef)
-      .then(setApiBaseUrl)
-      .catch(setError);
-  }, [rwApi, parsed?.entityRef]);
+    rwApi.getSiteBaseUrl(entityRef).then(setApiBaseUrl).catch(setError);
+  }, [rwApi, entityRef]);
 
   if (error) {
     return <ErrorPanel error={error} />;
@@ -39,5 +38,5 @@ export function RwEntityDocsViewer() {
     return <Progress />;
   }
 
-  return <RwDocsViewer apiBaseUrl={apiBaseUrl} initialScope={parsed?.scope} />;
+  return <RwDocsViewer apiBaseUrl={apiBaseUrl} initialScope={scope} />;
 }
