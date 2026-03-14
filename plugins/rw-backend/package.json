@@ -45,6 +45,7 @@
     "postpack": "backstage-cli package postpack"
   },
   "dependencies": {
+    "@backstage/catalog-model": "^1.7.6",
     "@backstage/errors": "^1.2.7",
     "@rwdocs/core": "^0.1.17",
     "express": "^4.21.0",
@@ -52,9 +53,6 @@
   },
   "peerDependencies": {
     "@backstage/backend-plugin-api": "^1.0.0"
-  },
-  "jest": {
-    "watchAll": false
   },
   "devDependencies": {
     "@backstage/backend-plugin-api": "^1.0.0",

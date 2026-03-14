@@ -8,14 +8,14 @@ export interface Config {
     projectDir?: string;
     /**
      * Entity ref that the local projectDir serves as (required when projectDir is set).
-     * Format: "namespace/kind/name"
+     * Standard Backstage entity ref format: "kind:namespace/name" (e.g. "component:default/my-docs")
      */
     entity?: string;
     /** URL prefix for generated links (e.g. "/docs"). Shared across all sites. */
     linkPrefix?: string;
     /**
      * Entity ref for the standalone /docs page.
-     * Format: "namespace/kind/name"
+     * Standard Backstage entity ref format: "kind:namespace/name" (e.g. "component:default/my-docs")
      * @visibility frontend
      */
     rootEntity?: string;

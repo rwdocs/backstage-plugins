@@ -48,7 +48,7 @@ describe("RwStandaloneViewer", () => {
 
   it("resolves base URL when rootEntity is configured", async () => {
     const mockApi = createMockRwApi();
-    const configApi = new ConfigReader({ rw: { rootEntity: "default/component/main-docs" } });
+    const configApi = new ConfigReader({ rw: { rootEntity: "component:default/main-docs" } });
 
     await renderInTestApp(
       <TestApiProvider
@@ -62,7 +62,7 @@ describe("RwStandaloneViewer", () => {
     );
 
     await waitFor(() => {
-      expect(mockApi.getSiteBaseUrl).toHaveBeenCalledWith("default/component/main-docs");
+      expect(mockApi.getSiteBaseUrl).toHaveBeenCalledWith("default/component/main-docs"); // parsed from "component:default/main-docs"
     });
   });
 
@@ -70,7 +70,7 @@ describe("RwStandaloneViewer", () => {
     const mockApi = createMockRwApi({
       getSiteBaseUrl: jest.fn().mockRejectedValue(new Error("discovery failed")),
     });
-    const configApi = new ConfigReader({ rw: { rootEntity: "default/component/main-docs" } });
+    const configApi = new ConfigReader({ rw: { rootEntity: "component:default/main-docs" } });
 
     await renderInTestApp(
       <TestApiProvider

@@ -7943,6 +7943,7 @@ __metadata:
   dependencies:
     "@backstage/backend-plugin-api": "npm:^1.0.0"
     "@backstage/backend-test-utils": "npm:^1.11.0"
+    "@backstage/catalog-model": "npm:^1.7.6"
     "@backstage/cli": "npm:^0.35.0"
     "@backstage/errors": "npm:^1.2.7"
     "@jest/environment-jsdom-abstract": "npm:^30.2.0"

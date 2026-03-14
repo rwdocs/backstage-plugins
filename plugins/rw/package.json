@@ -60,7 +60,6 @@
     "react-router-dom": "^6.0.0"
   },
   "jest": {
-    "watchAll": false,
     "moduleNameMapper": {
       "^@rwdocs/viewer$": "<rootDir>/src/__mocks__/@rwdocs/viewer.js"
     }
