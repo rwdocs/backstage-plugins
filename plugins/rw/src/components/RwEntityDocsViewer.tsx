@@ -24,7 +24,7 @@ export function RwEntityDocsViewer() {
   useEffect(() => {
     if (!entityRef) {
       setError(new Error(`Entity is missing the "${ANNOTATION_KEY}" annotation`));
-      return;
+      return undefined;
     }
 
     let cancelled = false;

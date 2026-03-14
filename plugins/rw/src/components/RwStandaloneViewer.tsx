@@ -15,7 +15,7 @@ export function RwStandaloneViewer() {
   useEffect(() => {
     if (!rootEntity) {
       setError(new Error("rw.rootEntity must be configured for the standalone /docs page"));
-      return;
+      return undefined;
     }
 
     let cancelled = false;

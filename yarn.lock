@@ -7967,7 +7967,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@rwdocs/backstage-plugin-rw@workspace:plugins/rw"
   dependencies:
+    "@backstage/catalog-model": "npm:^1.7.6"
     "@backstage/cli": "npm:^0.35.0"
+    "@backstage/config": "npm:^1.3.6"
     "@backstage/core-components": "npm:^0.18.0"
     "@backstage/core-plugin-api": "npm:^1.0.0"
     "@backstage/frontend-plugin-api": "npm:^0.14.0"
