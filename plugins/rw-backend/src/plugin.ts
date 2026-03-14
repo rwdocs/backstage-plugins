@@ -1,5 +1,6 @@
 import { coreServices, createBackendPlugin } from "@backstage/backend-plugin-api";
-import { createRouter, type S3Options, type DiagramsOptions } from "./router";
+import { createRouter } from "./router";
+import { Hub, type HubOptions } from "./hub";
 
 export const rwPlugin = createBackendPlugin({
   pluginId: "rw",
@@ -13,26 +14,31 @@ export const rwPlugin = createBackendPlugin({
       },
       async init({ httpRouter, httpAuth, logger, config }) {
         const projectDir = config.getOptionalString("rw.projectDir");
+        const entity = config.getOptionalString("rw.entity");
+        const linkPrefix = config.getOptionalString("rw.linkPrefix");
+        const cacheSize = config.getOptionalNumber("rw.cacheSize");
 
-        let s3: S3Options | undefined;
         const s3Config = config.getOptionalConfig("rw.s3");
-        if (s3Config) {
-          s3 = {
-            bucket: s3Config.getString("bucket"),
-            entity: s3Config.getString("entity"),
-            region: s3Config.getOptionalString("region"),
-            endpoint: s3Config.getOptionalString("endpoint"),
-            bucketRootPath: s3Config.getOptionalString("bucketRootPath"),
-            accessKeyId: s3Config.getOptionalString("accessKeyId"),
-            secretAccessKey: s3Config.getOptionalString("secretAccessKey"),
-          };
-        }
+        const s3 = s3Config
+          ? {
+              bucket: s3Config.getString("bucket"),
+              region: s3Config.getOptionalString("region"),
+              endpoint: s3Config.getOptionalString("endpoint"),
+              bucketRootPath: s3Config.getOptionalString("bucketRootPath"),
+              accessKeyId: s3Config.getOptionalString("accessKeyId"),
+              secretAccessKey: s3Config.getOptionalString("secretAccessKey"),
+            }
+          : undefined;
 
         if (!projectDir && !s3) {
           throw new Error("Either rw.projectDir or rw.s3 must be configured");
         }
 
-        let diagrams: DiagramsOptions | undefined;
+        if (projectDir && !entity) {
+          throw new Error("rw.entity is required when rw.projectDir is set");
+        }
+
+        let diagrams: { krokiUrl?: string; dpi?: number } | undefined;
         const diagramsConfig = config.getOptionalConfig("rw.diagrams");
         if (diagramsConfig) {
           diagrams = {
@@ -41,18 +47,27 @@ export const rwPlugin = createBackendPlugin({
           };
         }
 
-        const linkPrefix = config.getOptionalString("rw.linkPrefix");
-        if (linkPrefix) {
-          logger.info(`Using link prefix: ${linkPrefix}`);
-        }
-        const router = await createRouter({
-          logger,
-          httpAuth,
+        const hubOptions: HubOptions = {
           projectDir,
+          entity,
           s3,
           linkPrefix,
           diagrams,
-        });
+          cacheSize,
+        };
+
+        const hub = new Hub(hubOptions);
+
+        if (linkPrefix) {
+          logger.info(`Using link prefix: ${linkPrefix}`);
+        }
+        if (s3) {
+          logger.info(`Hub: S3 mode (bucket: ${s3.bucket}, cache size: ${cacheSize ?? 20})`);
+        } else {
+          logger.info(`Hub: local mode (${projectDir}, entity: ${entity})`);
+        }
+
+        const router = await createRouter({ logger, httpAuth, hub });
         httpRouter.use(router);
         httpRouter.addAuthPolicy({
           path: "/health",
