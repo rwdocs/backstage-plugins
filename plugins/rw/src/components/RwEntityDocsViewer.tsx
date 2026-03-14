@@ -27,7 +27,18 @@ export function RwEntityDocsViewer() {
       return;
     }
 
-    rwApi.getSiteBaseUrl(entityRef).then(setApiBaseUrl).catch(setError);
+    let cancelled = false;
+    rwApi
+      .getSiteBaseUrl(entityRef)
+      .then((url) => {
+        if (!cancelled) setApiBaseUrl(url);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [rwApi, entityRef]);
 
   if (error) {

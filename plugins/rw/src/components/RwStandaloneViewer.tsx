@@ -18,10 +18,18 @@ export function RwStandaloneViewer() {
       return;
     }
 
+    let cancelled = false;
     rwApi
       .getSiteBaseUrl(rootEntity)
-      .then(setApiBaseUrl)
-      .catch(setError);
+      .then((url) => {
+        if (!cancelled) setApiBaseUrl(url);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [rwApi, rootEntity]);
 
   if (error) {
