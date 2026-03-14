@@ -1,4 +1,4 @@
-import { parseEntityRef } from "@backstage/catalog-model";
+import { toEntityPath } from "./entityPath";
 
 export interface ParsedAnnotation {
   entityRef: string;
@@ -28,12 +28,7 @@ export function parseAnnotation(
   }
 
   try {
-    const ref = parseEntityRef(entity);
-    return {
-      entityRef:
-        `${ref.kind}/${ref.namespace}/${ref.name}`.toLocaleLowerCase("en-US"),
-      scope,
-    };
+    return { entityRef: toEntityPath(entity), scope };
   } catch {
     return undefined;
   }

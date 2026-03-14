@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useApi, configApiRef } from "@backstage/core-plugin-api";
-import { parseEntityRef } from "@backstage/catalog-model";
 import { ErrorPanel, Progress } from "@backstage/core-components";
 import { rwApiRef } from "../api/RwClient";
+import { toEntityPath } from "./entityPath";
 import { RwDocsViewer } from "./RwDocsViewer";
 
 export function RwStandaloneViewer() {
@@ -21,9 +21,8 @@ export function RwStandaloneViewer() {
       };
     }
     try {
-      const ref = parseEntityRef(rootEntityRaw);
       return {
-        entityPath: `${ref.kind}/${ref.namespace}/${ref.name}`.toLocaleLowerCase("en-US"),
+        entityPath: toEntityPath(rootEntityRaw),
         configError: undefined,
       };
     } catch (err) {
