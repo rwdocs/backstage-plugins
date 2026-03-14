@@ -53,6 +53,9 @@
   "peerDependencies": {
     "@backstage/backend-plugin-api": "^1.0.0"
   },
+  "jest": {
+    "watchAll": false
+  },
   "devDependencies": {
     "@backstage/backend-plugin-api": "^1.0.0",
     "@backstage/backend-test-utils": "^1.11.0",
