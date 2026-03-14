@@ -36,7 +36,12 @@ yarn workspace @rwdocs/backstage-plugin-rw run lint
 yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
 ```
 
-Tests use `backstage-cli package test` (Jest). No tests have been written yet.
+Tests use `backstage-cli package test` (Jest). Note: `backstage-cli` forces `--watch` mode by default, ignoring jest config. Always pass `--watchAll=false` when running tests:
+
+```bash
+yarn workspace @rwdocs/backstage-plugin-rw run test --watchAll=false
+yarn workspace @rwdocs/backstage-plugin-rw-backend run test --watchAll=false
+```
 
 ## Architecture
 

@@ -7952,6 +7952,7 @@ __metadata:
   dependencies:
     "@backstage/backend-plugin-api": "npm:^1.0.0"
     "@backstage/backend-test-utils": "npm:^1.11.0"
+    "@backstage/catalog-model": "npm:^1.7.6"
     "@backstage/cli": "npm:^0.35.0"
     "@backstage/errors": "npm:^1.2.7"
     "@jest/environment-jsdom-abstract": "npm:^30.2.0"
@@ -7976,7 +7977,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@rwdocs/backstage-plugin-rw@workspace:plugins/rw"
   dependencies:
+    "@backstage/catalog-model": "npm:^1.7.6"
     "@backstage/cli": "npm:^0.35.0"
+    "@backstage/config": "npm:^1.3.6"
     "@backstage/core-components": "npm:^0.18.0"
     "@backstage/core-plugin-api": "npm:^1.0.0"
     "@backstage/frontend-plugin-api": "npm:^0.14.0"
@@ -7999,7 +8002,7 @@ __metadata:
     "@backstage/core-plugin-api": ^1.0.0
     "@backstage/frontend-plugin-api": ^0.14.0
     "@backstage/plugin-catalog-react": ^2.0.0
-    "@mui/material": ^5.0.0
+    "@material-ui/core": ^4.12.2
     react: ^18.0.0
     react-dom: ^18.0.0
     react-router-dom: ^6.0.0

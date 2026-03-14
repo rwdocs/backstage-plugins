@@ -25,16 +25,21 @@ const rwPage = PageBlueprint.make({
   params: {
     path: "/docs",
     routeRef: rootRouteRef,
-    loader: () => import("./components/RwDocsViewer").then((m) => <m.RwDocsViewer />),
+    loader: () =>
+      import("./components/RwStandaloneViewer").then((m) => <m.RwStandaloneViewer />),
   },
 });
+
+const ANNOTATION_KEY = "rwdocs.org/ref";
 
 const rwEntityContent = EntityContentBlueprint.make({
   params: {
     path: "docs",
     title: "Documentation",
     group: "documentation",
-    loader: () => import("./components/RwDocsViewer").then((m) => <m.RwDocsViewer />),
+    filter: (entity) => Boolean(entity.metadata.annotations?.[ANNOTATION_KEY]),
+    loader: () =>
+      import("./components/RwEntityDocsViewer").then((m) => <m.RwEntityDocsViewer />),
   },
 });
 

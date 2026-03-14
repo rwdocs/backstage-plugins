@@ -13,9 +13,14 @@ jest.mock("@rwdocs/viewer/embed.css", () => ({}));
 
 const mockMountRw = mountRw as jest.MockedFunction<typeof mountRw>;
 
+const TEST_API_BASE_URL = "http://localhost:7007/api/rw/site/default/component/my-docs";
+
 function createMockRwApi(overrides?: Partial<RwApi>): RwApi {
   return {
     getBaseUrl: jest.fn().mockResolvedValue("http://localhost:7007/api/rw"),
+    getSiteBaseUrl: jest.fn().mockImplementation((entityRef: string) =>
+      Promise.resolve(`http://localhost:7007/api/rw/site/${entityRef}`),
+    ),
     getFetch: jest.fn().mockReturnValue(jest.fn()),
     ...overrides,
   };
@@ -37,13 +42,13 @@ describe("RwDocsViewer", () => {
     const mockApi = createMockRwApi();
     await renderInTestApp(
       <TestApiProvider apis={[[rwApiRef, mockApi]]}>
-        <RwDocsViewer />
+        <RwDocsViewer apiBaseUrl={TEST_API_BASE_URL} />
       </TestApiProvider>,
     );
     expect(document.querySelector(".rw-root")).toBeInTheDocument();
   });
 
-  it("calls mountRw with correct options after resolving base URL", async () => {
+  it("calls mountRw with correct options", async () => {
     const mockFetch = jest.fn() as unknown as typeof fetch;
     const mockApi = createMockRwApi({
       getFetch: jest.fn().mockReturnValue(mockFetch),
@@ -51,7 +56,7 @@ describe("RwDocsViewer", () => {
 
     await renderInTestApp(
       <TestApiProvider apis={[[rwApiRef, mockApi]]}>
-        <RwDocsViewer />
+        <RwDocsViewer apiBaseUrl={TEST_API_BASE_URL} />
       </TestApiProvider>,
     );
 
@@ -61,7 +66,7 @@ describe("RwDocsViewer", () => {
 
     const [container, options] = mockMountRw.mock.calls[0];
     expect(container).toBeInstanceOf(HTMLDivElement);
-    expect(options.apiBaseUrl).toBe("http://localhost:7007/api/rw");
+    expect(options.apiBaseUrl).toBe(TEST_API_BASE_URL);
     expect(options.fetchFn).toBe(mockFetch);
     expect(options.initialPath).toBe("/");
     expect(typeof options.onNavigate).toBe("function");
@@ -72,7 +77,7 @@ describe("RwDocsViewer", () => {
 
     await renderInTestApp(
       <TestApiProvider apis={[[rwApiRef, mockApi]]}>
-        <RwDocsViewer />
+        <RwDocsViewer apiBaseUrl={TEST_API_BASE_URL} />
       </TestApiProvider>,
     );
 
@@ -84,19 +89,21 @@ describe("RwDocsViewer", () => {
     expect(options.colorScheme).toBe("light");
   });
 
-  it("shows ErrorPanel when getBaseUrl rejects", async () => {
-    const mockApi = createMockRwApi({
-      getBaseUrl: jest.fn().mockRejectedValue(new Error("discovery failed")),
+  it("shows ErrorPanel when mountRw throws", async () => {
+    mockMountRw.mockImplementation(() => {
+      throw new Error("mount failed");
     });
+
+    const mockApi = createMockRwApi();
 
     await renderInTestApp(
       <TestApiProvider apis={[[rwApiRef, mockApi]]}>
-        <RwDocsViewer />
+        <RwDocsViewer apiBaseUrl={TEST_API_BASE_URL} />
       </TestApiProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getAllByText(/discovery failed/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/mount failed/).length).toBeGreaterThan(0);
     });
   });
 
@@ -105,7 +112,7 @@ describe("RwDocsViewer", () => {
 
     const { unmount } = await renderInTestApp(
       <TestApiProvider apis={[[rwApiRef, mockApi]]}>
-        <RwDocsViewer />
+        <RwDocsViewer apiBaseUrl={TEST_API_BASE_URL} />
       </TestApiProvider>,
     );
 
