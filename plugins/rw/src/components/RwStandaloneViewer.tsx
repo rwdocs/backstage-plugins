@@ -20,7 +20,13 @@ export function RwStandaloneViewer() {
     }
 
     let cancelled = false;
-    const ref = parseEntityRef(rootEntityRaw);
+    let ref;
+    try {
+      ref = parseEntityRef(rootEntityRaw);
+    } catch (err) {
+      setError(err as Error);
+      return undefined;
+    }
     const entityPath =
       `${ref.namespace}/${ref.kind}/${ref.name}`.toLocaleLowerCase("en-US");
 
