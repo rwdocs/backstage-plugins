@@ -27,7 +27,9 @@
       "@rwdocs/backstage-plugin-rw-backend"
     ]
   },
+  "configSchema": "config.d.ts",
   "files": [
+    "config.d.ts",
     "dist",
     "LICENSE-MIT",
     "LICENSE-APACHE"
