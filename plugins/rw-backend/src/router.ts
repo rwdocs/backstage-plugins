@@ -40,7 +40,7 @@ export async function createRouter(options: RouterOptions) {
     res.json(nav);
   });
 
-  router.get("/site/:kind/:namespace/:name/pages/", async (req, res) => {
+  router.get("/site/:kind/:namespace/:name/pages/", async (_req, res) => {
     const site: RwSite = res.locals.rwSite;
     const page = await renderPageOrThrow(site, "");
     res.json(page);

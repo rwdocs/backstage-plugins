@@ -7,6 +7,9 @@ import { parseEntityRef } from "@backstage/catalog-model";
  *
  * Also accepts already-normalized slash format ("component/default/arch")
  * and ensures consistent lowercasing.
+ *
+ * NOTE: The frontend plugin has a similar utility at
+ * plugins/rw/src/components/entityPath.ts — keep in sync if changing logic.
  */
 export function toEntityPath(entityRef: string): string {
   // If already in slash format (kind/namespace/name), convert to colon format

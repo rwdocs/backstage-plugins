@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { useApi } from "@backstage/core-plugin-api";
 import { ErrorPanel } from "@backstage/core-components";
-import { useTheme } from "@mui/material/styles";
+import { useTheme } from "@material-ui/core/styles";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { rwApiRef } from "../api/RwClient";
 import { mountRw } from "@rwdocs/viewer";
@@ -52,7 +52,7 @@ export function RwDocsViewer({ apiBaseUrl, initialScope }: RwDocsViewerProps) {
         initialPath,
         basePath: base,
         fetchFn: rwApi.getFetch(),
-        colorScheme: theme.palette.mode,
+        colorScheme: theme.palette.type,
         onNavigate: (rwPath: string) => {
           const browserPath = rwPath === "/" ? base : `${base}${rwPath}`;
           if (window.location.pathname !== browserPath) {
@@ -73,8 +73,8 @@ export function RwDocsViewer({ apiBaseUrl, initialScope }: RwDocsViewerProps) {
   }, [apiBaseUrl]);
 
   useEffect(() => {
-    instanceRef.current?.setColorScheme(theme.palette.mode);
-  }, [theme.palette.mode]);
+    instanceRef.current?.setColorScheme(theme.palette.type);
+  }, [theme.palette.type]);
 
   useEffect(() => {
     if (subPath === prevSubPathRef.current) return;
