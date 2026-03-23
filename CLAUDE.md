@@ -47,15 +47,13 @@ yarn workspace @rwdocs/backstage-plugin-rw-backend run test --watchAll=false
 
 ### Frontend Plugin (`plugins/rw/`)
 
-Defines three Backstage extensions in `plugin.tsx`:
+Defines two Backstage extensions in `plugin.tsx`:
 1. **rwApi** — `ApiBlueprint` providing `RwClient` (wraps `discoveryApi` + `fetchApi`)
-2. **rwPage** — Standalone page mounted at `/docs` via `PageBlueprint`, renders `RwStandaloneViewer`
-3. **rwEntityContent** — Catalog entity tab ("Documentation") via `EntityContentBlueprint`, renders `RwEntityDocsViewer` (filtered by `rwdocs.org/ref` annotation)
+2. **rwEntityContent** — Catalog entity tab ("Documentation") via `EntityContentBlueprint`, renders `RwEntityDocsViewer` (filtered by `rwdocs.org/ref` annotation)
 
-Three viewer components:
+Two viewer components:
 - **`RwDocsViewer`** — Core component that mounts `@rwdocs/viewer` into a DOM ref, maintains two-way navigation sync between React Router and the RW viewer instance, and resolves cross-entity section refs. A `rwNavigatingRef` flag prevents infinite nav loops.
 - **`RwEntityDocsViewer`** — Wrapper for catalog entity pages. Reads the entity's `rwdocs.org/ref` annotation via `parseAnnotation` and passes the resolved API base URL and section ref to `RwDocsViewer`.
-- **`RwStandaloneViewer`** — Wrapper for the standalone `/docs` page. Reads `rw.rootEntity` from config to determine which entity to render.
 
 ### Backend Plugin (`plugins/rw-backend/`)
 
@@ -78,4 +76,4 @@ Frontend `RwClient` discovers the backend URL via `discoveryApi.getBaseUrl("rw")
 
 ### Configuration Schema
 
-Defined in `plugins/rw-backend/config.d.ts` and `plugins/rw/config.d.ts`. Two modes: local filesystem (`rw.projectDir` + `rw.entity`) for development, S3 storage (`rw.s3`) for production. Optional `rw.rootEntity` (frontend-visible) sets the entity for the standalone `/docs` page.
+Defined in `plugins/rw-backend/config.d.ts` and `plugins/rw/config.d.ts`. Two modes: local filesystem (`rw.projectDir` + `rw.entity`) for development, S3 storage (`rw.s3`) for production.
