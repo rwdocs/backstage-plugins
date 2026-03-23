@@ -3,6 +3,7 @@ import { renderInTestApp, TestApiProvider } from "@backstage/test-utils";
 import { RwDocsViewer } from "./RwDocsViewer";
 import { rwApiRef } from "../api/RwClient";
 import type { RwApi } from "../api/RwClient";
+import { catalogApiRef } from "@backstage/plugin-catalog-react";
 import { mountRw } from "@rwdocs/viewer";
 
 jest.mock("@rwdocs/viewer", () => ({
@@ -11,14 +12,49 @@ jest.mock("@rwdocs/viewer", () => ({
 
 jest.mock("@rwdocs/viewer/embed.css", () => ({}));
 
+jest.mock("@backstage/core-plugin-api", () => ({
+  ...jest.requireActual("@backstage/core-plugin-api"),
+  useRouteRef: () =>
+    jest.fn(({ kind, namespace, name }: any) => `/catalog/${namespace}/${kind}/${name}`),
+}));
+
 const mockMountRw = mountRw as jest.MockedFunction<typeof mountRw>;
+
+const TEST_API_BASE_URL = "http://localhost:7007/api/rw/site/default/component/my-docs";
+const TEST_SOURCE_ENTITY_REF = "component:default/my-docs";
+
+const mockCatalogApi = {
+  getEntityByRef: jest.fn().mockResolvedValue(undefined),
+};
 
 function createMockRwApi(overrides?: Partial<RwApi>): RwApi {
   return {
     getBaseUrl: jest.fn().mockResolvedValue("http://localhost:7007/api/rw"),
+    getSiteBaseUrl: jest
+      .fn()
+      .mockImplementation((entityRef: string) =>
+        Promise.resolve(`http://localhost:7007/api/rw/site/${entityRef}`),
+      ),
     getFetch: jest.fn().mockReturnValue(jest.fn()),
     ...overrides,
   };
+}
+
+function renderViewer(mockApi: RwApi, props?: { sectionRef?: string; sourceEntityRef?: string }) {
+  return renderInTestApp(
+    <TestApiProvider
+      apis={[
+        [rwApiRef, mockApi],
+        [catalogApiRef, mockCatalogApi],
+      ]}
+    >
+      <RwDocsViewer
+        apiBaseUrl={TEST_API_BASE_URL}
+        sectionRef={props?.sectionRef ?? TEST_SOURCE_ENTITY_REF}
+        sourceEntityRef={props?.sourceEntityRef ?? TEST_SOURCE_ENTITY_REF}
+      />
+    </TestApiProvider>,
+  );
 }
 
 describe("RwDocsViewer", () => {
@@ -34,26 +70,17 @@ describe("RwDocsViewer", () => {
   });
 
   it("renders a container element", async () => {
-    const mockApi = createMockRwApi();
-    await renderInTestApp(
-      <TestApiProvider apis={[[rwApiRef, mockApi]]}>
-        <RwDocsViewer />
-      </TestApiProvider>,
-    );
+    await renderViewer(createMockRwApi());
     expect(document.querySelector(".rw-root")).toBeInTheDocument();
   });
 
-  it("calls mountRw with correct options after resolving base URL", async () => {
+  it("calls mountRw with correct options", async () => {
     const mockFetch = jest.fn() as unknown as typeof fetch;
     const mockApi = createMockRwApi({
       getFetch: jest.fn().mockReturnValue(mockFetch),
     });
 
-    await renderInTestApp(
-      <TestApiProvider apis={[[rwApiRef, mockApi]]}>
-        <RwDocsViewer />
-      </TestApiProvider>,
-    );
+    await renderViewer(mockApi);
 
     await waitFor(() => {
       expect(mockMountRw).toHaveBeenCalledTimes(1);
@@ -61,20 +88,15 @@ describe("RwDocsViewer", () => {
 
     const [container, options] = mockMountRw.mock.calls[0];
     expect(container).toBeInstanceOf(HTMLDivElement);
-    expect(options.apiBaseUrl).toBe("http://localhost:7007/api/rw");
+    expect(options.apiBaseUrl).toBe(TEST_API_BASE_URL);
     expect(options.fetchFn).toBe(mockFetch);
     expect(options.initialPath).toBe("/");
+    expect(options.sectionRef).toBe(TEST_SOURCE_ENTITY_REF);
     expect(typeof options.onNavigate).toBe("function");
   });
 
   it("passes colorScheme matching the Backstage theme to mountRw", async () => {
-    const mockApi = createMockRwApi();
-
-    await renderInTestApp(
-      <TestApiProvider apis={[[rwApiRef, mockApi]]}>
-        <RwDocsViewer />
-      </TestApiProvider>,
-    );
+    await renderViewer(createMockRwApi());
 
     await waitFor(() => {
       expect(mockMountRw).toHaveBeenCalledTimes(1);
@@ -84,30 +106,50 @@ describe("RwDocsViewer", () => {
     expect(options.colorScheme).toBe("light");
   });
 
-  it("shows ErrorPanel when getBaseUrl rejects", async () => {
-    const mockApi = createMockRwApi({
-      getBaseUrl: jest.fn().mockRejectedValue(new Error("discovery failed")),
+  it("shows ErrorPanel when mountRw throws", async () => {
+    mockMountRw.mockImplementation(() => {
+      throw new Error("mount failed");
     });
 
-    await renderInTestApp(
-      <TestApiProvider apis={[[rwApiRef, mockApi]]}>
-        <RwDocsViewer />
-      </TestApiProvider>,
-    );
+    await renderViewer(createMockRwApi());
 
     await waitFor(() => {
-      expect(screen.getAllByText(/discovery failed/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/mount failed/).length).toBeGreaterThan(0);
     });
   });
 
-  it("calls destroy on unmount", async () => {
-    const mockApi = createMockRwApi();
+  it("passes resolveSectionRefs to mountRw", async () => {
+    await renderViewer(createMockRwApi());
 
-    const { unmount } = await renderInTestApp(
-      <TestApiProvider apis={[[rwApiRef, mockApi]]}>
-        <RwDocsViewer />
-      </TestApiProvider>,
-    );
+    await waitFor(() => {
+      expect(mockMountRw).toHaveBeenCalledTimes(1);
+    });
+
+    const [, options] = mockMountRw.mock.calls[0];
+    expect(typeof options.resolveSectionRefs).toBe("function");
+  });
+
+  it("overrides self sectionRef with current basePath in resolveSectionRefs", async () => {
+    await renderViewer(createMockRwApi());
+
+    await waitFor(() => {
+      expect(mockMountRw).toHaveBeenCalledTimes(1);
+    });
+
+    const [, options] = mockMountRw.mock.calls[0];
+    const result = await options.resolveSectionRefs!([
+      TEST_SOURCE_ENTITY_REF,
+      "component:default/other",
+    ]);
+
+    // Self ref should map to the current basePath, not a catalog route
+    expect(result[TEST_SOURCE_ENTITY_REF]).toBe("/");
+    // Other ref not in catalog → omitted
+    expect(result["component:default/other"]).toBeUndefined();
+  });
+
+  it("calls destroy on unmount", async () => {
+    const { unmount } = await renderViewer(createMockRwApi());
 
     await waitFor(() => {
       expect(mockMountRw).toHaveBeenCalledTimes(1);

@@ -1,65 +1,67 @@
 import Router from "express-promise-router";
 import type { HttpAuthService, LoggerService } from "@backstage/backend-plugin-api";
 import { InputError, NotFoundError } from "@backstage/errors";
-import { createSite, type RwSite, type SiteConfig } from "@rwdocs/core";
-
-export interface S3Options {
-  bucket: string;
-  entity: string;
-  region?: string;
-  endpoint?: string;
-  bucketRootPath?: string;
-  accessKeyId?: string;
-  secretAccessKey?: string;
-}
-
-export interface DiagramsOptions {
-  krokiUrl?: string;
-  dpi?: number;
-}
+import type { RwSite } from "@rwdocs/core";
+import type { Hub } from "./hub";
 
 export interface RouterOptions {
   logger: LoggerService;
   httpAuth: HttpAuthService;
-  projectDir?: string;
-  s3?: S3Options;
-  linkPrefix?: string;
-  diagrams?: DiagramsOptions;
+  hub: Hub;
 }
 
 export async function createRouter(options: RouterOptions) {
-  const { logger, projectDir, s3, linkPrefix, diagrams } = options;
+  const { hub } = options;
   const router = Router();
-
-  const config: SiteConfig = { projectDir, s3, linkPrefix, diagrams };
-  logger.info(
-    s3
-      ? `Creating RW site from S3 (${s3.bucket}/${s3.entity})`
-      : `Creating RW site from ${projectDir}`,
-  );
-  const site: RwSite = createSite(config);
 
   router.get("/health", (_req, res) => {
     res.json({ status: "ok" });
   });
 
-  router.get("/config", (_req, res) => {
+  router.use("/site/:namespace/:kind/:name", (req, res, next) => {
+    const { namespace, kind, name } = req.params;
+    const siteRef = `${namespace}/${kind}/${name}`.toLowerCase();
+
+    const site = hub.getSite(siteRef);
+    if (!site) {
+      throw new NotFoundError(`No documentation site found for entity: ${siteRef}`);
+    }
+
+    res.locals.rwSite = site;
+    next();
+  });
+
+  router.get("/site/:namespace/:kind/:name/config", (_req, res) => {
     res.json({ liveReloadEnabled: false });
   });
 
-  router.get("/navigation", (req, res) => {
-    const scopeParam = req.query.scope;
-    const scope = typeof scopeParam === "string" ? scopeParam : undefined;
-    const nav = site.getNavigation(scope ?? null);
+  router.get("/site/:namespace/:kind/:name/navigation", (req, res) => {
+    const site: RwSite = res.locals.rwSite;
+    const sectionRefParam = req.query.sectionRef;
+    const sectionRef = typeof sectionRefParam === "string" ? sectionRefParam : null;
+    const nav = site.getNavigation(sectionRef);
     res.json(nav);
   });
 
-  router.get("/pages/", async (_req, res) => {
-    const page = await renderPageOrThrow(site, "");
+  router.get("/site/:namespace/:kind/:name/pages/", async (req, res) => {
+    const site: RwSite = res.locals.rwSite;
+    const sectionRefParam = req.query.sectionRef;
+    const sectionRef = typeof sectionRefParam === "string" ? sectionRefParam : undefined;
+
+    let pagePath = "";
+    if (sectionRef) {
+      const nav = site.getNavigation(sectionRef);
+      if (nav.scope?.path) {
+        pagePath = nav.scope.path.replace(/^\//, "");
+      }
+    }
+
+    const page = await renderPageOrThrow(site, pagePath);
     res.json(page);
   });
 
-  router.get("/pages/:path(*)", async (req, res) => {
+  router.get("/site/:namespace/:kind/:name/pages/:path(*)", async (req, res) => {
+    const site: RwSite = res.locals.rwSite;
     const pagePath = req.params.path || "";
     if (pagePath.split("/").includes("..")) {
       throw new InputError("Invalid path");

@@ -1,18 +1,26 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { useApi } from "@backstage/core-plugin-api";
 import { ErrorPanel } from "@backstage/core-components";
-import { useTheme } from "@mui/material/styles";
+import { useTheme } from "@material-ui/core/styles";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { rwApiRef } from "../api/RwClient";
+import { useSectionRefResolver } from "./useSectionRefResolver";
 import { mountRw } from "@rwdocs/viewer";
 import type { RwInstance } from "@rwdocs/viewer";
 import "@rwdocs/viewer/embed.css";
 
-export function RwDocsViewer() {
+interface RwDocsViewerProps {
+  apiBaseUrl: string;
+  sectionRef: string;
+  sourceEntityRef: string;
+}
+
+export function RwDocsViewer({ apiBaseUrl, sectionRef, sourceEntityRef }: RwDocsViewerProps) {
   const ref = useRef<HTMLDivElement>(null);
   const rwApi = useApi(rwApiRef);
   const theme = useTheme();
   const [error, setError] = useState<Error | null>(null);
+  const catalogResolver = useSectionRefResolver(sourceEntityRef);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -20,61 +28,69 @@ export function RwDocsViewer() {
   navigateRef.current = navigate;
   const { "*": subPath = "" } = useParams();
 
-  // Derive the plugin's base path by stripping the sub-path (and its leading slash) from the URL.
-  // e.g. URL="/rw-docs/getting-started", subPath="getting-started" → base="/rw-docs"
   const basePath = subPath ? location.pathname.slice(0, -(subPath.length + 1)) : location.pathname;
   const basePathRef = useRef(basePath);
   basePathRef.current = basePath;
+
+  const resolveSectionRefs = useCallback(
+    async (refs: string[]): Promise<Record<string, string>> => {
+      const otherRefs = refs.filter((r) => r !== sectionRef);
+      const result = otherRefs.length > 0 ? await catalogResolver(otherRefs) : {};
+      if (refs.includes(sectionRef)) {
+        result[sectionRef] = basePathRef.current;
+      }
+      return result;
+    },
+    [catalogResolver, sectionRef],
+  );
 
   const instanceRef = useRef<RwInstance | null>(null);
   const prevSubPathRef = useRef(subPath);
   const rwNavigatingRef = useRef(false);
 
   useEffect(() => {
-    let cancelled = false;
+    if (!ref.current) {
+      return undefined;
+    }
 
-    rwApi
-      .getBaseUrl()
-      .then((baseUrl) => {
-        if (cancelled || !ref.current) return;
+    try {
+      let initialPath = "/";
+      if (subPath) {
+        initialPath = `/${subPath}`;
+      }
+      if (location.hash) {
+        initialPath += location.hash;
+      }
 
-        const base = basePathRef.current;
-        const initialPath = subPath ? `/${subPath}` : "/";
-
-        instanceRef.current = mountRw(ref.current, {
-          apiBaseUrl: baseUrl,
-          initialPath,
-          basePath: base,
-          fetchFn: rwApi.getFetch(),
-          colorScheme: theme.palette.mode,
-          onNavigate: (rwPath: string) => {
-            const browserPath = rwPath === "/" ? base : `${base}${rwPath}`;
-            if (window.location.pathname !== browserPath) {
-              rwNavigatingRef.current = true;
-              navigateRef.current(browserPath, { replace: false });
-            }
-          },
-        });
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err);
+      instanceRef.current = mountRw(ref.current, {
+        apiBaseUrl,
+        initialPath,
+        sectionRef,
+        fetchFn: rwApi.getFetch(),
+        colorScheme: theme.palette.type,
+        resolveSectionRefs,
+        onNavigate: (href: string) => {
+          if (window.location.pathname !== href) {
+            rwNavigatingRef.current = true;
+            navigateRef.current(href, { replace: false });
+          }
+        },
       });
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    }
 
     return () => {
-      cancelled = true;
       instanceRef.current?.destroy();
       instanceRef.current = null;
     };
-    // Re-mount when API changes — theme and navigation sync are handled by effects below
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rwApi]);
+  }, [apiBaseUrl, sectionRef]);
 
-  // Sync Backstage theme to the RW viewer
   useEffect(() => {
-    instanceRef.current?.setColorScheme(theme.palette.mode);
-  }, [theme.palette.mode]);
+    instanceRef.current?.setColorScheme(theme.palette.type);
+  }, [theme.palette.type]);
 
-  // Sync external navigation (browser back/forward) to the RW app
   useEffect(() => {
     if (subPath === prevSubPathRef.current) return;
     prevSubPathRef.current = subPath;
@@ -84,7 +100,6 @@ export function RwDocsViewer() {
       return;
     }
 
-    // External navigation — tell RW to navigate
     const rwPath = subPath ? `/${subPath}` : "/";
     instanceRef.current?.navigateTo(rwPath);
   }, [subPath]);
@@ -93,5 +108,5 @@ export function RwDocsViewer() {
     return <ErrorPanel error={error} />;
   }
 
-  return <div ref={ref} className="rw-root" style={{ height: "100vh" }} />;
+  return <div ref={ref} className="rw-root" />;
 }

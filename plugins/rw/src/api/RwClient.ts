@@ -3,6 +3,7 @@ import type { DiscoveryApi, FetchApi } from "@backstage/core-plugin-api";
 
 export interface RwApi {
   getBaseUrl(): Promise<string>;
+  getSiteBaseUrl(entityRef: string): Promise<string>;
   getFetch(): typeof fetch;
 }
 
@@ -19,6 +20,11 @@ export class RwClient implements RwApi {
 
   async getBaseUrl(): Promise<string> {
     return this.discoveryApi.getBaseUrl("rw");
+  }
+
+  async getSiteBaseUrl(entityRef: string): Promise<string> {
+    const base = await this.discoveryApi.getBaseUrl("rw");
+    return `${base}/site/${entityRef}`;
   }
 
   getFetch(): typeof fetch {
