@@ -36,7 +36,12 @@ yarn workspace @rwdocs/backstage-plugin-rw run lint
 yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
 ```
 
-Tests use `backstage-cli package test` (Jest). No tests have been written yet.
+Tests use `backstage-cli package test` (Jest). Note: `backstage-cli` forces `--watch` mode by default, ignoring jest config. Always pass `--watchAll=false` when running tests:
+
+```bash
+yarn workspace @rwdocs/backstage-plugin-rw run test --watchAll=false
+yarn workspace @rwdocs/backstage-plugin-rw-backend run test --watchAll=false
+```
 
 ## Architecture
 
@@ -44,25 +49,33 @@ Tests use `backstage-cli package test` (Jest). No tests have been written yet.
 
 Defines three Backstage extensions in `plugin.tsx`:
 1. **rwApi** — `ApiBlueprint` providing `RwClient` (wraps `discoveryApi` + `fetchApi`)
-2. **rwPage** — Standalone page mounted at `/docs` via `PageBlueprint`
-3. **rwEntityContent** — Catalog entity tab ("Documentation") via `EntityContentBlueprint`
+2. **rwPage** — Standalone page mounted at `/docs` via `PageBlueprint`, renders `RwStandaloneViewer`
+3. **rwEntityContent** — Catalog entity tab ("Documentation") via `EntityContentBlueprint`, renders `RwEntityDocsViewer` (filtered by `rwdocs.org/ref` annotation)
 
-`RwDocsViewer` is the main component. It mounts the `@rwdocs/viewer` into a DOM ref and maintains two-way navigation sync between React Router and the RW viewer instance. A `rwNavigatingRef` flag prevents infinite nav loops.
+Three viewer components:
+- **`RwDocsViewer`** — Core component that mounts `@rwdocs/viewer` into a DOM ref, maintains two-way navigation sync between React Router and the RW viewer instance, and resolves cross-entity section refs. A `rwNavigatingRef` flag prevents infinite nav loops.
+- **`RwEntityDocsViewer`** — Wrapper for catalog entity pages. Reads the entity's `rwdocs.org/ref` annotation via `parseAnnotation` and passes the resolved API base URL and section ref to `RwDocsViewer`.
+- **`RwStandaloneViewer`** — Wrapper for the standalone `/docs` page. Reads `rw.rootEntity` from config to determine which entity to render.
 
 ### Backend Plugin (`plugins/rw-backend/`)
 
-`plugin.ts` reads config (`rw.projectDir` or `rw.s3`, mutually exclusive) and creates an Express router.
+`plugin.ts` reads config (`rw.projectDir` or `rw.s3`, mutually exclusive) and creates a `Hub` for managing `RwSite` instances.
 
-`router.ts` exposes four endpoints:
-- `GET /health` — unauthenticated health check
-- `GET /config` — returns `{ liveReloadEnabled: false }`
-- `GET /navigation?scope=` — navigation tree from `RwSite`
-- `GET /pages/:path(*)` — rendered page content (with path traversal protection)
+Key backend classes:
+- **`Hub`** — Manages multiple `RwSite` instances with LRU eviction. In `projectDir` mode, serves a single pre-configured site. In `s3` mode, creates sites on demand.
+
+`router.ts` exposes entity-scoped endpoints under `/site/:namespace/:kind/:name/`:
+- `GET /health` — unauthenticated health check (not entity-scoped)
+- `GET /site/:namespace/:kind/:name/config` — returns `{ liveReloadEnabled: false }`
+- `GET /site/:namespace/:kind/:name/navigation?sectionRef=` — navigation tree from `RwSite`
+- `GET /site/:namespace/:kind/:name/pages/:path(*)` — rendered page content (with path traversal protection)
+
+Middleware resolves the entity path from URL params to look up the corresponding `RwSite` from the Hub.
 
 ### Plugin Communication
 
-Frontend `RwClient` discovers the backend URL via `discoveryApi.getBaseUrl("rw")` and passes `fetchApi.fetch` to the RW viewer library, which makes HTTP calls to the backend endpoints.
+Frontend `RwClient` discovers the backend URL via `discoveryApi.getBaseUrl("rw")` and constructs entity-scoped URLs (e.g., `/site/default/component/my-docs/`). It passes `fetchApi.fetch` to the RW viewer library, which makes HTTP calls to the backend endpoints.
 
 ### Configuration Schema
 
-Defined in `plugins/rw-backend/config.d.ts`. Two modes: local filesystem (`rw.projectDir`) for development, S3 storage (`rw.s3`) for production. Optional `rw.linkPrefix` for URL prefixing.
+Defined in `plugins/rw-backend/config.d.ts` and `plugins/rw/config.d.ts`. Two modes: local filesystem (`rw.projectDir` + `rw.entity`) for development, S3 storage (`rw.s3`) for production. Optional `rw.rootEntity` (frontend-visible) sets the entity for the standalone `/docs` page.

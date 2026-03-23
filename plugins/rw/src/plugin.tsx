@@ -7,6 +7,7 @@ import {
 import { createApiFactory, discoveryApiRef, fetchApiRef } from "@backstage/core-plugin-api";
 import { EntityContentBlueprint } from "@backstage/plugin-catalog-react/alpha";
 import { rwApiRef, RwClient } from "./api/RwClient";
+import { ANNOTATION_KEY } from "./components/constants";
 
 const rootRouteRef = createRouteRef();
 
@@ -25,7 +26,7 @@ const rwPage = PageBlueprint.make({
   params: {
     path: "/docs",
     routeRef: rootRouteRef,
-    loader: () => import("./components/RwDocsViewer").then((m) => <m.RwDocsViewer />),
+    loader: () => import("./components/RwStandaloneViewer").then((m) => <m.RwStandaloneViewer />),
   },
 });
 
@@ -34,7 +35,8 @@ const rwEntityContent = EntityContentBlueprint.make({
     path: "docs",
     title: "Documentation",
     group: "documentation",
-    loader: () => import("./components/RwDocsViewer").then((m) => <m.RwDocsViewer />),
+    filter: (entity) => Boolean(entity.metadata.annotations?.[ANNOTATION_KEY]),
+    loader: () => import("./components/RwEntityDocsViewer").then((m) => <m.RwEntityDocsViewer />),
   },
 });
 
