@@ -1,15 +1,8 @@
-import {
-  createFrontendPlugin,
-  PageBlueprint,
-  createRouteRef,
-  ApiBlueprint,
-} from "@backstage/frontend-plugin-api";
+import { createFrontendPlugin, ApiBlueprint } from "@backstage/frontend-plugin-api";
 import { createApiFactory, discoveryApiRef, fetchApiRef } from "@backstage/core-plugin-api";
 import { EntityContentBlueprint } from "@backstage/plugin-catalog-react/alpha";
 import { rwApiRef, RwClient } from "./api/RwClient";
 import { ANNOTATION_KEY } from "./components/constants";
-
-const rootRouteRef = createRouteRef();
 
 const rwApi = ApiBlueprint.make({
   params: (defineParams) =>
@@ -20,14 +13,6 @@ const rwApi = ApiBlueprint.make({
         factory: ({ discoveryApi, fetchApi }) => new RwClient({ discoveryApi, fetchApi }),
       }),
     ),
-});
-
-const rwPage = PageBlueprint.make({
-  params: {
-    path: "/docs",
-    routeRef: rootRouteRef,
-    loader: () => import("./components/RwStandaloneViewer").then((m) => <m.RwStandaloneViewer />),
-  },
 });
 
 const rwEntityContent = EntityContentBlueprint.make({
@@ -42,8 +27,7 @@ const rwEntityContent = EntityContentBlueprint.make({
 
 export const rwPlugin = createFrontendPlugin({
   pluginId: "rw",
-  extensions: [rwApi, rwPage, rwEntityContent],
-  routes: { root: rootRouteRef },
+  extensions: [rwApi, rwEntityContent],
 });
 
 export default rwPlugin;

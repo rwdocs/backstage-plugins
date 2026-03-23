@@ -11,12 +11,6 @@ export interface Config {
      * Standard Backstage entity ref format: "kind:namespace/name" (e.g. "component:default/my-docs")
      */
     entity?: string;
-    /**
-     * Entity ref for the standalone /docs page.
-     * Standard Backstage entity ref format: "kind:namespace/name" (e.g. "component:default/my-docs")
-     * @visibility frontend
-     */
-    rootEntity?: string;
     /** Maximum number of cached RwSite instances. Default: 20. */
     cacheSize?: number;
     /**
