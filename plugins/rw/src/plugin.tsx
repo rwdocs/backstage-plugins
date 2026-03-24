@@ -1,8 +1,12 @@
 import { createFrontendPlugin, ApiBlueprint } from "@backstage/frontend-plugin-api";
 import { createApiFactory, discoveryApiRef, fetchApiRef } from "@backstage/core-plugin-api";
-import { EntityContentBlueprint } from "@backstage/plugin-catalog-react/alpha";
+import {
+  EntityContentBlueprint,
+  EntityIconLinkBlueprint,
+} from "@backstage/plugin-catalog-react/alpha";
 import { rwApiRef, RwClient } from "./api/RwClient";
 import { ANNOTATION_KEY } from "./components/constants";
+import { useRwDocsIconLinkProps } from "./hooks/useRwDocsIconLinkProps";
 
 const rwApi = ApiBlueprint.make({
   params: (defineParams) =>
@@ -25,9 +29,16 @@ const rwEntityContent = EntityContentBlueprint.make({
   },
 });
 
+const rwEntityIconLink = EntityIconLinkBlueprint.make({
+  name: "view-docs",
+  params: {
+    useProps: useRwDocsIconLinkProps,
+  },
+});
+
 export const rwPlugin = createFrontendPlugin({
   pluginId: "rw",
-  extensions: [rwApi, rwEntityContent],
+  extensions: [rwApi, rwEntityContent, rwEntityIconLink],
 });
 
 export default rwPlugin;
