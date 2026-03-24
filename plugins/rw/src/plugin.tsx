@@ -22,7 +22,7 @@ const rwApi = ApiBlueprint.make({
 const rwEntityContent = EntityContentBlueprint.make({
   params: {
     path: "docs",
-    title: "Documentation",
+    title: "Docs",
     group: "documentation",
     filter: (entity) => Boolean(entity.metadata.annotations?.[ANNOTATION_KEY]),
     loader: () => import("./components/RwEntityDocsViewer").then((m) => <m.RwEntityDocsViewer />),
