@@ -32,6 +32,7 @@ const rwEntityContent = EntityContentBlueprint.make({
 const rwEntityIconLink = EntityIconLinkBlueprint.make({
   name: "view-docs",
   params: {
+    filter: (entity) => Boolean(entity.metadata.annotations?.[ANNOTATION_KEY]),
     useProps: useRwDocsIconLinkProps,
   },
 });
