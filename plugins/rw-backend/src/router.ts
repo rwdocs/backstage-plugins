@@ -1,6 +1,6 @@
 import Router from "express-promise-router";
 import type { HttpAuthService, LoggerService } from "@backstage/backend-plugin-api";
-import { InputError, NotFoundError } from "@backstage/errors";
+import { InputError, NotFoundError, ServiceUnavailableError } from "@backstage/errors";
 import type { RwSite } from "@rwdocs/core";
 import type { Hub } from "./hub";
 
@@ -39,7 +39,7 @@ export async function createRouter(options: RouterOptions) {
     const site: RwSite = res.locals.rwSite;
     const sectionRefParam = req.query.sectionRef;
     const sectionRef = typeof sectionRefParam === "string" ? sectionRefParam : null;
-    const nav = site.getNavigation(sectionRef);
+    const nav = getNavigationOrThrow(site, sectionRef);
     res.json(nav);
   });
 
@@ -50,7 +50,7 @@ export async function createRouter(options: RouterOptions) {
 
     let pagePath = "";
     if (sectionRef) {
-      const nav = site.getNavigation(sectionRef);
+      const nav = getNavigationOrThrow(site, sectionRef);
       if (nav.scope?.path) {
         pagePath = nav.scope.path.replace(/^\//, "");
       }
@@ -73,6 +73,14 @@ export async function createRouter(options: RouterOptions) {
   return router;
 }
 
+function getNavigationOrThrow(site: RwSite, sectionRef: string | null) {
+  try {
+    return site.getNavigation(sectionRef);
+  } catch (err) {
+    throw toStorageError(err);
+  }
+}
+
 async function renderPageOrThrow(site: RwSite, pagePath: string) {
   try {
     return await site.renderPage(pagePath);
@@ -81,6 +89,16 @@ async function renderPageOrThrow(site: RwSite, pagePath: string) {
     if (message.includes("Content not found")) {
       throw new NotFoundError(`Page not found: /${pagePath}`);
     }
+    // Message prefix comes from @rwdocs/core native addon (RenderError::Storage).
+    // Must be updated if the upstream error format changes.
+    if (message.includes("Storage error")) {
+      throw toStorageError(err);
+    }
     throw err;
   }
+}
+
+function toStorageError(err: unknown): ServiceUnavailableError {
+  const message = err instanceof Error ? err.message : String(err);
+  return new ServiceUnavailableError(`Storage unavailable: ${message}`);
 }
