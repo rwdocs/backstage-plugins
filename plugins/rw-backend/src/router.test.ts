@@ -18,7 +18,11 @@ function makeApp(hub: Hub) {
     const app = express().use(router);
     app.use(
       (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-        const statusByName: Record<string, number> = { InputError: 400, NotFoundError: 404 };
+        const statusByName: Record<string, number> = {
+          InputError: 400,
+          NotFoundError: 404,
+          ServiceUnavailableError: 503,
+        };
         const status = statusByName[err.name] ?? 500;
         res.status(status).json({ error: { name: err.name, message: err.message } });
       },
@@ -139,6 +143,33 @@ describe("createRouter", () => {
 
       await request(app).get(`${prefix}/pages/?sectionRef=domain:default/billing`);
       expect(mockSite.renderPage).toHaveBeenCalledWith("domains/billing");
+    });
+  });
+
+  describe("storage errors", () => {
+    it("returns 503 when getNavigation throws storage error", async () => {
+      mockSite.getNavigation.mockImplementation(() => {
+        throw new Error("S3: storage unavailable");
+      });
+      const res = await request(app).get(`${prefix}/navigation`);
+      expect(res.status).toBe(503);
+      expect(res.body.error.name).toBe("ServiceUnavailableError");
+    });
+
+    it("returns 503 when renderPage throws storage error", async () => {
+      mockSite.renderPage.mockRejectedValue(new Error("Storage error: S3: storage unavailable"));
+      const res = await request(app).get(`${prefix}/pages/guide`);
+      expect(res.status).toBe(503);
+      expect(res.body.error.name).toBe("ServiceUnavailableError");
+    });
+
+    it("returns 503 when getNavigation throws on scope resolution", async () => {
+      mockSite.getNavigation.mockImplementation(() => {
+        throw new Error("S3: storage unavailable");
+      });
+      const res = await request(app).get(`${prefix}/pages/?sectionRef=domain:default/billing`);
+      expect(res.status).toBe(503);
+      expect(res.body.error.name).toBe("ServiceUnavailableError");
     });
   });
 
