@@ -46,8 +46,10 @@
   },
   "dependencies": {
     "@backstage/catalog-model": "^1.7.6",
+    "@backstage/config": "^1.3.6",
     "@backstage/errors": "^1.2.7",
-    "@rwdocs/core": "^0.1.19",
+    "@backstage/types": "^1.2.2",
+    "@rwdocs/core": "^0.1.21",
     "express": "^4.21.0",
     "express-promise-router": "^4.1.0"
   },

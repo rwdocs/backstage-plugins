@@ -1,3 +1,4 @@
+import { mockServices } from "@backstage/backend-test-utils";
 import { Hub } from "./hub";
 import { createSite } from "@rwdocs/core";
 
@@ -122,6 +123,49 @@ describe("Hub", () => {
         },
         diagrams: { krokiUrl: "http://kroki:8080" },
       });
+    });
+  });
+
+  describe("reloadAll", () => {
+    it("calls reload on all cached sites", async () => {
+      const site1 = mockSite();
+      const site2 = mockSite();
+      site1.reload.mockResolvedValue(true);
+      site2.reload.mockResolvedValue(false);
+      mockCreateSite.mockReturnValueOnce(site1).mockReturnValueOnce(site2);
+
+      const hub = new Hub({ s3: { bucket: "my-bucket" } });
+      hub.getSite("a/b/one");
+      hub.getSite("a/b/two");
+
+      const logger = mockServices.logger.mock();
+      await hub.reloadAll(logger);
+
+      expect(site1.reload).toHaveBeenCalledTimes(1);
+      expect(site2.reload).toHaveBeenCalledTimes(1);
+      expect(logger.info).toHaveBeenCalledWith("Reloaded site: a/b/one");
+      expect(logger.info).not.toHaveBeenCalledWith(expect.stringContaining("a/b/two"));
+    });
+
+    it("logs warning on reload failure and continues", async () => {
+      const site1 = mockSite();
+      const site2 = mockSite();
+      site1.reload.mockRejectedValue(new Error("S3 error"));
+      site2.reload.mockResolvedValue(true);
+      mockCreateSite.mockReturnValueOnce(site1).mockReturnValueOnce(site2);
+
+      const hub = new Hub({ s3: { bucket: "my-bucket" } });
+      hub.getSite("a/b/one");
+      hub.getSite("a/b/two");
+
+      const logger = mockServices.logger.mock();
+      await hub.reloadAll(logger);
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("Failed to reload site a/b/one"),
+      );
+      expect(site2.reload).toHaveBeenCalledTimes(1);
+      expect(logger.info).toHaveBeenCalledWith("Reloaded site: a/b/two");
     });
   });
 

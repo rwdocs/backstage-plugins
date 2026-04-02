@@ -1,3 +1,4 @@
+import type { LoggerService } from "@backstage/backend-plugin-api";
 import { createSite, type RwSite, type SiteConfig, type DiagramsConfig } from "@rwdocs/core";
 import { toEntityPath } from "./entityPath";
 
@@ -53,6 +54,20 @@ export class Hub {
     });
     this.cache.set(entityRef, site);
     return site;
+  }
+
+  async reloadAll(logger: LoggerService) {
+    const entries = [...this.cache.entries()];
+    for (const [ref, site] of entries) {
+      try {
+        const reloaded = await site.reload();
+        if (reloaded) {
+          logger.info(`Reloaded site: ${ref}`);
+        }
+      } catch (err) {
+        logger.warn(`Failed to reload site ${ref}: ${err}`);
+      }
+    }
   }
 
   private getS3Site(entityRef: string): RwSite {

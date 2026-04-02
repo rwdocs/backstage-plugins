@@ -1,4 +1,5 @@
 import { coreServices, createBackendPlugin } from "@backstage/backend-plugin-api";
+import { readDurationFromConfig } from "@backstage/config";
 import { createRouter } from "./router";
 import { Hub, type HubOptions } from "./hub";
 import { toEntityPath } from "./entityPath";
@@ -12,8 +13,9 @@ export const rwPlugin = createBackendPlugin({
         httpAuth: coreServices.httpAuth,
         logger: coreServices.logger,
         config: coreServices.rootConfig,
+        scheduler: coreServices.scheduler,
       },
-      async init({ httpRouter, httpAuth, logger, config }) {
+      async init({ httpRouter, httpAuth, logger, config, scheduler }) {
         const projectDir = config.getOptionalString("rw.projectDir");
         const entity = config.getOptionalString("rw.entity");
         const cacheSize = config.getOptionalNumber("rw.cacheSize");
@@ -62,6 +64,19 @@ export const rwPlugin = createBackendPlugin({
           logger.info(
             `Hub: local mode (${projectDir}, entity: ${entity ? toEntityPath(entity) : entity})`,
           );
+        }
+
+        if (config.has("rw.reloadInterval")) {
+          const frequency = readDurationFromConfig(config, { key: "rw.reloadInterval" });
+          logger.info(`Scheduling site reload with interval: ${JSON.stringify(frequency)}`);
+
+          await scheduler.scheduleTask({
+            id: "rw-site-reload",
+            frequency,
+            timeout: frequency,
+            scope: "local",
+            fn: async () => hub.reloadAll(logger),
+          });
         }
 
         const router = await createRouter({ logger, httpAuth, hub });

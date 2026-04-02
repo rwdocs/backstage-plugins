@@ -14,6 +14,17 @@ export interface Config {
     /** Maximum number of cached RwSite instances. Default: 20. */
     cacheSize?: number;
     /**
+     * How often to check cached sites for upstream changes and reload if needed.
+     * If not set, no periodic reloading is performed.
+     *
+     * @example
+     * ```yaml
+     * rw:
+     *   reloadInterval: { minutes: 5 }
+     * ```
+     */
+    reloadInterval?: import("@backstage/types").HumanDuration;
+    /**
      * S3 storage configuration. Shared across all entity sites.
      * Mutually exclusive with `projectDir`.
      */
