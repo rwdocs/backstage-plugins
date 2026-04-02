@@ -47,7 +47,7 @@
   },
   "dependencies": {
     "@backstage/catalog-model": "^1.7.6",
-    "@material-ui/icons": "^4.11.3",
+    "@mui/icons-material": "^5.0.0",
     "@rwdocs/viewer": "^0.1.21"
   },
   "peerDependencies": {
