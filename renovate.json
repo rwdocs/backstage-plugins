@@ -23,6 +23,12 @@
       "matchPackageNames": ["@mui/material"],
       "allowedVersions": "<6.0.0",
       "description": "Backstage requires MUI v5"
+    },
+    {
+      "matchPackageNames": ["@material-ui/icons"],
+      "matchUpdateTypes": ["replacement"],
+      "enabled": false,
+      "description": "Backstage does not support @mui/icons-material"
     }
   ]
 }
