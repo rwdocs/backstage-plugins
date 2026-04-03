@@ -25,6 +25,11 @@
       "description": "Backstage requires MUI v5"
     },
     {
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<6.0.0",
+      "description": "Backstage pins TypeScript ~5.7"
+    },
+    {
       "matchPackageNames": ["@material-ui/core", "@material-ui/icons"],
       "matchUpdateTypes": ["replacement"],
       "enabled": false,
