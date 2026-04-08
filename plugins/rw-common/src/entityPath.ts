@@ -1,19 +1,19 @@
-import { parseEntityRef } from "@backstage/catalog-model";
+import { parseEntityRef, stringifyEntityRef } from "@backstage/catalog-model";
 import { InputError } from "@backstage/errors";
 
 /**
- * Converts a Backstage entity ref (e.g. "component:default/arch") to the
- * slash-delimited, lowercased path format used in URLs and cache keys
+ * Converts an entity ref (e.g. "component:default/arch") or a compound ref
+ * object to the slash-delimited, lowercased path used in API URLs
  * (e.g. "default/component/arch").
  *
  * Uses namespace/kind/name ordering to match Backstage catalog URL convention.
- *
- * NOTE: The frontend plugin has a similar utility at
- * plugins/rw/src/components/entityPath.ts — keep in sync if changing logic.
  */
-export function toEntityPath(entityRef: string): string {
-  const ref = parseEntityRef(entityRef);
-  return `${ref.namespace}/${ref.kind}/${ref.name}`.toLocaleLowerCase("en-US");
+export function toEntityPath(
+  ref: string | { kind: string; namespace?: string; name: string },
+): string {
+  const parsed = typeof ref === "string" ? parseEntityRef(ref) : ref;
+  const ns = parsed.namespace ?? "default";
+  return `${ns}/${parsed.kind}/${parsed.name}`.toLocaleLowerCase("en-US");
 }
 
 /**
@@ -29,5 +29,5 @@ export function fromEntityPath(path: string): string {
     throw new InputError(`Invalid entity path: "${path}" (expected "namespace/kind/name")`);
   }
   const [namespace, kind, name] = parts;
-  return `${kind}:${namespace}/${name}`;
+  return stringifyEntityRef({ kind, namespace, name });
 }

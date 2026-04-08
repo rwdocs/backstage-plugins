@@ -13,6 +13,16 @@ describe("toEntityPath", () => {
     expect(toEntityPath("component:arch")).toBe("default/component/arch");
   });
 
+  it("accepts a compound ref object", () => {
+    expect(toEntityPath({ kind: "component", namespace: "default", name: "arch" })).toBe(
+      "default/component/arch",
+    );
+  });
+
+  it("defaults namespace to 'default' for compound ref object", () => {
+    expect(toEntityPath({ kind: "component", name: "arch" })).toBe("default/component/arch");
+  });
+
   it("throws on invalid entity ref", () => {
     expect(() => toEntityPath("")).toThrow();
   });

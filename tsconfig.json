@@ -2,8 +2,9 @@
   "extends": "@backstage/cli/config/tsconfig.json",
   "include": [
     "plugins/rw/src",
+    "plugins/rw-common/src",
     "plugins/rw-backend/src",
-    "plugins/rw-backend/config.d.ts",
+    "plugins/rw-common/config.d.ts",
     "packages/app/src",
     "packages/backend/src"
   ],

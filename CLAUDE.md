@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Backstage plugin pair for embedding RW documentation sites. Yarn 4.12.0 workspace monorepo with two plugins:
+Backstage plugin pair for embedding RW documentation sites. Yarn 4.12.0 workspace monorepo with three packages:
 
 - **`@rwdocs/backstage-plugin-rw`** (frontend) — Renders RW docs in Backstage UI via `@rwdocs/viewer`
 - **`@rwdocs/backstage-plugin-rw-backend`** (backend) — Express-based API serving docs via `@rwdocs/core`
+- **`@rwdocs/backstage-plugin-rw-common`** (common) — Shared utilities: entity path construction, annotation parsing, S3 config reading
 
 ## Commands
 
@@ -45,6 +46,15 @@ yarn workspace @rwdocs/backstage-plugin-rw-backend run test --watchAll=false
 
 ## Architecture
 
+### Common Library (`plugins/rw-common/`)
+
+Shared utilities used by both frontend and backend plugins:
+- **`entityPath`** — Converts between entity refs (`kind:namespace/name`) and URL path segments (`namespace/kind/name`) using `@backstage/catalog-model`
+- **`parseAnnotation`** — Parses `rwdocs.org/ref` entity annotations into site ref and optional section ref
+- **`config`** — Reads S3 configuration (`S3Config`) from Backstage config
+
+Also owns the Backstage configuration schema (`config.d.ts`).
+
 ### Frontend Plugin (`plugins/rw/`)
 
 Defines two Backstage extensions in `plugin.tsx`:
@@ -76,4 +86,4 @@ Frontend `RwClient` discovers the backend URL via `discoveryApi.getBaseUrl("rw")
 
 ### Configuration Schema
 
-Defined in `plugins/rw-backend/config.d.ts` and `plugins/rw/config.d.ts`. Two modes: local filesystem (`rw.projectDir` + `rw.entity`) for development, S3 storage (`rw.s3`) for production.
+Defined in `plugins/rw-common/config.d.ts`. Two modes: local filesystem (`rw.projectDir` + `rw.entity`) for development, S3 storage (`rw.s3`) for production.

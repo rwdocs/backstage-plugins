@@ -23,13 +23,12 @@
     "pluginId": "rw",
     "pluginPackages": [
       "@rwdocs/backstage-plugin-rw",
-      "@rwdocs/backstage-plugin-rw-backend"
+      "@rwdocs/backstage-plugin-rw-backend",
+      "@rwdocs/backstage-plugin-rw-common"
     ]
   },
-  "configSchema": "config.d.ts",
   "files": [
     "dist",
-    "config.d.ts",
     "LICENSE-MIT",
     "LICENSE-APACHE"
   ],
@@ -49,7 +48,8 @@
     "@backstage/config": "^1.3.6",
     "@backstage/errors": "^1.2.7",
     "@backstage/types": "^1.2.2",
-    "@rwdocs/core": "^0.1.21",
+    "@rwdocs/backstage-plugin-rw-common": "workspace:^",
+    "@rwdocs/core": "^0.1.22",
     "express": "^4.21.0",
     "express-promise-router": "^4.1.0"
   },

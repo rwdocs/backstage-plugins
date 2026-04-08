@@ -1,18 +1,9 @@
 import type { LoggerService } from "@backstage/backend-plugin-api";
 import { createSite, type RwSite, type SiteConfig, type DiagramsConfig } from "@rwdocs/core";
-import { toEntityPath } from "./entityPath";
-
-export interface S3SharedConfig {
-  bucket: string;
-  region?: string;
-  endpoint?: string;
-  bucketRootPath?: string;
-  accessKeyId?: string;
-  secretAccessKey?: string;
-}
+import { toEntityPath, type S3Config } from "@rwdocs/backstage-plugin-rw-common";
 
 export interface HubOptions {
-  s3?: S3SharedConfig;
+  s3?: S3Config;
   projectDir?: string;
   /** Entity ref in any format accepted by parseEntityRef. Normalized internally. */
   entity?: string;

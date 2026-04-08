@@ -8628,7 +8628,8 @@ __metadata:
     "@backstage/errors": "npm:^1.2.7"
     "@backstage/types": "npm:^1.2.2"
     "@jest/environment-jsdom-abstract": "npm:^30.2.0"
-    "@rwdocs/core": "npm:^0.1.21"
+    "@rwdocs/backstage-plugin-rw-common": "workspace:^"
+    "@rwdocs/core": "npm:^0.1.22"
     "@types/express": "npm:^4.17.0"
     "@types/jest": "npm:^30.0.0"
     "@types/jsdom": "npm:^28"
@@ -8645,6 +8646,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@rwdocs/backstage-plugin-rw-common@workspace:^, @rwdocs/backstage-plugin-rw-common@workspace:plugins/rw-common":
+  version: 0.0.0-use.local
+  resolution: "@rwdocs/backstage-plugin-rw-common@workspace:plugins/rw-common"
+  dependencies:
+    "@backstage/catalog-model": "npm:^1.7.6"
+    "@backstage/cli": "npm:^0.36.0"
+    "@backstage/config": "npm:^1.3.6"
+    "@backstage/errors": "npm:^1.2.7"
+    "@backstage/types": "npm:^1.2.2"
+    "@types/jest": "npm:^30.0.0"
+    jest: "npm:^30.2.0"
+    prettier: "npm:^3.4.2"
+    typescript: "npm:^5.7.0"
+  languageName: unknown
+  linkType: soft
+
 "@rwdocs/backstage-plugin-rw@workspace:*, @rwdocs/backstage-plugin-rw@workspace:plugins/rw":
   version: 0.0.0-use.local
   resolution: "@rwdocs/backstage-plugin-rw@workspace:plugins/rw"
@@ -8658,6 +8675,7 @@ __metadata:
     "@backstage/plugin-catalog-react": "npm:^2.0.0"
     "@backstage/test-utils": "npm:^1.7.0"
     "@material-ui/icons": "npm:^4.11.3"
+    "@rwdocs/backstage-plugin-rw-common": "workspace:^"
     "@rwdocs/viewer": "npm:^0.1.21"
     "@testing-library/dom": "npm:^10.0.0"
     "@testing-library/jest-dom": "npm:^6.0.0"
@@ -8682,34 +8700,34 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@rwdocs/core-darwin-arm64@npm:0.1.21":
-  version: 0.1.21
-  resolution: "@rwdocs/core-darwin-arm64@npm:0.1.21"
+"@rwdocs/core-darwin-arm64@npm:0.1.22":
+  version: 0.1.22
+  resolution: "@rwdocs/core-darwin-arm64@npm:0.1.22"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@rwdocs/core-linux-x64-gnu@npm:0.1.21":
-  version: 0.1.21
-  resolution: "@rwdocs/core-linux-x64-gnu@npm:0.1.21"
+"@rwdocs/core-linux-x64-gnu@npm:0.1.22":
+  version: 0.1.22
+  resolution: "@rwdocs/core-linux-x64-gnu@npm:0.1.22"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@rwdocs/core-linux-x64-musl@npm:0.1.21":
-  version: 0.1.21
-  resolution: "@rwdocs/core-linux-x64-musl@npm:0.1.21"
+"@rwdocs/core-linux-x64-musl@npm:0.1.22":
+  version: 0.1.22
+  resolution: "@rwdocs/core-linux-x64-musl@npm:0.1.22"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@rwdocs/core@npm:^0.1.21":
-  version: 0.1.21
-  resolution: "@rwdocs/core@npm:0.1.21"
+"@rwdocs/core@npm:^0.1.22":
+  version: 0.1.22
+  resolution: "@rwdocs/core@npm:0.1.22"
   dependencies:
-    "@rwdocs/core-darwin-arm64": "npm:0.1.21"
-    "@rwdocs/core-linux-x64-gnu": "npm:0.1.21"
-    "@rwdocs/core-linux-x64-musl": "npm:0.1.21"
+    "@rwdocs/core-darwin-arm64": "npm:0.1.22"
+    "@rwdocs/core-linux-x64-gnu": "npm:0.1.22"
+    "@rwdocs/core-linux-x64-musl": "npm:0.1.22"
   dependenciesMeta:
     "@rwdocs/core-darwin-arm64":
       optional: true
@@ -8717,7 +8735,7 @@ __metadata:
       optional: true
     "@rwdocs/core-linux-x64-musl":
       optional: true
-  checksum: 10c0/b57c4d94b2869b8fc18d85cdb1deb41a317068d9c7c8731ef5225d10e5c07d9dda698b3f62799116bee872690dc2fd7d9a2b8de3e194eceb555bbb0788944ebb
+  checksum: 10c0/941d1fe0766fc4ccde69f0818d8f12873a6f59605166210c4bf92524dda70a01f8ada1b881db0ff7c9dfc87c27067bcd7ebd1bfe5bf3065245a847df529968f7
   languageName: node
   linkType: hard
 
