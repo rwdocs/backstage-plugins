@@ -1,5 +1,5 @@
 import { parseEntityRef, stringifyEntityRef } from "@backstage/catalog-model";
-import { toEntityPath } from "./entityPath";
+import { toEntityPath, fromEntityPath } from "./entityPath";
 
 export interface ParsedAnnotation {
   /** Slash-delimited path for API URLs (e.g. "default/component/arch"). */
@@ -9,9 +9,23 @@ export interface ParsedAnnotation {
   sectionRef: string | undefined;
 }
 
+/**
+ * Parses an `rwdocs.org/ref` annotation value into its component parts.
+ *
+ * The annotation format is `<entityRef>[#<sectionRef>]`, where `entityRef` is
+ * a standard Backstage entity ref and `sectionRef` is an optional path within
+ * the documentation site.
+ *
+ * A special value of `"."` refers to the entity itself; this requires the
+ * `selfEntityPath` parameter to resolve.
+ *
+ * @param value - The raw annotation value
+ * @param selfEntityPath - The entity path of the entity bearing the annotation,
+ *   required to resolve `"."` self-references
+ */
 export function parseAnnotation(
   value: string | undefined,
-  selfEntityRef: string,
+  selfEntityPath?: string,
 ): ParsedAnnotation | undefined {
   if (!value) return undefined;
 
@@ -28,7 +42,8 @@ export function parseAnnotation(
   }
 
   if (entity === ".") {
-    return { entityPath: selfEntityRef, entityRef: fromEntityPath(selfEntityRef), sectionRef };
+    if (!selfEntityPath) return undefined;
+    return { entityPath: selfEntityPath, entityRef: fromEntityPath(selfEntityPath), sectionRef };
   }
 
   try {
@@ -40,10 +55,4 @@ export function parseAnnotation(
   } catch {
     return undefined;
   }
-}
-
-/** Convert slash-delimited path (namespace/kind/name) back to colon-format entity ref. */
-function fromEntityPath(path: string): string {
-  const [namespace, kind, name] = path.split("/");
-  return stringifyEntityRef({ kind, namespace, name });
 }

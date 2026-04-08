@@ -3,10 +3,9 @@ import { useApi } from "@backstage/core-plugin-api";
 import { useEntity } from "@backstage/plugin-catalog-react";
 import { getCompoundEntityRef } from "@backstage/catalog-model";
 import { ErrorPanel, Progress } from "@backstage/core-components";
+import { toEntityPath, parseAnnotation } from "@rwdocs/backstage-plugin-rw-common";
 import { rwApiRef } from "../api/RwClient";
-import { toEntityPath } from "./entityPath";
 import { ANNOTATION_KEY } from "./constants";
-import { parseAnnotation } from "./parseAnnotation";
 import { RwDocsViewer } from "./RwDocsViewer";
 
 export function RwEntityDocsViewer() {
