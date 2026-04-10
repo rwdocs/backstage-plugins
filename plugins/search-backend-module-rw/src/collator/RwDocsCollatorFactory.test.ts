@@ -177,14 +177,16 @@ describe("RwDocsCollatorFactory", () => {
 
   it("strips scope path prefix from location URLs", async () => {
     const catalog = createMockCatalog([
-      makeEntity("payment-gateway", "component:default/arch#system:default/payment-gateway", "System"),
+      makeEntity(
+        "payment-gateway",
+        "component:default/arch#system:default/payment-gateway",
+        "System",
+      ),
     ]);
 
     const site = createMockSite({
       navigation: {
-        items: [
-          { title: "Migration", path: "domains/billing/systems/payment-gateway/migration" },
-        ],
+        items: [{ title: "Migration", path: "domains/billing/systems/payment-gateway/migration" }],
         scope: {
           path: "/domains/billing/systems/payment-gateway",
           title: "Payment Gateway",

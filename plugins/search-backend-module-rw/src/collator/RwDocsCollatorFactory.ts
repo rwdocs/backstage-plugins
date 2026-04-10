@@ -70,7 +70,14 @@ export class RwDocsCollatorFactory implements DocumentCollatorFactory {
     const locationTemplate =
       config.getOptionalString("search.collators.rw.locationTemplate") ?? DEFAULT_LOCATION_TEMPLATE;
 
-    return new RwDocsCollatorFactory(type, siteConfig, locationTemplate, deps.logger, deps.auth, deps.catalog);
+    return new RwDocsCollatorFactory(
+      type,
+      siteConfig,
+      locationTemplate,
+      deps.logger,
+      deps.auth,
+      deps.catalog,
+    );
   }
 
   async getCollator(): Promise<Readable> {
@@ -149,9 +156,8 @@ export class RwDocsCollatorFactory implements DocumentCollatorFactory {
         const doc = await site.renderSearchDocument(path);
         if (!doc) continue;
 
-        const relativePath = scopePath && path.startsWith(scopePath)
-          ? path.slice(scopePath.length + 1)
-          : path;
+        const relativePath =
+          scopePath && path.startsWith(scopePath) ? path.slice(scopePath.length + 1) : path;
 
         yield {
           title: doc.title,
