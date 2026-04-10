@@ -8842,12 +8842,12 @@ __metadata:
   linkType: hard
 
 "@rwdocs/viewer@npm:^0.1.23":
-  version: 0.1.23
-  resolution: "@rwdocs/viewer@npm:0.1.23"
+  version: 0.1.24
+  resolution: "@rwdocs/viewer@npm:0.1.24"
   dependencies:
     "@fontsource/jetbrains-mono": "npm:^5.2.8"
     "@fontsource/roboto": "npm:^5.2.9"
-  checksum: 10c0/3409f3d0740a4ddac5311df9445ab40da00a1af9ca1bedcbbe205bd912d1ba33d57181ac96b8701f60ec0527ded90fcef6a2b4b7acda07d26ed2e4710eadd2e8
+  checksum: 10c0/c6f1a72f4a3ec8baa9bcb123bf74c9a9ba40b0628fedc04001be483c8eb1c86e3917edd692c77c0ac6b9bc575c7e111af7f27a16dfc75bb3c72c785589acc144
   languageName: node
   linkType: hard
 
