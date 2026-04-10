@@ -35,11 +35,11 @@ export async function createRouter(options: RouterOptions) {
     res.json({ liveReloadEnabled: false });
   });
 
-  router.get("/site/:namespace/:kind/:name/navigation", (req, res) => {
+  router.get("/site/:namespace/:kind/:name/navigation", async (req, res) => {
     const site: RwSite = res.locals.rwSite;
     const sectionRefParam = req.query.sectionRef;
     const sectionRef = typeof sectionRefParam === "string" ? sectionRefParam : null;
-    const nav = getNavigationOrThrow(site, sectionRef);
+    const nav = await getNavigationOrThrow(site, sectionRef);
     res.json(nav);
   });
 
@@ -50,7 +50,7 @@ export async function createRouter(options: RouterOptions) {
 
     let pagePath = "";
     if (sectionRef) {
-      const nav = getNavigationOrThrow(site, sectionRef);
+      const nav = await getNavigationOrThrow(site, sectionRef);
       if (nav.scope?.path) {
         pagePath = nav.scope.path.replace(/^\//, "");
       }
@@ -73,9 +73,9 @@ export async function createRouter(options: RouterOptions) {
   return router;
 }
 
-function getNavigationOrThrow(site: RwSite, sectionRef: string | null) {
+async function getNavigationOrThrow(site: RwSite, sectionRef: string | null) {
   try {
-    return site.getNavigation(sectionRef);
+    return await site.getNavigation(sectionRef);
   } catch (err) {
     throw toStorageError(err);
   }

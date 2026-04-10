@@ -77,7 +77,7 @@ describe("createRouter", () => {
     const mockNav = [{ title: "Home", path: "/" }];
 
     it("returns navigation with null scope when no query param", async () => {
-      mockSite.getNavigation.mockReturnValue(mockNav);
+      mockSite.getNavigation.mockResolvedValue(mockNav);
       const res = await request(app).get(`${prefix}/navigation`);
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockNav);
@@ -85,7 +85,7 @@ describe("createRouter", () => {
     });
 
     it("passes sectionRef query param to getNavigation", async () => {
-      mockSite.getNavigation.mockReturnValue(mockNav);
+      mockSite.getNavigation.mockResolvedValue(mockNav);
       const res = await request(app).get(`${prefix}/navigation?sectionRef=api`);
       expect(res.status).toBe(200);
       expect(mockSite.getNavigation).toHaveBeenCalledWith("api");
@@ -129,7 +129,7 @@ describe("createRouter", () => {
     });
 
     it("serves scope root page when sectionRef query param is provided", async () => {
-      mockSite.getNavigation.mockReturnValue({
+      mockSite.getNavigation.mockResolvedValue({
         items: [],
         scope: {
           path: "/domains/billing",
@@ -148,9 +148,7 @@ describe("createRouter", () => {
 
   describe("storage errors", () => {
     it("returns 503 when getNavigation throws storage error", async () => {
-      mockSite.getNavigation.mockImplementation(() => {
-        throw new Error("S3: storage unavailable");
-      });
+      mockSite.getNavigation.mockRejectedValue(new Error("S3: storage unavailable"));
       const res = await request(app).get(`${prefix}/navigation`);
       expect(res.status).toBe(503);
       expect(res.body.error.name).toBe("ServiceUnavailableError");
@@ -164,9 +162,7 @@ describe("createRouter", () => {
     });
 
     it("returns 503 when getNavigation throws on scope resolution", async () => {
-      mockSite.getNavigation.mockImplementation(() => {
-        throw new Error("S3: storage unavailable");
-      });
+      mockSite.getNavigation.mockRejectedValue(new Error("S3: storage unavailable"));
       const res = await request(app).get(`${prefix}/pages/?sectionRef=domain:default/billing`);
       expect(res.status).toBe(503);
       expect(res.body.error.name).toBe("ServiceUnavailableError");
