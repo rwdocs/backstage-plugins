@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Backstage plugin pair for embedding RW documentation sites. Yarn 4.12.0 workspace monorepo with three packages:
+Backstage plugins for embedding RW documentation sites. Yarn 4.12.0 workspace monorepo with four packages:
 
 - **`@rwdocs/backstage-plugin-rw`** (frontend) — Renders RW docs in Backstage UI via `@rwdocs/viewer`
 - **`@rwdocs/backstage-plugin-rw-backend`** (backend) — Express-based API serving docs via `@rwdocs/core`
+- **`@rwdocs/backstage-plugin-search-backend-module-rw`** (search) — Indexes RW documentation for Backstage search via a collator module
 - **`@rwdocs/backstage-plugin-rw-common`** (common) — Shared utilities: entity path construction, annotation parsing, S3 config reading
 
 ## Commands
@@ -31,10 +32,12 @@ make format
 # Build a single plugin
 yarn workspace @rwdocs/backstage-plugin-rw run build
 yarn workspace @rwdocs/backstage-plugin-rw-backend run build
+yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run build
 
 # Lint a single plugin
 yarn workspace @rwdocs/backstage-plugin-rw run lint
 yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
+yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run lint
 ```
 
 Tests use `backstage-cli package test` (Jest). Note: `backstage-cli` forces `--watch` mode by default, ignoring jest config. Always pass `--watchAll=false` when running tests:
@@ -42,6 +45,7 @@ Tests use `backstage-cli package test` (Jest). Note: `backstage-cli` forces `--w
 ```bash
 yarn workspace @rwdocs/backstage-plugin-rw run test --watchAll=false
 yarn workspace @rwdocs/backstage-plugin-rw-backend run test --watchAll=false
+yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run test --watchAll=false
 ```
 
 ## Architecture
@@ -79,6 +83,17 @@ Key backend classes:
 - `GET /site/:namespace/:kind/:name/pages/:path(*)` — rendered page content (with path traversal protection)
 
 Middleware resolves the entity path from URL params to look up the corresponding `RwSite` from the Hub.
+
+### Search Collator Module (`plugins/search-backend-module-rw/`)
+
+Backstage backend module (`pluginId: "search"`, `moduleId: "rw-collator"`) that indexes RW documentation for search.
+
+Key classes:
+- **`RwDocsCollatorFactory`** — Implements `DocumentCollatorFactory`. Discovers entities annotated with `rwdocs.org/ref` via `catalogServiceRef` (paginated with `queryEntities`), creates `RwSite` instances to render pages, and emits `IndexableDocument` entries. Supports configurable result type (`search.collators.rw.type`, default `"rw"`), location URL template, and schedule.
+
+`module.ts` registers the collator with the search index via `searchIndexRegistryExtensionPoint` from `@backstage/plugin-search-backend-node/alpha`.
+
+Configuration schema defined in `config.d.ts`. Schedule defaults: every 10 minutes, 15-minute timeout, 3-second initial delay.
 
 ### Plugin Communication
 

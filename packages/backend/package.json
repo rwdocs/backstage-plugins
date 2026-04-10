@@ -22,7 +22,10 @@
     "@backstage/plugin-catalog-backend-module-scaffolder-entity-model": "^0.2.17",
     "@backstage/plugin-permission-backend": "^0.7.9",
     "@backstage/plugin-permission-backend-module-allow-all-policy": "^0.2.16",
+    "@backstage/plugin-search-backend": "^1.8.0",
+    "@backstage/plugin-search-backend-module-catalog": "^0.3.8",
     "@rwdocs/backstage-plugin-rw-backend": "workspace:*",
+    "@rwdocs/backstage-plugin-search-backend-module-rw": "workspace:*",
     "better-sqlite3": "^12.0.0"
   },
   "devDependencies": {
