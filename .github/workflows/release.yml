@@ -32,14 +32,23 @@ jobs:
         run: |
           yarn workspace @rwdocs/backstage-plugin-rw run lint
           yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
+          yarn workspace @rwdocs/backstage-plugin-rw-common run lint
+          yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run lint
 
       - name: Test
-        run: yarn workspace @rwdocs/backstage-plugin-rw-backend run test
+        run: |
+          yarn workspace @rwdocs/backstage-plugin-rw-backend run test --watchAll=false
+          yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run test --watchAll=false
 
       - name: Format check
         run: |
           yarn workspace @rwdocs/backstage-plugin-rw run format:check
           yarn workspace @rwdocs/backstage-plugin-rw-backend run format:check
+          yarn workspace @rwdocs/backstage-plugin-rw-common run format:check
+          yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run format:check
+
+      - name: Build common
+        run: yarn workspace @rwdocs/backstage-plugin-rw-common run build
 
       - name: Build frontend
         run: yarn workspace @rwdocs/backstage-plugin-rw run build
@@ -47,11 +56,20 @@ jobs:
       - name: Build backend
         run: yarn workspace @rwdocs/backstage-plugin-rw-backend run build
 
+      - name: Build search collator
+        run: yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run build
+
+      - name: Publish common to npm
+        run: yarn workspace @rwdocs/backstage-plugin-rw-common npm publish --provenance
+
       - name: Publish frontend to npm
         run: yarn workspace @rwdocs/backstage-plugin-rw npm publish --provenance
 
       - name: Publish backend to npm
         run: yarn workspace @rwdocs/backstage-plugin-rw-backend npm publish --provenance
+
+      - name: Publish search collator to npm
+        run: yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw npm publish --provenance
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
