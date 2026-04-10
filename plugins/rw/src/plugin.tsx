@@ -4,6 +4,8 @@ import {
   EntityContentBlueprint,
   EntityIconLinkBlueprint,
 } from "@backstage/plugin-catalog-react/alpha";
+import { SearchFilterResultTypeBlueprint } from "@backstage/plugin-search-react/alpha";
+import DocsIcon from "@material-ui/icons/Description";
 import { rwApiRef, RwClient } from "./api/RwClient";
 import { ANNOTATION_KEY } from "./components/constants";
 import { useRwDocsIconLinkProps } from "./hooks/useRwDocsIconLinkProps";
@@ -37,9 +39,17 @@ const rwEntityIconLink = EntityIconLinkBlueprint.make({
   },
 });
 
+const rwSearchResultType = SearchFilterResultTypeBlueprint.make({
+  params: {
+    value: "rw",
+    name: "Documentation",
+    icon: <DocsIcon />,
+  },
+});
+
 export const rwPlugin = createFrontendPlugin({
   pluginId: "rw",
-  extensions: [rwApi, rwEntityContent, rwEntityIconLink],
+  extensions: [rwApi, rwEntityContent, rwEntityIconLink, rwSearchResultType],
 });
 
 export default rwPlugin;
