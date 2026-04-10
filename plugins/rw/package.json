@@ -48,7 +48,7 @@
     "@backstage/catalog-model": "^1.7.6",
     "@material-ui/icons": "^4.11.3",
     "@rwdocs/backstage-plugin-rw-common": "workspace:^",
-    "@rwdocs/viewer": "^0.1.21"
+    "@rwdocs/viewer": "^0.1.23"
   },
   "peerDependencies": {
     "@backstage/core-components": "^0.18.0",
