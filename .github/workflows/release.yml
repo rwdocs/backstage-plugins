@@ -72,6 +72,6 @@ jobs:
         run: yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw npm publish --provenance
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
