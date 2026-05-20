@@ -1,6 +1,6 @@
 {
   "private": true,
-  "packageManager": "yarn@4.13.0",
+  "packageManager": "yarn@4.15.0",
   "scripts": {
     "dev": "concurrently \"yarn start\" \"yarn start-backend\"",
     "start": "yarn workspace app start",
