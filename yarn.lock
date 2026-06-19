@@ -7146,17 +7146,14 @@ __metadata:
     "@backstage/config": "npm:^1.3.6"
     "@backstage/errors": "npm:^1.2.7"
     "@backstage/types": "npm:^1.2.2"
-    "@jest/environment-jsdom-abstract": "npm:^30.2.0"
     "@rwdocs/backstage-plugin-rw-common": "workspace:^"
     "@rwdocs/core": "npm:^0.1.23"
     "@types/express": "npm:^4.17.0"
     "@types/jest": "npm:^30.0.0"
-    "@types/jsdom": "npm:^28"
     "@types/supertest": "npm:^7.2.0"
     express: "npm:^4.21.0"
     express-promise-router: "npm:^4.1.0"
     jest: "npm:^30.2.0"
-    jsdom: "npm:^29.0.0"
     prettier: "npm:^3.4.2"
     supertest: "npm:^7.2.2"
     typescript: "npm:^5.7.0"
@@ -8705,18 +8702,6 @@ __metadata:
     "@types/tough-cookie": "npm:*"
     parse5: "npm:^7.0.0"
   checksum: 10c0/c0c0025adc2b193e85453eeeea168bb909f0ebad08d6552be7474a407e9c163db8f696dcf1e3cbe8cb9c9d970ba45f4386171794509c1a0fe5d1fed72c91679d
-  languageName: node
-  linkType: hard
-
-"@types/jsdom@npm:^28":
-  version: 28.0.3
-  resolution: "@types/jsdom@npm:28.0.3"
-  dependencies:
-    "@types/node": "npm:*"
-    "@types/tough-cookie": "npm:*"
-    parse5: "npm:^8.0.0"
-    undici-types: "npm:^7.21.0"
-  checksum: 10c0/08b1cd61ee3e9610676be3c68a782a94667b86a5f73b8a262095d05f84c9e864fc11b25ae53450cd519a0abd46c202906a735bd61aa176257a981964bc5b1166
   languageName: node
   linkType: hard
 
@@ -23092,7 +23077,9 @@ __metadata:
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
     "@backstage/cli-defaults": "npm:^0.1.0"
+    "@jest/environment-jsdom-abstract": "npm:^30.2.0"
     concurrently: "npm:^10.0.0"
+    jsdom: "npm:^29.0.0"
   languageName: unknown
   linkType: soft
 
@@ -25361,13 +25348,6 @@ __metadata:
   version: 1.13.8
   resolution: "underscore@npm:1.13.8"
   checksum: 10c0/6677688daeda30484823e77c0b89ce4dcf29964a77d5a06f37299c007ab4bb1c66a0ff75e0d274620b62a1fe2a6ba29879f8214533ca611d71a1ae504f2bfc9b
-  languageName: node
-  linkType: hard
-
-"undici-types@npm:^7.21.0":
-  version: 7.22.0
-  resolution: "undici-types@npm:7.22.0"
-  checksum: 10c0/5e6f2513c41d07404c719eb7c1c499b8d4cde042f1269b3bc2be335f059e6ef53eb04f316696c728d5e8064c4d522b98f63d7ae8938adf6317351e07ae9c943e
   languageName: node
   linkType: hard
 
