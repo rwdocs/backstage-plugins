@@ -13,3 +13,6 @@ node_modules/
 /dist-types
 *.tsbuildinfo
 dist/
+
+# Persisted local dev backend database (better-sqlite3)
+/.data/
