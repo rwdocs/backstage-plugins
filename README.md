@@ -95,3 +95,10 @@ yarn install
 yarn workspace @rwdocs/backstage-plugin-rw run build
 yarn workspace @rwdocs/backstage-plugin-rw-backend run build
 ```
+
+Run the dev harness (frontend + backend) with `yarn dev`.
+
+The backend persists its SQLite database (catalog, search index, …) under a
+`.data/` directory at the repo root, so state survives restarts instead of being
+rebuilt from scratch each time. The directory is git-ignored. Delete it
+(`rm -rf .data`) for a clean database.

@@ -10,7 +10,13 @@ backend:
     dangerouslyDisableDefaultAuthPolicy: true
   database:
     client: better-sqlite3
-    connection: ':memory:'
+    connection:
+      # Persist the dev DB between runs (catalog, search index, …) instead of
+      # rebuilding from scratch on every start. Resolved relative to the backend
+      # process cwd (packages/backend), so ../../ points at the repo root.
+      # Backstage writes one <pluginId>.sqlite file per plugin in this directory.
+      # Remove the directory (rm -rf .data) for a clean database.
+      directory: ../../.data
   cors:
     origin: http://localhost:3000
     credentials: true
