@@ -1,4 +1,4 @@
-import { createFrontendPlugin, ApiBlueprint } from "@backstage/frontend-plugin-api";
+import { createFrontendPlugin, ApiBlueprint, FrontendPlugin } from "@backstage/frontend-plugin-api";
 import { createApiFactory, discoveryApiRef, fetchApiRef } from "@backstage/core-plugin-api";
 import {
   EntityContentBlueprint,
@@ -47,7 +47,7 @@ const rwSearchResultType = SearchFilterResultTypeBlueprint.make({
   },
 });
 
-export const rwPlugin = createFrontendPlugin({
+export const rwPlugin: FrontendPlugin = createFrontendPlugin({
   pluginId: "rw",
   extensions: [rwApi, rwEntityContent, rwEntityIconLink, rwSearchResultType],
 });
