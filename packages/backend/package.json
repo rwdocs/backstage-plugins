@@ -18,6 +18,7 @@
     "@backstage/plugin-app-backend": "^0.5.11",
     "@backstage/plugin-auth-backend": "^0.29.0",
     "@backstage/plugin-auth-backend-module-guest-provider": "^0.2.16",
+    "@backstage/plugin-auth-node": "^0.7.2",
     "@backstage/plugin-catalog-backend": "^3.4.0",
     "@backstage/plugin-catalog-backend-module-scaffolder-entity-model": "^0.2.17",
     "@backstage/plugin-permission-backend": "^0.7.9",

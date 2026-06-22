@@ -1,10 +1,18 @@
 import { createApiRef } from "@backstage/core-plugin-api";
 import type { DiscoveryApi, FetchApi } from "@backstage/core-plugin-api";
+import type {
+  CommentApiClient,
+  Comment,
+  CreateCommentRequest,
+  UpdateCommentRequest,
+} from "@rwdocs/viewer";
 
 export interface RwApi {
   getBaseUrl(): Promise<string>;
   getSiteBaseUrl(entityRef: string): Promise<string>;
   getFetch(): typeof fetch;
+  getCommentsEnabled(): Promise<boolean>;
+  createCommentClient(siteRef: string): CommentApiClient;
 }
 
 export const rwApiRef = createApiRef<RwApi>({ id: "plugin.rw.api" });
@@ -29,5 +37,58 @@ export class RwClient implements RwApi {
 
   getFetch(): typeof fetch {
     return this.fetchApi.fetch;
+  }
+
+  async getCommentsEnabled(): Promise<boolean> {
+    const base = await this.discoveryApi.getBaseUrl("rw");
+    const res = await this.fetchApi.fetch(`${base}/comments/config`);
+    if (!res.ok) return false;
+    const body = await res.json();
+    return Boolean(body.enabled);
+  }
+
+  createCommentClient(siteRef: string): CommentApiClient {
+    const json = async (res: Response) => {
+      if (!res.ok) throw new Error(`Comment request failed: ${res.status}`);
+      return res.json();
+    };
+    const baseUrl = () => this.discoveryApi.getBaseUrl("rw");
+    return {
+      list: async (documentId: string, opts?: { signal?: AbortSignal }): Promise<Comment[]> => {
+        const base = await baseUrl();
+        const q = new URLSearchParams({ siteRef, documentId });
+        return json(
+          await this.fetchApi.fetch(`${base}/comments?${q.toString()}`, { signal: opts?.signal }),
+        );
+      },
+      create: async (input: CreateCommentRequest): Promise<Comment> => {
+        const base = await baseUrl();
+        return json(
+          await this.fetchApi.fetch(`${base}/comments`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ siteRef, ...input }),
+          }),
+        );
+      },
+      update: async (id: string, input: UpdateCommentRequest): Promise<Comment> => {
+        const base = await baseUrl();
+        return json(
+          await this.fetchApi.fetch(`${base}/comments/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(input),
+          }),
+        );
+      },
+      delete: async (id: string): Promise<Comment> => {
+        const base = await baseUrl();
+        return json(
+          await this.fetchApi.fetch(`${base}/comments/${encodeURIComponent(id)}`, {
+            method: "DELETE",
+          }),
+        );
+      },
+    };
   }
 }

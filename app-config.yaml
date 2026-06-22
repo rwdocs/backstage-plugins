@@ -24,6 +24,15 @@ backend:
 auth:
   providers:
     guest: {}
+    alice: {}
+    bob: {}
+
+catalog:
+  rules:
+    - allow: [Component, Domain, System, Location, User, Group]
+  locations:
+    - type: file
+      target: ../../examples/entities.yaml
 
 rw:
   projectDir: ${RW_PROJECT_DIR}

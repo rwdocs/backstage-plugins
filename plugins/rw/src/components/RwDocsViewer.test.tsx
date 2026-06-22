@@ -36,6 +36,8 @@ function createMockRwApi(overrides?: Partial<RwApi>): RwApi {
         Promise.resolve(`http://localhost:7007/api/rw/site/${entityRef}`),
       ),
     getFetch: jest.fn().mockReturnValue(jest.fn()),
+    getCommentsEnabled: jest.fn().mockResolvedValue(false),
+    createCommentClient: jest.fn().mockReturnValue(undefined),
     ...overrides,
   };
 }
@@ -118,17 +120,6 @@ describe("RwDocsViewer", () => {
     });
   });
 
-  it("passes resolveSectionRefs to mountRw", async () => {
-    await renderViewer(createMockRwApi());
-
-    await waitFor(() => {
-      expect(mockMountRw).toHaveBeenCalledTimes(1);
-    });
-
-    const [, options] = mockMountRw.mock.calls[0];
-    expect(typeof options.resolveSectionRefs).toBe("function");
-  });
-
   it("overrides self sectionRef with current basePath in resolveSectionRefs", async () => {
     await renderViewer(createMockRwApi());
 
@@ -157,5 +148,37 @@ describe("RwDocsViewer", () => {
 
     unmount();
     expect(mockDestroy).toHaveBeenCalled();
+  });
+
+  it("passes comments to mountRw when the comments prop is provided", async () => {
+    const stubCommentClient = {
+      list: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    };
+
+    await renderInTestApp(
+      <TestApiProvider
+        apis={[
+          [rwApiRef, createMockRwApi()],
+          [catalogApiRef, mockCatalogApi],
+        ]}
+      >
+        <RwDocsViewer
+          apiBaseUrl={TEST_API_BASE_URL}
+          sectionRef={TEST_SOURCE_ENTITY_REF}
+          sourceEntityRef={TEST_SOURCE_ENTITY_REF}
+          comments={stubCommentClient as any}
+        />
+      </TestApiProvider>,
+    );
+
+    await waitFor(() => {
+      expect(mockMountRw).toHaveBeenCalledTimes(1);
+    });
+
+    const [, options] = mockMountRw.mock.calls[0];
+    expect(options).toHaveProperty("comments", stubCommentClient);
   });
 });
