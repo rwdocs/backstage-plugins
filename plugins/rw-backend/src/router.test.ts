@@ -1,3 +1,4 @@
+import * as http from "http";
 import { mockServices } from "@backstage/backend-test-utils";
 import express from "express";
 import request from "supertest";
@@ -9,26 +10,25 @@ jest.mock("@rwdocs/core");
 
 const mockCreateSite = createSite as jest.MockedFunction<typeof createSite>;
 
-function makeApp(hub: Hub) {
-  return createRouter({
+async function makeServer(hub: Hub): Promise<http.Server> {
+  const router = await createRouter({
     logger: mockServices.logger.mock(),
     httpAuth: mockServices.httpAuth.mock(),
     hub,
-  }).then((router) => {
-    const app = express().use(router);
-    app.use(
-      (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-        const statusByName: Record<string, number> = {
-          InputError: 400,
-          NotFoundError: 404,
-          ServiceUnavailableError: 503,
-        };
-        const status = statusByName[err.name] ?? 500;
-        res.status(status).json({ error: { name: err.name, message: err.message } });
-      },
-    );
-    return app;
   });
+  const app = express().use(router);
+  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    const statusByName: Record<string, number> = {
+      InputError: 400,
+      NotFoundError: 404,
+      ServiceUnavailableError: 503,
+    };
+    const status = statusByName[err.name] ?? 500;
+    res.status(status).json({ error: { name: err.name, message: err.message } });
+  });
+  const server = http.createServer(app);
+  await new Promise<void>((r) => server.listen(0, () => r()));
+  return server;
 }
 
 describe("createRouter", () => {
@@ -38,7 +38,7 @@ describe("createRouter", () => {
     reload: jest.fn(),
   };
 
-  let app: express.Express;
+  let server: http.Server;
 
   beforeAll(async () => {
     mockCreateSite.mockReturnValue(mockSite as any);
@@ -46,7 +46,11 @@ describe("createRouter", () => {
       projectDir: "/test/docs",
       entity: "component:default/test",
     });
-    app = await makeApp(hub);
+    server = await makeServer(hub);
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((r) => server.close(() => r()));
   });
 
   beforeEach(() => {
@@ -59,7 +63,7 @@ describe("createRouter", () => {
 
   describe("GET /health", () => {
     it("returns ok", async () => {
-      const res = await request(app).get("/health");
+      const res = await request(server).get("/health");
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ status: "ok" });
     });
@@ -67,7 +71,7 @@ describe("createRouter", () => {
 
   describe(`GET ${prefix}/config`, () => {
     it("returns config with liveReloadEnabled false", async () => {
-      const res = await request(app).get(`${prefix}/config`);
+      const res = await request(server).get(`${prefix}/config`);
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ liveReloadEnabled: false });
     });
@@ -78,7 +82,7 @@ describe("createRouter", () => {
 
     it("returns navigation with null scope when no query param", async () => {
       mockSite.getNavigation.mockResolvedValue(mockNav);
-      const res = await request(app).get(`${prefix}/navigation`);
+      const res = await request(server).get(`${prefix}/navigation`);
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockNav);
       expect(mockSite.getNavigation).toHaveBeenCalledWith(null);
@@ -86,7 +90,7 @@ describe("createRouter", () => {
 
     it("passes sectionRef query param to getNavigation", async () => {
       mockSite.getNavigation.mockResolvedValue(mockNav);
-      const res = await request(app).get(`${prefix}/navigation?sectionRef=api`);
+      const res = await request(server).get(`${prefix}/navigation?sectionRef=api`);
       expect(res.status).toBe(200);
       expect(mockSite.getNavigation).toHaveBeenCalledWith("api");
     });
@@ -97,7 +101,7 @@ describe("createRouter", () => {
 
     it("renders root page", async () => {
       mockSite.renderPage.mockResolvedValue(mockPage);
-      const res = await request(app).get(`${prefix}/pages/`);
+      const res = await request(server).get(`${prefix}/pages/`);
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockPage);
       expect(mockSite.renderPage).toHaveBeenCalledWith("");
@@ -105,26 +109,26 @@ describe("createRouter", () => {
 
     it("renders nested page", async () => {
       mockSite.renderPage.mockResolvedValue(mockPage);
-      const res = await request(app).get(`${prefix}/pages/getting-started`);
+      const res = await request(server).get(`${prefix}/pages/getting-started`);
       expect(res.status).toBe(200);
       expect(mockSite.renderPage).toHaveBeenCalledWith("getting-started");
     });
 
     it("rejects path traversal with 400", async () => {
-      const res = await request(app).get(`${prefix}/pages/a%2F..%2Fb`);
+      const res = await request(server).get(`${prefix}/pages/a%2F..%2Fb`);
       expect(res.status).toBe(400);
       expect(mockSite.renderPage).not.toHaveBeenCalled();
     });
 
     it("returns 404 when page not found", async () => {
       mockSite.renderPage.mockRejectedValue(new Error("Content not found"));
-      const res = await request(app).get(`${prefix}/pages/nonexistent`);
+      const res = await request(server).get(`${prefix}/pages/nonexistent`);
       expect(res.status).toBe(404);
     });
 
     it("returns 500 on unexpected render error", async () => {
       mockSite.renderPage.mockRejectedValue(new Error("disk read failed"));
-      const res = await request(app).get(`${prefix}/pages/broken`);
+      const res = await request(server).get(`${prefix}/pages/broken`);
       expect(res.status).toBe(500);
     });
 
@@ -141,7 +145,7 @@ describe("createRouter", () => {
       const mockScopedPage = { title: "Billing", content: "<p>Billing docs</p>" };
       mockSite.renderPage.mockResolvedValue(mockScopedPage);
 
-      await request(app).get(`${prefix}/pages/?sectionRef=domain:default/billing`);
+      await request(server).get(`${prefix}/pages/?sectionRef=domain:default/billing`);
       expect(mockSite.renderPage).toHaveBeenCalledWith("domains/billing");
     });
   });
@@ -149,21 +153,21 @@ describe("createRouter", () => {
   describe("storage errors", () => {
     it("returns 503 when getNavigation throws storage error", async () => {
       mockSite.getNavigation.mockRejectedValue(new Error("S3: storage unavailable"));
-      const res = await request(app).get(`${prefix}/navigation`);
+      const res = await request(server).get(`${prefix}/navigation`);
       expect(res.status).toBe(503);
       expect(res.body.error.name).toBe("ServiceUnavailableError");
     });
 
     it("returns 503 when renderPage throws storage error", async () => {
       mockSite.renderPage.mockRejectedValue(new Error("Storage error: S3: storage unavailable"));
-      const res = await request(app).get(`${prefix}/pages/guide`);
+      const res = await request(server).get(`${prefix}/pages/guide`);
       expect(res.status).toBe(503);
       expect(res.body.error.name).toBe("ServiceUnavailableError");
     });
 
     it("returns 503 when getNavigation throws on scope resolution", async () => {
       mockSite.getNavigation.mockRejectedValue(new Error("S3: storage unavailable"));
-      const res = await request(app).get(`${prefix}/pages/?sectionRef=domain:default/billing`);
+      const res = await request(server).get(`${prefix}/pages/?sectionRef=domain:default/billing`);
       expect(res.status).toBe(503);
       expect(res.body.error.name).toBe("ServiceUnavailableError");
     });
@@ -171,7 +175,7 @@ describe("createRouter", () => {
 
   describe("unknown entity ref", () => {
     it("returns 404 for non-existent entity", async () => {
-      const res = await request(app).get("/site/default/component/unknown/config");
+      const res = await request(server).get("/site/default/component/unknown/config");
       expect(res.status).toBe(404);
     });
   });

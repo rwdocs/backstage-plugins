@@ -52,5 +52,17 @@ export interface Config {
       /** Diagram rendering DPI. */
       dpi?: number;
     };
+    /**
+     * Inline/page comments in the embedded viewer.
+     */
+    comments?: {
+      /**
+       * Enable comments. The frontend reads this via GET /comments/config and
+       * gates client injection on it; the backend defaults it to true in code
+       * (this @default annotation is a docs/UI hint only — Backstage does not apply it).
+       * @default true
+       */
+      enabled?: boolean;
+    };
   };
 }

@@ -27,3 +27,76 @@ describe("RwClient", () => {
     });
   });
 });
+
+function makeClient() {
+  const fetchMock = jest.fn();
+  const discoveryApi = { getBaseUrl: jest.fn(async () => "http://backstage/api/rw") };
+  const fetchApi = { fetch: fetchMock };
+  const client = new RwClient({ discoveryApi: discoveryApi as any, fetchApi: fetchApi as any });
+  return { client, fetchMock };
+}
+
+describe("RwClient comment methods", () => {
+  it("getCommentsEnabled reads /comments/config", async () => {
+    const { client, fetchMock } = makeClient();
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ enabled: true }) });
+    await expect(client.getCommentsEnabled()).resolves.toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith("http://backstage/api/rw/comments/config");
+  });
+
+  it("getCommentsEnabled returns false (not throws) on a non-ok response", async () => {
+    const { client, fetchMock } = makeClient();
+    fetchMock.mockResolvedValue({ ok: false, status: 503 });
+    await expect(client.getCommentsEnabled()).resolves.toBe(false);
+  });
+
+  it("getCommentsEnabled propagates fetch rejection (caller is responsible for catching and degrading to disabled)", async () => {
+    const { client, fetchMock } = makeClient();
+    fetchMock.mockRejectedValue(new Error("network timeout"));
+    await expect(client.getCommentsEnabled()).rejects.toThrow("network timeout");
+  });
+
+  it("list() GETs /comments with siteRef + documentId", async () => {
+    const { client, fetchMock } = makeClient();
+    fetchMock.mockResolvedValue({ ok: true, json: async () => [] });
+    const cc = client.createCommentClient("component:default/arch");
+    await cc.list("section:default/root#guide");
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).toContain("/comments?");
+    expect(url).toContain("siteRef=component%3Adefault%2Farch");
+    expect(url).toContain("documentId=section%3Adefault%2Froot%23guide");
+  });
+
+  it("create() POSTs /comments with siteRef merged into the body", async () => {
+    const { client, fetchMock } = makeClient();
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ id: "c1" }) });
+    const cc = client.createCommentClient("component:default/arch");
+    await cc.create({ documentId: "d#p", body: "hi", selectors: [] } as any);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://backstage/api/rw/comments");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toMatchObject({
+      siteRef: "component:default/arch",
+      documentId: "d#p",
+      body: "hi",
+    });
+  });
+
+  it("update() PATCHes /comments/:id and delete() DELETEs it", async () => {
+    const { client, fetchMock } = makeClient();
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ id: "c1" }) });
+    const cc = client.createCommentClient("component:default/arch");
+    await cc.update("c1", { status: "resolved" });
+    expect(fetchMock.mock.calls[0][1].method).toBe("PATCH");
+    expect(fetchMock.mock.calls[0][0]).toBe("http://backstage/api/rw/comments/c1");
+    await cc.delete("c1");
+    expect(fetchMock.mock.calls[1][1].method).toBe("DELETE");
+  });
+
+  it("throws on a non-ok response", async () => {
+    const { client, fetchMock } = makeClient();
+    fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
+    const cc = client.createCommentClient("component:default/arch");
+    await expect(cc.list("d#p")).rejects.toThrow();
+  });
+});

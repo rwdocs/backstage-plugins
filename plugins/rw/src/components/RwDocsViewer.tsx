@@ -6,16 +6,22 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { rwApiRef } from "../api/RwClient";
 import { useSectionRefResolver } from "./useSectionRefResolver";
 import { mountRw } from "@rwdocs/viewer";
-import type { RwInstance } from "@rwdocs/viewer";
+import type { RwInstance, CommentApiClient } from "@rwdocs/viewer";
 import "@rwdocs/viewer/embed.css";
 
 interface RwDocsViewerProps {
   apiBaseUrl: string;
   sectionRef: string;
   sourceEntityRef: string;
+  comments?: CommentApiClient;
 }
 
-export function RwDocsViewer({ apiBaseUrl, sectionRef, sourceEntityRef }: RwDocsViewerProps) {
+export function RwDocsViewer({
+  apiBaseUrl,
+  sectionRef,
+  sourceEntityRef,
+  comments,
+}: RwDocsViewerProps) {
   const ref = useRef<HTMLDivElement>(null);
   const rwApi = useApi(rwApiRef);
   const theme = useTheme();
@@ -75,6 +81,7 @@ export function RwDocsViewer({ apiBaseUrl, sectionRef, sourceEntityRef }: RwDocs
             navigateRef.current(href, { replace: false });
           }
         },
+        ...(comments ? { comments } : {}),
       });
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
@@ -85,7 +92,7 @@ export function RwDocsViewer({ apiBaseUrl, sectionRef, sourceEntityRef }: RwDocs
       instanceRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiBaseUrl, sectionRef]);
+  }, [apiBaseUrl, sectionRef, comments]);
 
   useEffect(() => {
     instanceRef.current?.setColorScheme(theme.palette.type);

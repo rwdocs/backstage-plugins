@@ -98,7 +98,7 @@ async function renderPageOrThrow(site: RwSite, pagePath: string) {
   }
 }
 
-function toStorageError(err: unknown): ServiceUnavailableError {
+export function toStorageError(err: unknown): ServiceUnavailableError {
   const message = err instanceof Error ? err.message : String(err);
   return new ServiceUnavailableError(`Storage unavailable: ${message}`);
 }
