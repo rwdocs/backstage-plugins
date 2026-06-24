@@ -30,6 +30,11 @@
       "description": "Backstage pins TypeScript ~5.7"
     },
     {
+      "matchPackageNames": ["p-limit"],
+      "allowedVersions": "<4.0.0",
+      "description": "p-limit v4+ is pure ESM; our CommonJS backend plugin and Backstage's own backend packages stay on v3"
+    },
+    {
       "matchPackageNames": ["@material-ui/core", "@material-ui/icons"],
       "matchUpdateTypes": ["replacement"],
       "enabled": false,
