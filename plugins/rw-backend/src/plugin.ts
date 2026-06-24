@@ -2,7 +2,14 @@ import {
   coreServices,
   createBackendPlugin,
   resolvePackagePath,
+  readSchedulerServiceTaskScheduleDefinitionFromConfig,
 } from "@backstage/backend-plugin-api";
+import { SectionOwnershipStore } from "./siteIndex/SectionOwnershipStore";
+import { RegistryStore } from "./siteIndex/RegistryStore";
+import { SiteRefreshStore } from "./siteIndex/SiteRefreshStore";
+import { runScan } from "./siteIndex/runScan";
+import { runWorker } from "./siteIndex/runWorker";
+import { makeSiteFactory } from "./siteIndex/schedule";
 import { readDurationFromConfig } from "@backstage/config";
 import {
   readRwSiteConfig,
@@ -87,6 +94,40 @@ export const rwPlugin = createBackendPlugin({
           });
         }
         const store = new CommentStore(client);
+
+        const sectionOwnershipStore = new SectionOwnershipStore(client);
+        const registryStore = new RegistryStore(client);
+        const siteRefreshStore = new SiteRefreshStore(client);
+        const makeSite = makeSiteFactory(siteConfig);
+
+        const scanSchedule = config.has("rw.siteIndex.schedule")
+          ? readSchedulerServiceTaskScheduleDefinitionFromConfig(
+              config.getConfig("rw.siteIndex.schedule"),
+            )
+          : { frequency: { minutes: 15 }, timeout: { minutes: 10 }, initialDelay: { seconds: 30 } };
+        const workerSchedule = config.has("rw.siteIndex.worker")
+          ? readSchedulerServiceTaskScheduleDefinitionFromConfig(
+              config.getConfig("rw.siteIndex.worker"),
+            )
+          : { frequency: { seconds: 30 }, timeout: { minutes: 5 }, initialDelay: { seconds: 10 } };
+
+        await scheduler.scheduleTask({
+          id: "rw-site-index-scan",
+          scope: "global",
+          ...scanSchedule,
+          fn: async () =>
+            runScan({ catalog, auth, logger, siteConfig, sectionOwnershipStore, siteRefreshStore }),
+        });
+        await scheduler.scheduleTask({
+          id: "rw-site-index-worker",
+          scope: "local",
+          ...workerSchedule,
+          fn: async () => runWorker({ logger, siteRefreshStore, registryStore, makeSite }),
+        });
+        logger.info(
+          `Scheduled site index rebuild: scan ${JSON.stringify(scanSchedule.frequency)} (global), ` +
+            `worker ${JSON.stringify(workerSchedule.frequency)} (local)`,
+        );
 
         const commentsEnabled = config.getOptionalBoolean("rw.comments.enabled") ?? true;
 

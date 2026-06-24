@@ -64,5 +64,15 @@ export interface Config {
        */
       enabled?: boolean;
     };
+    /**
+     * Site index rebuild (catalog scan + per-site worker queue).
+     */
+    siteIndex?: {
+      /** Schedule for the catalog scan (producer). Parsed by
+       *  readSchedulerServiceTaskScheduleDefinitionFromConfig. Accepts HumanDuration / cron. */
+      schedule?: object;
+      /** Schedule for the worker tick (queue drain). Same parser as `schedule`. */
+      worker?: object;
+    };
   };
 }
