@@ -5,18 +5,18 @@ import type { CatalogService } from "@backstage/plugin-catalog-node";
 import type { DocumentCollatorFactory, IndexableDocument } from "@backstage/plugin-search-common";
 import type { Permission } from "@backstage/plugin-permission-common";
 import { catalogEntityReadPermission } from "@backstage/plugin-catalog-common/alpha";
-import { CATALOG_FILTER_EXISTS } from "@backstage/catalog-client";
 import { stringifyEntityRef } from "@backstage/catalog-model";
 import type { Entity } from "@backstage/catalog-model";
 import { createSite, type RwSite, type NavItemResponse } from "@rwdocs/core";
 import {
+  iterateAnnotatedEntities,
+  RW_ANNOTATION,
   parseAnnotation,
   toEntityPath,
   readRwSiteConfig,
   type RwSiteConfig,
 } from "@rwdocs/backstage-plugin-rw-common";
 
-const RW_ANNOTATION = "rwdocs.org/ref";
 const DEFAULT_LOCATION_TEMPLATE = "/catalog/:namespace/:kind/:name/docs/:path";
 
 function applyLocationTemplate(
@@ -92,34 +92,18 @@ export class RwDocsCollatorFactory implements DocumentCollatorFactory {
       : undefined;
 
     let docCount = 0;
-    let cursor: string | undefined;
 
-    do {
-      const response = await this.catalog.queryEntities(
-        cursor
-          ? { cursor }
-          : {
-              filter: {
-                [`metadata.annotations.${RW_ANNOTATION}`]: CATALOG_FILTER_EXISTS,
-              },
-            },
-        { credentials },
-      );
-
-      for (const entity of response.items) {
-        try {
-          for await (const doc of this.indexEntity(entity, localEntityPath)) {
-            docCount++;
-            yield doc;
-          }
-        } catch (err) {
-          const ref = stringifyEntityRef(entity);
-          this.logger.warn(`Failed to index entity ${ref}: ${err}`);
+    for await (const { entity } of iterateAnnotatedEntities(this.catalog, credentials)) {
+      try {
+        for await (const doc of this.indexEntity(entity, localEntityPath)) {
+          docCount++;
+          yield doc;
         }
+      } catch (err) {
+        const ref = stringifyEntityRef(entity);
+        this.logger.warn(`Failed to index entity ${ref}: ${err}`);
       }
-
-      cursor = response.pageInfo.nextCursor;
-    } while (cursor);
+    }
 
     this.logger.info(`RW docs indexing complete: ${docCount} documents indexed`);
   }

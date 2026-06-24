@@ -4,3 +4,4 @@ export type { ParsedAnnotation } from "./parseAnnotation";
 export { readRwSiteConfig } from "./config";
 export type { RwSiteConfig, S3Config, RwDiagramsConfig } from "./config";
 export * from "./permissions";
+export { iterateAnnotatedEntities, RW_ANNOTATION } from "./iterateAnnotatedEntities";
