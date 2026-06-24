@@ -7303,14 +7303,14 @@ __metadata:
   linkType: hard
 
 "@rwdocs/viewer@npm:^0.1.27":
-  version: 0.1.27
-  resolution: "@rwdocs/viewer@npm:0.1.27"
+  version: 0.1.28
+  resolution: "@rwdocs/viewer@npm:0.1.28"
   dependencies:
     "@fontsource/jetbrains-mono": "npm:^5.2.8"
     "@fontsource/roboto": "npm:^5.2.10"
     "@types/diff-match-patch": "npm:^1.0.36"
     diff-match-patch: "npm:^1.0.5"
-  checksum: 10c0/f162d74b33e2866fd0a1462f52836a2be29eb89edbc6f183f00bbfe6fcdfbd8c184fd1da84cfb8792fe72013de011805781cd719fd3315e58b6816a72f087f0f
+  checksum: 10c0/da18c4ae328fbb86863da61c20866292c07044374d141701dd3fdd117a46cb872779ec0ae7f0d1dacbe771d2ea335a9c9a06f53c6f970fb72734a2600fd6aaa9
   languageName: node
   linkType: hard
 
