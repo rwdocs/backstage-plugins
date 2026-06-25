@@ -27,4 +27,16 @@ describe("iterateAnnotatedEntities", () => {
     expect(calls[1].req).toEqual({ cursor: "c1" });
     expect(calls[0].opts).toEqual({ credentials: {} });
   });
+
+  it("yields nothing and stops after one page when the catalog is empty", async () => {
+    const catalog = {
+      queryEntities: jest.fn().mockResolvedValue({ items: [], pageInfo: {} }),
+    };
+    const out: string[] = [];
+    for await (const { entity: e } of iterateAnnotatedEntities(catalog as any, {} as any)) {
+      out.push(e.metadata.name);
+    }
+    expect(out).toEqual([]);
+    expect(catalog.queryEntities).toHaveBeenCalledTimes(1);
+  });
 });
