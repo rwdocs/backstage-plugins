@@ -111,8 +111,8 @@ export function createCommentsRouter(deps: CommentsRouterDeps): Router {
   /**
    * Read authorization is intentionally governed by the host `siteRef`'s read scope.
    * The host site entity governs all comment content it hosts — a caller who can read
-   * the site may read its comments, regardless of which section (entity_ref) a comment
-   * belongs to. The stored `entity_ref` is for future cross-section / entity-scoped
+   * the site may read its comments, regardless of which section (section_ref) a comment
+   * belongs to. The stored `section_ref` is for future cross-section / entity-scoped
    * querying (see `ListFilter`), not a security boundary. This is by design.
    */
   // Entity-read scope: caller must be able to read the host site entity.

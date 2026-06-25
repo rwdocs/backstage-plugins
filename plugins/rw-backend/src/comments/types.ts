@@ -11,7 +11,10 @@ export interface CommentRow {
   id: string;
   site_ref: string;
   document_id: string;
-  entity_ref: string;
+  /** the comment's canonical section ref, stored verbatim from document_id; a routing/filter hint
+   *  (and the future join key to the siteIndex `sections` table for owner derivation), never an
+   *  authorization input. */
+  section_ref: string;
   parent_id: string | null;
   author_ref: string;
   author_profile: string | null; // JSON AuthorProfile
@@ -37,21 +40,18 @@ export interface CreateCommentInput {
 
 export interface ListFilter {
   documentId?: string;
-  entityRef?: string;
+  sectionRef?: string;
   status?: CommentStatus;
   parentId?: string | null;
   topLevelOnly?: boolean;
 }
 
-const SECTION_ROOT = "section:default/root";
-
-/**
- * Compute the content-owning entity ref from a verbatim documentId + host siteRef.
- * Stored in `entity_ref` for future querying; not used as an authorization boundary
- * (read scope is determined by the host `siteRef` — see `assertSiteVisible` in router.ts).
- */
-export function computeEntityRef(documentId: string, siteRef: string): string {
+/** The section ref portion of a viewer documentId ("<sectionRef>#<subpath>"), verbatim.
+ *  rw-core already produced the canonical ref; no transformation/collapse. Total accessor
+ *  (no-'#' case returns the whole string); the router's `parseDocumentId` extracts the same
+ *  sectionRef prefix for well-formed ids but additionally rejects the no-/leading-'#' cases with
+ *  a 400 at the HTTP boundary — keep the two in sync if the format changes. */
+export function sectionRefOf(documentId: string): string {
   const i = documentId.indexOf("#");
-  const sectionRef = i === -1 ? documentId : documentId.slice(0, i);
-  return sectionRef === SECTION_ROOT ? siteRef : sectionRef;
+  return i === -1 ? documentId : documentId.slice(0, i);
 }

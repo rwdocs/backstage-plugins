@@ -1,13 +1,7 @@
 import type { Knex } from "knex";
 import { v7 as uuidv7 } from "uuid";
 import { renderCommentBody } from "@rwdocs/core";
-import {
-  CommentRow,
-  CommentStatus,
-  CreateCommentInput,
-  ListFilter,
-  computeEntityRef,
-} from "./types";
+import { CommentRow, CommentStatus, CreateCommentInput, ListFilter, sectionRefOf } from "./types";
 
 const TABLE = "comments";
 
@@ -20,7 +14,7 @@ export class CommentStore {
       id: uuidv7(),
       site_ref: siteRef,
       document_id: input.documentId,
-      entity_ref: computeEntityRef(input.documentId, siteRef),
+      section_ref: sectionRefOf(input.documentId),
       parent_id: input.parentId ?? null,
       author_ref: input.authorRef,
       author_profile: input.authorProfile ? JSON.stringify(input.authorProfile) : null,
@@ -64,15 +58,15 @@ export class CommentStore {
    * Site-scoped; ALWAYS excludes soft-deleted rows; ORDER BY created_at ASC.
    *
    * Forward hook: the router currently reads only by `documentId`. The additional
-   * `ListFilter` fields (`entityRef`, `status`, `parentId`, `topLevelOnly`) and the
-   * corresponding `entity_ref` column + `comments_entity_idx` index are intentional
+   * `ListFilter` fields (`sectionRef`, `status`, `parentId`, `topLevelOnly`) and the
+   * corresponding `section_ref` column + `comments_section_idx` index are intentional
    * forward hooks for the planned cross-section / entity-scoped querying direction (v1
    * design). They are not dead code.
    */
   async list(siteRef: string, filter: ListFilter): Promise<CommentRow[]> {
     const q = this.knex<CommentRow>(TABLE).where({ site_ref: siteRef }).whereNull("deleted_at");
     if (filter.documentId !== undefined) q.andWhere({ document_id: filter.documentId });
-    if (filter.entityRef !== undefined) q.andWhere({ entity_ref: filter.entityRef });
+    if (filter.sectionRef !== undefined) q.andWhere({ section_ref: filter.sectionRef });
     if (filter.status !== undefined) q.andWhere({ status: filter.status });
     if (filter.parentId !== undefined) q.andWhere({ parent_id: filter.parentId });
     if (filter.topLevelOnly) q.whereNull("parent_id");

@@ -14,7 +14,7 @@ describe("comments migration", () => {
       "id",
       "site_ref",
       "document_id",
-      "entity_ref",
+      "section_ref",
       "parent_id",
       "author_ref",
       "author_profile",
