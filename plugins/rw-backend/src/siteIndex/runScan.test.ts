@@ -95,6 +95,30 @@ describe("runScan", () => {
     expect(await knex("site_refresh").pluck("site_ref")).toEqual(["component:default/docs"]);
   });
 
+  it("skips foreign sites when projectDir mode constrains to onlySiteRef", async () => {
+    // projectDir mode: siteConfig.entity pins the site to component:default/docs.
+    // A foreign entity claims a different site (component:default/other); it must be ignored.
+    const catalog = catalogReturning([
+      ent("docs", ".", "group:default/owners"),
+      ent("foreign", "component:default/other", "group:default/other-owners"),
+    ]);
+    const projectDirDeps = {
+      ...deps(knex, catalog),
+      siteConfig: { projectDir: "/fake", entity: "component:default/docs" } as any,
+    };
+    await runScan(projectDirDeps);
+
+    // Only the configured site lands in site_refresh
+    const siteRefs = await knex("site_refresh").pluck("site_ref");
+    expect(siteRefs).toEqual(["component:default/docs"]);
+    expect(siteRefs).not.toContain("component:default/other");
+
+    // Only the configured site's ownership row lands in section_ownership
+    const ownershipSiteRefs = await knex("section_ownership").pluck("site_ref");
+    expect(ownershipSiteRefs.every((r: string) => r === "component:default/docs")).toBe(true);
+    expect(ownershipSiteRefs).not.toContain("component:default/other");
+  });
+
   it("does NOT prune a site whose per-site write failed", async () => {
     // Seed a site in the queue via a clean first scan.
     await runScan(deps(knex, catalogReturning([ent("docs", ".", "group:default/o")])));
