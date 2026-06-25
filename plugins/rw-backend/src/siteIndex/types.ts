@@ -6,12 +6,17 @@ export interface SectionOwnershipRow {
   entity_owner_ref: string | null;
 }
 
-/** A section registry row (written by the worker from listSections). */
+/** A dense section registry row (one per section, written by the worker from listSections + the
+ *  effective-ownership rollup). `section_path` is owner-relative (the claimer's prefix stripped),
+ *  and `entity_ref`/`entity_owner_ref` are the section's effective owner after nearest-ancestor
+ *  inheritance + site-root sentinel fallback. */
 export interface SectionRow {
   site_ref: string;
   section_ref: string;
   section_path: string;
   parent_section_ref: string | null;
+  entity_ref: string;
+  entity_owner_ref: string | null;
 }
 
 /** A page registry row (written by the worker from listPages). */
