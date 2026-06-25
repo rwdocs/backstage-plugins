@@ -99,4 +99,46 @@ describe("RwClient comment methods", () => {
     const cc = client.createCommentClient("component:default/arch");
     await expect(cc.list("d#p")).rejects.toThrow();
   });
+
+  it("getCommentInbox() GETs /comments/inbox and returns InboxResponse", async () => {
+    const { client, fetchMock } = makeClient();
+    const payload = {
+      built: true,
+      items: [{ commentId: "1" }],
+      pageInfo: {},
+      openCount: 1,
+      unansweredCount: 0,
+    };
+    fetchMock.mockResolvedValue({ ok: true, json: async () => payload });
+    const result = await client.getCommentInbox();
+    expect(fetchMock).toHaveBeenCalledWith("http://backstage/api/rw/comments/inbox");
+    expect(result).toEqual(payload);
+  });
+
+  it("getCommentInbox() throws on non-ok response", async () => {
+    const { client, fetchMock } = makeClient();
+    fetchMock.mockResolvedValue({ ok: false, status: 503 });
+    await expect(client.getCommentInbox()).rejects.toThrow("Inbox request failed: 503");
+  });
+
+  it("getCommentInbox({ filter, sort }) encodes both params and no cursor", async () => {
+    const { client, fetchMock } = makeClient();
+    const payload = { built: true, items: [], pageInfo: {}, openCount: 0, unansweredCount: 0 };
+    fetchMock.mockResolvedValue({ ok: true, json: async () => payload });
+    await client.getCommentInbox({ filter: "unanswered", sort: "oldest" });
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).toContain("filter=unanswered");
+    expect(url).toContain("sort=oldest");
+    expect(url).not.toContain("cursor=");
+  });
+
+  it("getCommentInbox({ cursor }) sends cursor only — filter/sort are dropped", async () => {
+    const { client, fetchMock } = makeClient();
+    const payload = { built: true, items: [], pageInfo: {}, openCount: 0, unansweredCount: 0 };
+    fetchMock.mockResolvedValue({ ok: true, json: async () => payload });
+    await client.getCommentInbox({ cursor: "ABC123", filter: "unanswered" });
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).toContain("cursor=ABC123");
+    expect(url).not.toContain("filter=");
+  });
 });

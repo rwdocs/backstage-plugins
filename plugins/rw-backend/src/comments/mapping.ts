@@ -1,6 +1,6 @@
-import { parseEntityRef } from "@backstage/catalog-model";
-import { CommentRow, AuthorProfile } from "./types";
+import { CommentRow } from "./types";
 import { toIso } from "./timestamps";
+import { authorFromRow } from "./author";
 
 export interface CommentResponse {
   id: string;
@@ -20,9 +20,6 @@ export interface CommentResponse {
 }
 
 export function toCommentResponse(row: CommentRow, callerRef: string | undefined): CommentResponse {
-  const profile: AuthorProfile | null = row.author_profile ? JSON.parse(row.author_profile) : null;
-  const name = profile?.displayName ?? parseEntityRef(row.author_ref).name;
-
   const isReply = row.parent_id !== null;
   const deleted = row.deleted_at !== null;
   const isAuthor = callerRef !== undefined && callerRef === row.author_ref;
@@ -31,11 +28,7 @@ export function toCommentResponse(row: CommentRow, callerRef: string | undefined
     id: row.id,
     documentId: row.document_id,
     ...(row.parent_id !== null ? { parentId: row.parent_id } : {}),
-    author: {
-      id: row.author_ref,
-      name,
-      ...(profile?.picture ? { avatarUrl: profile.picture } : {}),
-    },
+    author: authorFromRow(row),
     body: row.body,
     bodyHtml: row.body_html,
     selectors: JSON.parse(row.selectors),

@@ -70,4 +70,22 @@ describe("SiteRefreshStore", () => {
     await store.completeSuccess("b", "h", new Date(), new Date());
     expect(await store.allBuilt()).toBe(true);
   });
+
+  it("anyBuilt returns false for empty table", async () => {
+    expect(await store.anyBuilt()).toBe(false);
+  });
+
+  it("anyBuilt returns false when all rows have null last_built_at", async () => {
+    await store.upsertSite("a", new Date("2026-06-24T00:00:00Z"));
+    await store.upsertSite("b", new Date("2026-06-24T00:00:00Z"));
+    expect(await store.anyBuilt()).toBe(false);
+  });
+
+  it("anyBuilt returns true when at least one row has last_built_at (even if another is null)", async () => {
+    await store.upsertSite("a", new Date("2026-06-24T00:00:00Z"));
+    await store.upsertSite("b", new Date("2026-06-24T00:00:00Z"));
+    // only "a" is built; "b" still has null last_built_at
+    await store.completeSuccess("a", "h", new Date(), new Date());
+    expect(await store.anyBuilt()).toBe(true);
+  });
 });

@@ -1,5 +1,6 @@
 import { createApiRef } from "@backstage/core-plugin-api";
 import type { DiscoveryApi, FetchApi } from "@backstage/core-plugin-api";
+import type { InboxQuery, InboxResponse } from "@rwdocs/backstage-plugin-rw-common";
 import type {
   CommentApiClient,
   Comment,
@@ -7,11 +8,14 @@ import type {
   UpdateCommentRequest,
 } from "@rwdocs/viewer";
 
+export type { InboxItem, InboxQuery, InboxResponse } from "@rwdocs/backstage-plugin-rw-common";
+
 export interface RwApi {
   getBaseUrl(): Promise<string>;
   getSiteBaseUrl(entityRef: string): Promise<string>;
   getFetch(): typeof fetch;
   getCommentsEnabled(): Promise<boolean>;
+  getCommentInbox(query?: InboxQuery): Promise<InboxResponse>;
   createCommentClient(siteRef: string): CommentApiClient;
 }
 
@@ -45,6 +49,21 @@ export class RwClient implements RwApi {
     if (!res.ok) return false;
     const body = await res.json();
     return Boolean(body.enabled);
+  }
+
+  async getCommentInbox(query: InboxQuery = {}): Promise<InboxResponse> {
+    const base = await this.discoveryApi.getBaseUrl("rw");
+    const params = new URLSearchParams();
+    if (query.cursor) params.set("cursor", query.cursor);
+    else {
+      if (query.filter) params.set("filter", query.filter);
+      if (query.sort) params.set("sort", query.sort);
+    }
+    if (query.limit) params.set("limit", String(query.limit));
+    const qs = params.toString();
+    const res = await this.fetchApi.fetch(`${base}/comments/inbox${qs ? `?${qs}` : ""}`);
+    if (!res.ok) throw new Error(`Inbox request failed: ${res.status}`);
+    return res.json();
   }
 
   createCommentClient(siteRef: string): CommentApiClient {
