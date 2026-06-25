@@ -76,10 +76,19 @@ export class SiteRefreshStore {
     await this.knex(TABLE).where({ site_ref: siteRef }).update({ errors: message });
   }
 
-  /** True iff every queue row has been built at least once. */
+  /** True iff every queue row has been built at least once. Returns true for an empty table
+   *  (vacuous truth) — prefer anyBuilt() to test readiness. */
   async allBuilt(): Promise<boolean> {
     const [{ count }] = await this.knex(TABLE).whereNull("last_built_at").count({ count: "*" });
     return Number(count) === 0;
+  }
+
+  /** True iff at least one queue row has been built. Preferred over allBuilt() for the inbox
+   *  readiness check: avoids (a) empty-table false-positive and (b) one permanently-failing site
+   *  blocking the inbox for all users forever. */
+  async anyBuilt(): Promise<boolean> {
+    const [{ count }] = await this.knex(TABLE).whereNotNull("last_built_at").count({ count: "*" });
+    return Number(count) > 0;
   }
 
   /** Run fn in a single DB transaction (lets a caller atomically span multiple stores). */

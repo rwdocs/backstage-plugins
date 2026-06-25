@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "@backstage/catalog-model": "^1.7.6",
+    "@backstage/ui": "^0.16.0",
     "@material-ui/icons": "^4.11.3",
     "@rwdocs/backstage-plugin-rw-common": "workspace:^",
     "@rwdocs/viewer": "^0.1.27"

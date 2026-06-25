@@ -31,6 +31,13 @@ function createMockRwApi(overrides?: Partial<RwApi>): RwApi {
       ),
     getFetch: jest.fn().mockReturnValue(jest.fn()),
     getCommentsEnabled: jest.fn().mockResolvedValue(false),
+    getCommentInbox: jest.fn().mockResolvedValue({
+      built: false,
+      items: [],
+      pageInfo: {},
+      openCount: 0,
+      unansweredCount: 0,
+    }),
     createCommentClient: jest.fn().mockReturnValue(undefined),
     ...overrides,
   };

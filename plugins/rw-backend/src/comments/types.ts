@@ -11,8 +11,8 @@ export interface CommentRow {
   id: string;
   site_ref: string;
   document_id: string;
-  /** the comment's canonical section ref, stored verbatim from document_id; a routing/filter hint
-   *  (and the future join key to the siteIndex `sections` table for owner derivation), never an
+  /** the comment's canonical section ref, stored verbatim from document_id; join key for owner
+   *  derivation via siteIndex's `sections` table; a routing/filter hint, never an
    *  authorization input. */
   section_ref: string;
   parent_id: string | null;
@@ -54,4 +54,11 @@ export interface ListFilter {
 export function sectionRefOf(documentId: string): string {
   const i = documentId.indexOf("#");
   return i === -1 ? documentId : documentId.slice(0, i);
+}
+
+/** The subpath portion of a viewer documentId ("<sectionRef>#<subpath>").
+ *  Returns empty string when there is no "#". */
+export function subpathOf(documentId: string): string {
+  const i = documentId.indexOf("#");
+  return i === -1 ? "" : documentId.slice(i + 1);
 }

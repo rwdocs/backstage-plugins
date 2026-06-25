@@ -139,4 +139,25 @@ export class CommentStore {
     if (count === 0) return undefined;
     return this.get(id, { executor });
   }
+
+  /**
+   * Returns a map from parent_id → open reply count for a given set of
+   * top-level comment ids. Uses a single grouped query (no N+1).
+   * Only counts open, non-deleted replies.
+   */
+  async replyCountsFor(parentIds: string[]): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    if (!parentIds.length) return map;
+    const rows = await this.knex(TABLE)
+      .whereIn("parent_id", parentIds)
+      .andWhere("status", "open")
+      .whereNull("deleted_at")
+      .groupBy("parent_id")
+      .select("parent_id")
+      .count("id as cnt");
+    for (const row of rows) {
+      map.set(row.parent_id as string, Number(row.cnt));
+    }
+    return map;
+  }
 }

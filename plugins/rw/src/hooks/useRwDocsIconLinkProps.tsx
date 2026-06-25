@@ -1,6 +1,7 @@
 import DocsIcon from "@material-ui/icons/Description";
 import { useRouteRef } from "@backstage/core-plugin-api";
 import { entityRouteRef, useEntity } from "@backstage/plugin-catalog-react";
+import { entityDocsPath } from "../components/constants";
 
 const docsIcon = <DocsIcon />;
 
@@ -16,6 +17,6 @@ export function useRwDocsIconLinkProps() {
     label: "View Docs",
     disabled: !entityRoute,
     icon: docsIcon,
-    href: entityRoute ? `${entityRoute({ kind, namespace, name })}/docs` : "",
+    href: entityRoute ? entityDocsPath(entityRoute, { kind, namespace, name }) : "",
   };
 }

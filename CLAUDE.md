@@ -69,6 +69,41 @@ Two viewer components:
 - **`RwDocsViewer`** — Core component that mounts `@rwdocs/viewer` into a DOM ref, maintains two-way navigation sync between React Router and the RW viewer instance, and resolves cross-entity section refs. A `rwNavigatingRef` flag prevents infinite nav loops.
 - **`RwEntityDocsViewer`** — Wrapper for catalog entity pages. Reads the entity's `rwdocs.org/ref` annotation via `parseAnnotation` and passes the resolved API base URL and section ref to `RwDocsViewer`.
 
+#### Docs page (standalone, tabbed)
+
+The plugin also contributes a standalone **Docs** surface, built with the new
+Frontend System's native tabbed-page support:
+
+- **`rwDocsPage`** — a `PageBlueprint` (`name: "docs"` → extension id
+  `page:rw/docs`) mounted at **`/docs`**, `title: "Docs"`, icon `LibraryBooks`,
+  `routeRef: docsRouteRef`, with **no loader**. With no loader and ≥1 attached
+  sub-page, the framework renders the plugin header + a tab strip and redirects
+  bare `/docs` to the first tab. The sidebar nav item is auto-discovered from the
+  page's `title`/`icon`/`routeRef` (no nav-item extension — `NavItemBlueprint`
+  was removed in `@backstage/frontend-plugin-api` 0.17.0).
+- **`rwCommentsSubPage`** — a `SubPageBlueprint` (`name: "comments"` → id
+  `sub-page:rw/comments`) at **`/docs/comments`**, tab label "Comments", rendering
+  `CommentInboxPage` (the doc-comment inbox). It attaches to the page explicitly
+  by id (`attachTo: { id: "page:rw/docs", input: "pages" }`); the default
+  `relative` attachTo resolves to the un-named id `page:rw`, not the named
+  `page:rw/docs`, so the explicit id is required.
+
+**Configuring the route prefix.** The `/docs` path is the default and is
+overridable per Backstage instance via standard extension config — no custom
+schema. This matters because TechDocs also defaults to `/docs`; if both plugins
+are installed, override one:
+
+```yaml
+app:
+  extensions:
+    - page:rw/docs:
+        config:
+          path: /rwdocs
+```
+
+(The Comments tab's own path is likewise overridable via the `sub-page:rw/comments`
+extension config if ever needed.)
+
 ### Backend Plugin (`plugins/rw-backend/`)
 
 `plugin.ts` reads config (`rw.projectDir` or `rw.s3`, mutually exclusive) and creates a `Hub` for managing `RwSite` instances.

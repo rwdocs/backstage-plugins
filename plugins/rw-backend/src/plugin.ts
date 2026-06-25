@@ -23,6 +23,8 @@ import { CommentStore } from "./comments/CommentStore";
 import { createCommentsRouter } from "./comments/router";
 import { commentResourceRef, isCommentAuthor } from "./comments/permissions";
 import { toCommentResponse } from "./comments/mapping";
+import { InboxStore } from "./inbox/InboxStore";
+import { createInboxRouter } from "./inbox/inboxRouter";
 
 export const rwPlugin = createBackendPlugin({
   pluginId: "rw",
@@ -94,6 +96,7 @@ export const rwPlugin = createBackendPlugin({
           });
         }
         const store = new CommentStore(client);
+        const inboxStore = new InboxStore(client);
 
         const sectionOwnershipStore = new SectionOwnershipStore(client);
         const registryStore = new RegistryStore(client);
@@ -151,6 +154,20 @@ export const rwPlugin = createBackendPlugin({
           hub,
         });
         httpRouter.use(router);
+        // The inbox router MUST be mounted before the comments router: it owns the
+        // exact path `/comments/inbox`, which would otherwise be shadowed by the
+        // comments router's `/comments/:id` route (id="inbox" → 404) when comments
+        // are enabled, or its `/comments/*` catch-all (404) when disabled.
+        httpRouter.use(
+          createInboxRouter({
+            httpAuth,
+            permissions,
+            userInfo,
+            store: inboxStore,
+            commentStore: store,
+            siteRefreshStore,
+          }),
+        );
         httpRouter.use(
           createCommentsRouter({
             store,

@@ -1,4 +1,18 @@
-import { sectionRefOf } from "./types";
+import { sectionRefOf, subpathOf } from "./types";
+
+describe("subpathOf", () => {
+  it("returns the part after # when present", () => {
+    expect(subpathOf("section:default/root#guide")).toBe("guide");
+  });
+
+  it("returns empty string when no # is present", () => {
+    expect(subpathOf("section:default/root")).toBe("");
+  });
+
+  it("handles documentId with multiple # by slicing at the first one", () => {
+    expect(subpathOf("section:default/root#guide#extra")).toBe("guide#extra");
+  });
+});
 
 describe("sectionRefOf", () => {
   it("returns the section ref verbatim, including a non-default root namespace", () => {
@@ -7,7 +21,11 @@ describe("sectionRefOf", () => {
     expect(sectionRefOf("section:payments/root#x")).toBe("section:payments/root"); // no default-collapse
   });
 
-  it("returns the whole string when there is no '#' fragment (total accessor)", () => {
-    expect(sectionRefOf("system:default/payments")).toBe("system:default/payments");
+  it("returns the whole documentId when there is no fragment", () => {
+    expect(sectionRefOf("section:default/root")).toBe("section:default/root");
+  });
+
+  it("returns empty string when the documentId begins with the fragment separator", () => {
+    expect(sectionRefOf("#frag")).toBe("");
   });
 });

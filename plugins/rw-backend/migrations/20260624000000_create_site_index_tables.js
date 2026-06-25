@@ -11,8 +11,7 @@ exports.up = async function up(knex) {
   });
   // The `sections` table is dense (one row per section) and carries both structure
   // (parent_section_ref) and the effective-ownership rollup (entity_ref, entity_owner_ref, and an
-  // owner-relative section_path). The owner index is pre-positioned for the inbox's
-  // "sections owned by X" query (the consumer lands in a separate change).
+  // owner-relative section_path). The owner index serves the inbox's hot "sections owned by X" query.
   await knex.schema.createTable('sections', table => {
     table.text('site_ref').notNullable();
     table.text('section_ref').notNullable();
