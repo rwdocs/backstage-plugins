@@ -4,8 +4,10 @@ import { toEntityPath } from "@rwdocs/backstage-plugin-rw-common";
 import type { RwSite } from "@rwdocs/core";
 import type { SiteRefreshStore } from "./SiteRefreshStore";
 import type { RegistryStore } from "./RegistryStore";
+import type { SectionOwnershipStore } from "./SectionOwnershipStore";
 import type { SectionRow, PageRow } from "./types";
 import { registryHash } from "./registryHash";
+import { computeSectionRows } from "./effectiveOwnership";
 import { jitteredNextUpdate, BATCH_SIZE, CONCURRENCY, LEASE_MS, INTERVAL_MS } from "./schedule";
 
 function sortSections(rows: SectionRow[]): SectionRow[] {
@@ -21,11 +23,12 @@ export async function runWorker(deps: {
   logger: LoggerService;
   siteRefreshStore: SiteRefreshStore;
   registryStore: RegistryStore;
+  sectionOwnershipStore: Pick<SectionOwnershipStore, "listForSite">;
   makeSite: (entityPath: string) => Pick<RwSite, "listSections" | "listPages">;
   now?: () => Date;
   rng?: () => number;
 }): Promise<void> {
-  const { logger, siteRefreshStore, registryStore, makeSite } = deps;
+  const { logger, siteRefreshStore, registryStore, sectionOwnershipStore, makeSite } = deps;
   const now = deps.now ?? (() => new Date());
 
   const claimNow = now();
@@ -43,18 +46,16 @@ export async function runWorker(deps: {
       limit(async () => {
         try {
           const site = makeSite(toEntityPath(siteRef));
-          const [rawSections, rawPages] = await Promise.all([
+          // listForSite is independent of the doc-structure reads, so fetch all three together.
+          const [rawSections, rawPages, claims] = await Promise.all([
             site.listSections(),
             site.listPages(),
+            sectionOwnershipStore.listForSite(siteRef),
           ]);
-          const sections = sortSections(
-            rawSections.map((s) => ({
-              site_ref: siteRef,
-              section_ref: s.sectionRef,
-              section_path: s.path,
-              parent_section_ref: s.ancestors[0] ?? null, // ancestors is nearest-first; [0] is immediate parent
-            })),
-          );
+          // computeSectionRows folds the effective-ownership rollup into each dense section row.
+          // registryHash is order-sensitive (JSON.stringify) and listSections order is unspecified,
+          // so sort by section_ref for a stable hash.
+          const sections = sortSections(computeSectionRows(siteRef, rawSections, claims));
           const pages = sortPages(
             rawPages.map((p) => ({
               site_ref: siteRef,

@@ -16,4 +16,9 @@ export class SectionOwnershipStore {
     await exec(TABLE).where({ site_ref: siteRef }).del();
     if (links.length) await exec.batchInsert(TABLE, links, 500);
   }
+
+  /** Return all ownership links for `siteRef`. */
+  async listForSite(siteRef: string): Promise<SectionOwnershipRow[]> {
+    return this.knex(TABLE).where({ site_ref: siteRef }).select("*");
+  }
 }

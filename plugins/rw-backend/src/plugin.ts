@@ -122,7 +122,8 @@ export const rwPlugin = createBackendPlugin({
           id: "rw-site-index-worker",
           scope: "local",
           ...workerSchedule,
-          fn: async () => runWorker({ logger, siteRefreshStore, registryStore, makeSite }),
+          fn: async () =>
+            runWorker({ logger, siteRefreshStore, registryStore, sectionOwnershipStore, makeSite }),
         });
         logger.info(
           `Scheduled site index rebuild: scan ${JSON.stringify(scanSchedule.frequency)} (global), ` +

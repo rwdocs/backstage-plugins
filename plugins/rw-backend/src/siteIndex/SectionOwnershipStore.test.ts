@@ -44,4 +44,32 @@ describe("SectionOwnershipStore", () => {
     expect(rowA?.entity_ref).toBe("e3");
     expect(rowA?.entity_owner_ref).toBe("g3");
   });
+
+  it("listForSite returns only that site's claims", async () => {
+    const store = new SectionOwnershipStore(knex);
+    await store.swapSite("component:default/a", [
+      {
+        site_ref: "component:default/a",
+        section_ref: "section:default/x",
+        entity_ref: "e1",
+        entity_owner_ref: "o1",
+      },
+    ]);
+    await store.swapSite("component:default/b", [
+      {
+        site_ref: "component:default/b",
+        section_ref: "section:default/y",
+        entity_ref: "e2",
+        entity_owner_ref: null,
+      },
+    ]);
+    const rows = await store.listForSite("component:default/a");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual({
+      site_ref: "component:default/a",
+      section_ref: "section:default/x",
+      entity_ref: "e1",
+      entity_owner_ref: "o1",
+    });
+  });
 });
