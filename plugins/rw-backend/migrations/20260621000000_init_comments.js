@@ -5,7 +5,7 @@ exports.up = async function up(knex) {
     table.uuid('id').primary(); // uuid v7
     table.text('site_ref').notNullable();
     table.text('document_id').notNullable();
-    table.text('entity_ref').notNullable();
+    table.text('section_ref').notNullable();
     table.uuid('parent_id').nullable();
     table.text('author_ref').notNullable();
     table.text('author_profile').nullable(); // JSON {displayName, picture?}
@@ -21,7 +21,7 @@ exports.up = async function up(knex) {
     table.index(['site_ref', 'document_id'], 'comments_site_doc_idx');
     table.index(['site_ref', 'document_id', 'status'], 'comments_site_doc_status_idx');
     table.index(['parent_id'], 'comments_parent_idx');
-    table.index(['entity_ref'], 'comments_entity_idx');
+    table.index(['section_ref'], 'comments_section_idx');
   });
 };
 

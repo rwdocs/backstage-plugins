@@ -21,7 +21,7 @@ async function freshStore(databases: TestDatabases): Promise<{ store: CommentSto
 describe("CommentStore read core", () => {
   const databases = TestDatabases.create({ ids: ["SQLITE_3"] });
 
-  it("create stores a row, renders body_html, and computes entity_ref (root → site_ref)", async () => {
+  it("create stores a row, renders body_html, and stores section_ref verbatim", async () => {
     const { store } = await freshStore(databases);
     const row = await store.create(ARCH, {
       documentId: ROOT_DOC,
@@ -33,12 +33,12 @@ describe("CommentStore read core", () => {
     expect(row.id).toMatch(/[0-9a-f-]{36}/);
     expect(row.site_ref).toBe(ARCH);
     expect(row.document_id).toBe(ROOT_DOC);
-    expect(row.entity_ref).toBe(ARCH); // root → host
+    expect(row.section_ref).toBe("section:default/root"); // verbatim; old code collapsed root → site_ref (ARCH)
     expect(row.body_html).toBe("<p>hello</p>");
     expect(row.status).toBe("open");
   });
 
-  it("create computes entity_ref = sectionRef for an embedded section", async () => {
+  it("create stores section_ref verbatim for an embedded section", async () => {
     const { store } = await freshStore(databases);
     const row = await store.create(ARCH, {
       documentId: "domain:default/billing#overview",
@@ -46,7 +46,7 @@ describe("CommentStore read core", () => {
       body: "x",
       selectors: [],
     });
-    expect(row.entity_ref).toBe("domain:default/billing");
+    expect(row.section_ref).toBe("domain:default/billing");
   });
 
   it("list returns the full thread for a page, ORDER BY created_at ASC", async () => {

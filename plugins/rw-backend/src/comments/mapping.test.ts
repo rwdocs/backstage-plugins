@@ -6,7 +6,7 @@ function baseRow(over: Partial<CommentRow> = {}): CommentRow {
     id: "id1",
     site_ref: "component:default/arch",
     document_id: "section:default/root#guide",
-    entity_ref: "component:default/arch",
+    section_ref: "section:default/root",
     parent_id: null,
     author_ref: "user:default/alice",
     author_profile: JSON.stringify({ displayName: "Alice", picture: "http://a/x.png" }),
