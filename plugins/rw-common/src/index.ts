@@ -6,3 +6,6 @@ export type { RwSiteConfig, S3Config, RwDiagramsConfig } from "./config";
 export * from "./permissions";
 export { iterateAnnotatedEntities, RW_ANNOTATION } from "./iterateAnnotatedEntities";
 export type { InboxItem, InboxResponse, InboxQuery } from "./inboxTypes";
+export { buildCommentDeepLinkSuffix } from "./commentLink";
+export { RW_COMMENTS_TOPIC } from "./commentEvents";
+export type { CommentEventPayload, CommentEventKind, CommentEventAudience } from "./commentEvents";

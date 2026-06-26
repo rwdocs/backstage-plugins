@@ -9,6 +9,7 @@ import { AuthorizeResult } from "@backstage/plugin-permission-common";
 import type { PermissionsService } from "@backstage/backend-plugin-api";
 import { CommentStore } from "./CommentStore";
 import { createCommentsRouter } from "./router";
+import { CommentEventPublisher } from "./CommentEventPublisher";
 
 jest.mock("@rwdocs/core", () => ({
   renderCommentBody: jest.fn(async (md: string) => `<p>${md}</p>`),
@@ -844,6 +845,133 @@ describe("comments router", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ enabled: true });
   });
+
+  // ── Task 6: publisher wiring ─────────────────────────────────────────────
+
+  async function buildAppWithPublisher(publisher: CommentEventPublisher) {
+    const knex = await databases.init("SQLITE_3");
+    await knex.migrate.latest({
+      directory: resolvePackagePath("@rwdocs/backstage-plugin-rw-backend", "migrations"),
+    });
+    const store = new CommentStore(knex);
+
+    const app = express();
+    app.use(
+      createCommentsRouter({
+        store,
+        logger: mockServices.logger.mock(),
+        httpAuth: mockServices.httpAuth(),
+        auth: mockServices.auth(),
+        userInfo: mockServices.userInfo(),
+        permissions: mockServices.permissions(),
+        permissionsRegistry: mockServices.permissionsRegistry.mock(),
+        catalog: catalogServiceMock({
+          entities: [
+            {
+              apiVersion: "backstage.io/v1alpha1",
+              kind: "Component",
+              metadata: { name: "arch", namespace: "default" },
+            },
+          ],
+        }),
+        commentsEnabled: true,
+        publisher,
+      }),
+    );
+    app.use(
+      MiddlewareFactory.create({
+        logger: mockServices.logger.mock(),
+        config: mockServices.rootConfig(),
+      }).error(),
+    );
+
+    const server = http.createServer(app);
+    await new Promise<void>((r) => server.listen(0, () => r()));
+    servers.push(server);
+    return { server, store };
+  }
+
+  it("fire-and-forgets onCommentCreated after a successful create", async () => {
+    const onCommentCreated = jest.fn().mockResolvedValue(undefined);
+    const onCommentResolved = jest.fn().mockResolvedValue(undefined);
+    const publisher = { onCommentCreated, onCommentResolved } as unknown as CommentEventPublisher;
+    const { server } = await buildAppWithPublisher(publisher);
+
+    const res = await request(server)
+      .post("/comments")
+      .send({ siteRef: ARCH, documentId: DOC, body: "hello publisher", selectors: [] });
+    expect(res.status).toBe(201);
+
+    // Let the fire-and-forget settle before asserting
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(onCommentCreated).toHaveBeenCalledTimes(1);
+    const [rowArg, actorArg] = onCommentCreated.mock.calls[0];
+    expect(rowArg.parent_id).toBeNull();
+    expect(typeof actorArg).toBe("string");
+    expect(onCommentResolved).not.toHaveBeenCalled();
+  });
+
+  it("fire-and-forgets onCommentResolved after a resolve PATCH", async () => {
+    const onCommentCreated = jest.fn().mockResolvedValue(undefined);
+    const onCommentResolved = jest.fn().mockResolvedValue(undefined);
+    const publisher = { onCommentCreated, onCommentResolved } as unknown as CommentEventPublisher;
+    const { server, store } = await buildAppWithPublisher(publisher);
+
+    // Seed a top-level comment directly in the store
+    const row = await store.create(ARCH, {
+      documentId: DOC,
+      authorRef: "user:default/mock",
+      body: "to be resolved",
+      selectors: [],
+    });
+
+    const res = await request(server).patch(`/comments/${row.id}`).send({ status: "resolved" });
+    expect(res.status).toBe(200);
+
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(onCommentResolved).toHaveBeenCalledTimes(1);
+    const [resolvedRowArg, actorArg, resolverNameArg] = onCommentResolved.mock.calls[0];
+    expect(resolvedRowArg.id).toBe(row.id);
+    expect(typeof actorArg).toBe("string");
+    // resolverName is the third arg: string (display name) or undefined (if not resolvable)
+    expect(resolverNameArg === undefined || typeof resolverNameArg === "string").toBe(true);
+  });
+
+  it("does NOT call onCommentResolved on reopen (status:'open') or edit (body)", async () => {
+    const onCommentCreated = jest.fn().mockResolvedValue(undefined);
+    const onCommentResolved = jest.fn().mockResolvedValue(undefined);
+    const publisher = { onCommentCreated, onCommentResolved } as unknown as CommentEventPublisher;
+    const { server, store } = await buildAppWithPublisher(publisher);
+
+    // Seed a resolved top-level comment to reopen
+    const row = await store.create(ARCH, {
+      documentId: DOC,
+      authorRef: "user:default/mock",
+      body: "comment to test reopen/edit",
+      selectors: [],
+    });
+    await store.update(row.id, { status: "resolved", resolverRef: "user:default/mock" });
+
+    // Reopen
+    const reopenRes = await request(server).patch(`/comments/${row.id}`).send({ status: "open" });
+    expect(reopenRes.status).toBe(200);
+
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(onCommentResolved).not.toHaveBeenCalled();
+
+    // Edit (body change by author)
+    const editRes = await request(server)
+      .patch(`/comments/${row.id}`)
+      .send({ body: "edited body" });
+    expect(editRes.status).toBe(200);
+
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(onCommentResolved).not.toHaveBeenCalled();
+  });
+
+  // ── End Task 6: publisher wiring ─────────────────────────────────────────
 
   it("disabled app returns 404 on /comments and enabled:false on /comments/config", async () => {
     const knex = await databases.init("SQLITE_3");

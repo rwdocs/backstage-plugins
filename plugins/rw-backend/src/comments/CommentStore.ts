@@ -141,6 +141,33 @@ export class CommentStore {
   }
 
   /**
+   * Distinct author refs participating in a thread: the root comment plus its direct,
+   * non-deleted replies (threads are one level deep, so `rootId` is the parent of every
+   * reply). Used by the comment-event publisher to address commenter-side notifications.
+   * Order is stable (creation order) so notification recipient lists are deterministic.
+   */
+  async participantsOf(rootId: string): Promise<string[]> {
+    const rows = await this.knex(TABLE)
+      .where(function whereInThread(this: Knex.QueryBuilder) {
+        this.where("id", rootId).orWhere("parent_id", rootId);
+      })
+      .whereNull("deleted_at")
+      .orderBy("created_at", "asc")
+      .orderBy("id", "asc")
+      .select("author_ref");
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const row of rows) {
+      const ref = row.author_ref as string;
+      if (!seen.has(ref)) {
+        seen.add(ref);
+        out.push(ref);
+      }
+    }
+    return out;
+  }
+
+  /**
    * Returns a map from parent_id → open reply count for a given set of
    * top-level comment ids. Uses a single grouped query (no N+1).
    * Only counts open, non-deleted replies.

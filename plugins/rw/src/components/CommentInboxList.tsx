@@ -2,6 +2,7 @@ import { memo, useEffect, useRef } from "react";
 import { useRouteRef } from "@backstage/core-plugin-api";
 import { entityRouteRef, useEntityPresentation } from "@backstage/plugin-catalog-react";
 import { parseEntityRef } from "@backstage/catalog-model";
+import { buildCommentDeepLinkSuffix } from "@rwdocs/backstage-plugin-rw-common";
 import {
   Button,
   Card,
@@ -18,7 +19,6 @@ import type { ShowFilter, SortOrder } from "./useInboxFilters";
 import { useInboxFilters } from "./useInboxFilters";
 import { useInboxData } from "./useInboxData";
 import { bucketByActivity } from "./inboxBuckets";
-import { entityDocsPath } from "./constants";
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -168,8 +168,7 @@ const CommentInboxRow = memo(function CommentInboxRow({
 
   const entityTitle = useEntityPresentation(item.entityRef).primaryTitle;
 
-  const viewerSegment = item.viewerPath ? `/${item.viewerPath}` : "";
-  const href = `${entityDocsPath(entityRoute, parseEntityRef(item.entityRef))}${viewerSegment}#comment-${item.commentId}`;
+  const href = `${entityRoute(parseEntityRef(item.entityRef))}${buildCommentDeepLinkSuffix({ viewerPath: item.viewerPath, commentId: item.commentId })}`;
   const needsReply = item.replyCount <= 0;
 
   return (

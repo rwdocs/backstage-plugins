@@ -36,3 +36,24 @@ catalog:
 
 rw:
   projectDir: ${RW_PROJECT_DIR}
+
+notifications:
+  # Pre-declare the doc-comment topics so all three toggles appear in
+  # Settings → Notifications immediately (Backstage otherwise only lists a topic
+  # after the first notification carrying it is received). Origin id "plugin:rw"
+  # is the rw plugin's service-principal subject. Default-on (opt-out model):
+  # users disable individual topics in the UI.
+  defaultSettings:
+    channels:
+      - id: Web
+        enabled: true
+        origins:
+          - id: plugin:rw
+            enabled: true
+            topics:
+              - id: comment:thread:created
+                enabled: true
+              - id: comment:reply:created
+                enabled: true
+              - id: comment:thread:resolved
+                enabled: true

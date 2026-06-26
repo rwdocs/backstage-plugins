@@ -17,10 +17,14 @@ import {
   toEntityPath,
 } from "@rwdocs/backstage-plugin-rw-common";
 import { catalogServiceRef } from "@backstage/plugin-catalog-node";
+import { eventsServiceRef } from "@backstage/plugin-events-node";
 import { createRouter } from "./router";
 import { Hub, type HubOptions } from "./hub";
 import { CommentStore } from "./comments/CommentStore";
 import { createCommentsRouter } from "./comments/router";
+import { CommentEventPublisher } from "./comments/CommentEventPublisher";
+import { SectionsReader } from "./siteIndex/SectionsReader";
+import { PagesReader } from "./siteIndex/PagesReader";
 import { commentResourceRef, isCommentAuthor } from "./comments/permissions";
 import { toCommentResponse } from "./comments/mapping";
 import { InboxStore } from "./inbox/InboxStore";
@@ -42,6 +46,7 @@ export const rwPlugin = createBackendPlugin({
         userInfo: coreServices.userInfo,
         auth: coreServices.auth,
         catalog: catalogServiceRef,
+        events: eventsServiceRef,
       },
       async init({
         httpRouter,
@@ -55,6 +60,7 @@ export const rwPlugin = createBackendPlugin({
         userInfo,
         auth,
         catalog,
+        events,
       }) {
         const siteConfig = readRwSiteConfig(config);
         const cacheSize = config.getOptionalNumber("rw.cacheSize");
@@ -101,6 +107,15 @@ export const rwPlugin = createBackendPlugin({
         const sectionOwnershipStore = new SectionOwnershipStore(client);
         const registryStore = new RegistryStore(client);
         const siteRefreshStore = new SiteRefreshStore(client);
+        const sectionsReader = new SectionsReader(client);
+        const pagesReader = new PagesReader(client);
+        const publisher = new CommentEventPublisher({
+          events,
+          sections: sectionsReader,
+          comments: store,
+          logger,
+          pages: pagesReader,
+        });
         const makeSite = makeSiteFactory(siteConfig);
 
         const scanSchedule = config.has("rw.siteIndex.schedule")
@@ -179,6 +194,7 @@ export const rwPlugin = createBackendPlugin({
             permissionsRegistry,
             catalog,
             commentsEnabled,
+            publisher,
           }),
         );
         httpRouter.addAuthPolicy({
