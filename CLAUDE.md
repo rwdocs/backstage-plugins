@@ -4,12 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Backstage plugins for embedding RW documentation sites. Yarn 4.12.0 workspace monorepo with four packages:
+Backstage plugins for embedding RW documentation sites. Yarn 4.12.0 workspace monorepo with five packages:
 
 - **`@rwdocs/backstage-plugin-rw`** (frontend) — Renders RW docs in Backstage UI via `@rwdocs/viewer`
 - **`@rwdocs/backstage-plugin-rw-backend`** (backend) — Express-based API serving docs via `@rwdocs/core`
 - **`@rwdocs/backstage-plugin-search-backend-module-rw`** (search) — Indexes RW documentation for Backstage search via a collator module
 - **`@rwdocs/backstage-plugin-rw-common`** (common) — Shared utilities: entity path construction, annotation parsing, S3 config reading
+- **`@rwdocs/backstage-plugin-rw-backend-module-notifications`** (notifications) — Opt-in backend module: subscribes to `rw.comments` events and delivers doc-comment notifications via the native notifications plugin
 
 ## Commands
 

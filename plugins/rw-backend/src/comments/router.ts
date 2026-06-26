@@ -34,6 +34,7 @@ import type { CommentResponse } from "./mapping";
 import { resolveAuthor } from "./author";
 import { logCommentOp } from "./logging";
 import { commentResourceRef } from "./permissions";
+import type { CommentEventPublisher } from "./CommentEventPublisher";
 
 const MAX_BODY_BYTES = 16 * 1024;
 
@@ -60,6 +61,9 @@ export interface CommentsRouterDeps {
   permissionsRegistry: PermissionsRegistryService;
   catalog: CatalogService;
   commentsEnabled: boolean;
+  /** Optional: when present, comment create/resolve fire-and-forget a domain event.
+   *  Absent in tests that don't exercise notifications. */
+  publisher?: CommentEventPublisher;
 }
 
 /** Split a viewer documentId; throws InputError(400) on a non-string, missing or leading '#'. */
@@ -216,6 +220,7 @@ export function createCommentsRouter(deps: CommentsRouterDeps): Router {
     });
     logCommentOp(logger, { kind: "mutation", op: "create", siteRef, commentId: row.id, parentId });
     res.status(201).json(toCommentResponse(row, authorRef));
+    void deps.publisher?.onCommentCreated(row, authorRef);
   });
 
   router.get("/comments/:id", async (req, res) => {
@@ -350,6 +355,19 @@ export function createCommentsRouter(deps: CommentsRouterDeps): Router {
       commentId: row.id,
     });
     res.json(toCommentResponse(updated!, userRef));
+    // Notify participants only on resolve; reopens/edits aren't a thread-ending event worth a push (spec §6 noise model).
+    if (status === "resolved") {
+      // Resolve the display name of the resolver (best-effort; falls back to parsed entity name).
+      const resolverName = await resolveAuthor({
+        userInfo: deps.userInfo,
+        auth: deps.auth,
+        catalog,
+        credentials,
+      })
+        .then((a) => a.authorProfile?.displayName ?? undefined)
+        .catch(() => undefined);
+      void deps.publisher?.onCommentResolved(updated!, userRef, resolverName);
+    }
   });
 
   router.delete("/comments/:id", async (req, res) => {

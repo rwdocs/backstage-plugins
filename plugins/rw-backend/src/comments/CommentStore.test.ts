@@ -270,3 +270,64 @@ describe("CommentStore mutations", () => {
     expect(winners[0]!.deleted_at).not.toBeNull();
   });
 });
+
+describe("participantsOf", () => {
+  const databases = TestDatabases.create({ ids: ["SQLITE_3"] });
+
+  it("returns distinct authors across the root and its replies", async () => {
+    const { store } = await freshStore(databases);
+    const root = await store.create("component:default/s", {
+      documentId: "sec#a",
+      authorRef: "user:default/alice",
+      body: "root",
+      selectors: [],
+    });
+    await store.create("component:default/s", {
+      documentId: "sec#a",
+      parentId: root.id,
+      authorRef: "user:default/bob",
+      body: "reply 1",
+      selectors: [],
+    });
+    await store.create("component:default/s", {
+      documentId: "sec#a",
+      parentId: root.id,
+      authorRef: "user:default/alice", // duplicate author — must dedupe
+      body: "reply 2",
+      selectors: [],
+    });
+    const participants = await store.participantsOf(root.id);
+    // creation order: alice (root) then bob (reply); alice's later reply is deduped
+    expect(participants).toEqual(["user:default/alice", "user:default/bob"]);
+  });
+
+  it("returns just the root author for a reply-less thread", async () => {
+    const { store } = await freshStore(databases);
+    const root = await store.create("component:default/s", {
+      documentId: "sec#a",
+      authorRef: "user:default/alice",
+      body: "root",
+      selectors: [],
+    });
+    expect(await store.participantsOf(root.id)).toEqual(["user:default/alice"]);
+  });
+
+  it("excludes soft-deleted replies' authors", async () => {
+    const { store } = await freshStore(databases);
+    const root = await store.create("component:default/s", {
+      documentId: "sec#a",
+      authorRef: "user:default/alice",
+      body: "root",
+      selectors: [],
+    });
+    const reply = await store.create("component:default/s", {
+      documentId: "sec#a",
+      parentId: root.id,
+      authorRef: "user:default/carol",
+      body: "reply",
+      selectors: [],
+    });
+    await store.softDelete(reply.id);
+    expect(await store.participantsOf(root.id)).toEqual(["user:default/alice"]);
+  });
+});
