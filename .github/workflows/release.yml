@@ -26,59 +26,22 @@ jobs:
         run: yarn install --immutable
 
       - name: Type-check
-        run: npx tsc --project tsconfig.json
+        run: yarn typecheck
 
       - name: Lint
-        run: |
-          yarn workspace @rwdocs/backstage-plugin-rw run lint
-          yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
-          yarn workspace @rwdocs/backstage-plugin-rw-common run lint
-          yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run lint
-          yarn workspace @rwdocs/backstage-plugin-rw-backend-module-notifications run lint
+        run: yarn lint
 
       - name: Test
-        run: |
-          yarn workspace @rwdocs/backstage-plugin-rw-backend run test --watchAll=false
-          yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run test --watchAll=false
-          yarn workspace @rwdocs/backstage-plugin-rw-backend-module-notifications run test --watchAll=false
+        run: yarn test
 
       - name: Format check
-        run: |
-          yarn workspace @rwdocs/backstage-plugin-rw run format:check
-          yarn workspace @rwdocs/backstage-plugin-rw-backend run format:check
-          yarn workspace @rwdocs/backstage-plugin-rw-common run format:check
-          yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run format:check
-          yarn workspace @rwdocs/backstage-plugin-rw-backend-module-notifications run format:check
+        run: yarn format:check
 
-      - name: Build common
-        run: yarn workspace @rwdocs/backstage-plugin-rw-common run build
+      - name: Build
+        run: yarn build
 
-      - name: Build frontend
-        run: yarn workspace @rwdocs/backstage-plugin-rw run build
-
-      - name: Build backend
-        run: yarn workspace @rwdocs/backstage-plugin-rw-backend run build
-
-      - name: Build search collator
-        run: yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run build
-
-      - name: Build notifications module
-        run: yarn workspace @rwdocs/backstage-plugin-rw-backend-module-notifications run build
-
-      - name: Publish common to npm
-        run: yarn workspace @rwdocs/backstage-plugin-rw-common npm publish --provenance
-
-      - name: Publish frontend to npm
-        run: yarn workspace @rwdocs/backstage-plugin-rw npm publish --provenance
-
-      - name: Publish backend to npm
-        run: yarn workspace @rwdocs/backstage-plugin-rw-backend npm publish --provenance
-
-      - name: Publish search collator to npm
-        run: yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw npm publish --provenance
-
-      - name: Publish notifications module to npm
-        run: yarn workspace @rwdocs/backstage-plugin-rw-backend-module-notifications npm publish --provenance
+      - name: Publish to npm
+        run: yarn publish:all
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
