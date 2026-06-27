@@ -141,4 +141,24 @@ describe("RwClient comment methods", () => {
     expect(url).toContain("cursor=ABC123");
     expect(url).not.toContain("filter=");
   });
+
+  it("createCommentClient stays on the documentId viewer wire", async () => {
+    const { client, fetchMock } = makeClient();
+    fetchMock.mockResolvedValue({ ok: true, json: async () => [] });
+    const comments = client.createCommentClient("site:default/x");
+
+    await comments.list("section:default/root#guide");
+    const listUrl = new URL(fetchMock.mock.calls[0][0] as string);
+    expect(listUrl.searchParams.get("documentId")).toBe("section:default/root#guide");
+
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ id: "c1" }) });
+    await comments.create({
+      siteRef: "site:default/x",
+      documentId: "section:default/root#guide",
+      body: "hi",
+      selectors: [],
+    } as any);
+    const body = JSON.parse(fetchMock.mock.calls[1][1].body);
+    expect(body.documentId).toBe("section:default/root#guide");
+  });
 });

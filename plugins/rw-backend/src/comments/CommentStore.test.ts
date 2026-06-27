@@ -9,7 +9,7 @@ jest.mock("@rwdocs/core", () => ({
 }));
 
 const ARCH = "component:default/arch";
-const ROOT_DOC = "section:default/root#guide/intro";
+const ROOT_PAGE = "section:default/root#guide/intro";
 
 async function freshStore(databases: TestDatabases): Promise<{ store: CommentStore; knex: Knex }> {
   const knex = await databases.init("SQLITE_3");
@@ -24,7 +24,7 @@ describe("CommentStore read core", () => {
   it("create stores a row, renders body_html, and stores section_ref verbatim", async () => {
     const { store } = await freshStore(databases);
     const row = await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       authorRef: "user:default/alice",
       authorProfile: { displayName: "Alice" },
       body: "hello",
@@ -32,7 +32,7 @@ describe("CommentStore read core", () => {
     });
     expect(row.id).toMatch(/[0-9a-f-]{36}/);
     expect(row.site_ref).toBe(ARCH);
-    expect(row.document_id).toBe(ROOT_DOC);
+    expect(row.page_ref).toBe(ROOT_PAGE);
     expect(row.section_ref).toBe("section:default/root"); // verbatim; old code collapsed root → site_ref (ARCH)
     expect(row.body_html).toBe("<p>hello</p>");
     expect(row.status).toBe("open");
@@ -41,7 +41,7 @@ describe("CommentStore read core", () => {
   it("create stores section_ref verbatim for an embedded section", async () => {
     const { store } = await freshStore(databases);
     const row = await store.create(ARCH, {
-      documentId: "domain:default/billing#overview",
+      pageRef: "domain:default/billing#overview",
       authorRef: "user:default/alice",
       body: "x",
       selectors: [],
@@ -52,36 +52,36 @@ describe("CommentStore read core", () => {
   it("list returns the full thread for a page, ORDER BY created_at ASC", async () => {
     const { store } = await freshStore(databases);
     const a = await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       authorRef: "user:default/a",
       body: "1",
       selectors: [],
     });
     const b = await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       authorRef: "user:default/b",
       body: "2",
       selectors: [],
     });
-    const rows = await store.list(ARCH, { documentId: ROOT_DOC });
+    const rows = await store.list(ARCH, { pageRef: ROOT_PAGE });
     expect(rows.map((r) => r.id)).toEqual([a.id, b.id]);
   });
 
   it("list scopes by site_ref (synthetic-root collision avoided)", async () => {
     const { store } = await freshStore(databases);
     await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       authorRef: "user:default/a",
       body: "arch",
       selectors: [],
     });
     await store.create("component:default/other", {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       authorRef: "user:default/a",
       body: "other",
       selectors: [],
     });
-    const rows = await store.list(ARCH, { documentId: ROOT_DOC });
+    const rows = await store.list(ARCH, { pageRef: ROOT_PAGE });
     expect(rows).toHaveLength(1);
     expect(rows[0].body).toBe("arch");
   });
@@ -90,13 +90,13 @@ describe("CommentStore read core", () => {
     const { store, knex } = await freshStore(databases);
     const t = new Date("2024-01-01T00:00:00.000Z");
     const a = await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       authorRef: "user:default/a",
       body: "first",
       selectors: [],
     });
     const b = await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       authorRef: "user:default/b",
       body: "second",
       selectors: [],
@@ -104,14 +104,14 @@ describe("CommentStore read core", () => {
     // Force identical created_at so only the id tiebreaker determines order.
     await knex("comments").where({ id: a.id }).update({ created_at: t });
     await knex("comments").where({ id: b.id }).update({ created_at: t });
-    const rows = await store.list(ARCH, { documentId: ROOT_DOC });
+    const rows = await store.list(ARCH, { pageRef: ROOT_PAGE });
     expect(rows.map((r) => r.id)).toEqual([a.id, b.id]); // uuid v7 is time-ordered, a was created first
   });
 
   it("get returns by global id without a siteRef", async () => {
     const { store } = await freshStore(databases);
     const row = await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       authorRef: "user:default/a",
       body: "x",
       selectors: [],
@@ -128,7 +128,7 @@ describe("CommentStore mutations", () => {
   it("resolve stamps resolved_at + resolved_by; reopen clears both", async () => {
     const { store } = await freshStore(databases);
     const c = await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       authorRef: "user:default/a",
       body: "x",
       selectors: [],
@@ -151,7 +151,7 @@ describe("CommentStore mutations", () => {
   it("idempotent re-resolve keeps the original resolved_at/resolved_by", async () => {
     const { store } = await freshStore(databases);
     const c = await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       authorRef: "user:default/a",
       body: "x",
       selectors: [],
@@ -168,7 +168,7 @@ describe("CommentStore mutations", () => {
   it("a body change re-renders body_html and bumps updated_at", async () => {
     const { store } = await freshStore(databases);
     const c = await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       authorRef: "user:default/a",
       body: "x",
       selectors: [],
@@ -192,23 +192,23 @@ describe("CommentStore mutations", () => {
   it("softDelete sets deleted_at (and list excludes it); restore clears it", async () => {
     const { store } = await freshStore(databases);
     const reply = await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       parentId: "p",
       authorRef: "user:default/a",
       body: "r",
       selectors: [],
     });
     await store.softDelete(reply.id);
-    expect(await store.list(ARCH, { documentId: ROOT_DOC })).toHaveLength(0);
+    expect(await store.list(ARCH, { pageRef: ROOT_PAGE })).toHaveLength(0);
     const restored = await store.restore(reply.id);
     expect(restored?.deleted_at).toBeNull();
-    expect(await store.list(ARCH, { documentId: ROOT_DOC })).toHaveLength(1);
+    expect(await store.list(ARCH, { pageRef: ROOT_PAGE })).toHaveLength(1);
   });
 
   it("softDelete on an already-deleted row returns undefined and does not bump updated_at", async () => {
     const { store } = await freshStore(databases);
     const reply = await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       parentId: "p",
       authorRef: "user:default/a",
       body: "r",
@@ -232,7 +232,7 @@ describe("CommentStore mutations", () => {
   it("restore on a non-deleted row returns undefined", async () => {
     const { store } = await freshStore(databases);
     const reply = await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       parentId: "p",
       authorRef: "user:default/a",
       body: "r",
@@ -244,7 +244,7 @@ describe("CommentStore mutations", () => {
   it("two racing soft-deletes: exactly one wins, the other sees undefined", async () => {
     const { store } = await freshStore(databases);
     const reply = await store.create(ARCH, {
-      documentId: ROOT_DOC,
+      pageRef: ROOT_PAGE,
       parentId: "p",
       authorRef: "user:default/a",
       body: "r",
@@ -277,20 +277,20 @@ describe("participantsOf", () => {
   it("returns distinct authors across the root and its replies", async () => {
     const { store } = await freshStore(databases);
     const root = await store.create("component:default/s", {
-      documentId: "sec#a",
+      pageRef: "sec#a",
       authorRef: "user:default/alice",
       body: "root",
       selectors: [],
     });
     await store.create("component:default/s", {
-      documentId: "sec#a",
+      pageRef: "sec#a",
       parentId: root.id,
       authorRef: "user:default/bob",
       body: "reply 1",
       selectors: [],
     });
     await store.create("component:default/s", {
-      documentId: "sec#a",
+      pageRef: "sec#a",
       parentId: root.id,
       authorRef: "user:default/alice", // duplicate author — must dedupe
       body: "reply 2",
@@ -304,7 +304,7 @@ describe("participantsOf", () => {
   it("returns just the root author for a reply-less thread", async () => {
     const { store } = await freshStore(databases);
     const root = await store.create("component:default/s", {
-      documentId: "sec#a",
+      pageRef: "sec#a",
       authorRef: "user:default/alice",
       body: "root",
       selectors: [],
@@ -315,13 +315,13 @@ describe("participantsOf", () => {
   it("excludes soft-deleted replies' authors", async () => {
     const { store } = await freshStore(databases);
     const root = await store.create("component:default/s", {
-      documentId: "sec#a",
+      pageRef: "sec#a",
       authorRef: "user:default/alice",
       body: "root",
       selectors: [],
     });
     const reply = await store.create("component:default/s", {
-      documentId: "sec#a",
+      pageRef: "sec#a",
       parentId: root.id,
       authorRef: "user:default/carol",
       body: "reply",

@@ -9,7 +9,7 @@ describe("subpathOf", () => {
     expect(subpathOf("section:default/root")).toBe("");
   });
 
-  it("handles documentId with multiple # by slicing at the first one", () => {
+  it("handles pageRef with multiple # by slicing at the first one", () => {
     expect(subpathOf("section:default/root#guide#extra")).toBe("guide#extra");
   });
 });
@@ -21,11 +21,11 @@ describe("sectionRefOf", () => {
     expect(sectionRefOf("section:payments/root#x")).toBe("section:payments/root"); // no default-collapse
   });
 
-  it("returns the whole documentId when there is no fragment", () => {
+  it("returns the whole pageRef when there is no fragment", () => {
     expect(sectionRefOf("section:default/root")).toBe("section:default/root");
   });
 
-  it("returns empty string when the documentId begins with the fragment separator", () => {
+  it("returns empty string when the pageRef begins with the fragment separator", () => {
     expect(sectionRefOf("#frag")).toBe("");
   });
 });

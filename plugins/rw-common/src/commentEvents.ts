@@ -12,7 +12,7 @@ export interface CommentEventPayload {
   parentId: string | null;
   siteRef: string;
   sectionRef: string;
-  documentId: string; // DB document_id; identifies the page within the section
+  pageRef: string; // identifies the page within the section ("<sectionRef>#<subpath>")
   actorRef: string; // already removed from `recipients`
   recipients: string[]; // catalog entity refs, non-empty
   entityRef: string | null; // owning entity (sections.entity_ref); null = degraded link

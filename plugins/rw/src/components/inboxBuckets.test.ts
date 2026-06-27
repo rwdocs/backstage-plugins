@@ -19,10 +19,10 @@ function item(id: string, daysAgo: number): InboxItem {
   return {
     commentId: id,
     siteRef: "component:default/arch",
-    documentId: "domain:default/billing#x",
+    pageRef: "domain:default/billing#x",
     entityRef: "domain:default/billing",
     viewerPath: "x",
-    documentTitle: "X",
+    pageTitle: "X",
     author: { id: "user:default/alice", name: "Alice" },
     bodySnippet: id,
     createdAt: ts,

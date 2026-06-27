@@ -5,7 +5,7 @@ function baseRow(over: Partial<CommentRow> = {}): CommentRow {
   return {
     id: "id1",
     site_ref: "component:default/arch",
-    document_id: "section:default/root#guide",
+    page_ref: "section:default/root#guide",
     section_ref: "section:default/root",
     parent_id: null,
     author_ref: "user:default/alice",

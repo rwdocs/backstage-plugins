@@ -10,8 +10,8 @@ export interface AuthorProfile {
 export interface CommentRow {
   id: string;
   site_ref: string;
-  document_id: string;
-  /** the comment's canonical section ref, stored verbatim from document_id; join key for owner
+  page_ref: string;
+  /** the comment's canonical section ref, stored verbatim from page_ref; join key for owner
    *  derivation via siteIndex's `sections` table; a routing/filter hint, never an
    *  authorization input. */
   section_ref: string;
@@ -30,7 +30,7 @@ export interface CommentRow {
 }
 
 export interface CreateCommentInput {
-  documentId: string;
+  pageRef: string;
   parentId?: string;
   authorRef: string;
   authorProfile?: AuthorProfile;
@@ -39,26 +39,26 @@ export interface CreateCommentInput {
 }
 
 export interface ListFilter {
-  documentId?: string;
+  pageRef?: string;
   sectionRef?: string;
   status?: CommentStatus;
   parentId?: string | null;
   topLevelOnly?: boolean;
 }
 
-/** The section ref portion of a viewer documentId ("<sectionRef>#<subpath>"), verbatim.
+/** The section ref portion of a pageRef ("<sectionRef>#<subpath>"), verbatim.
  *  rw-core already produced the canonical ref; no transformation/collapse. Total accessor
- *  (no-'#' case returns the whole string); the router's `parseDocumentId` extracts the same
- *  sectionRef prefix for well-formed ids but additionally rejects the no-/leading-'#' cases with
+ *  (no-'#' case returns the whole string); the router's `parsePageRef` extracts the same
+ *  sectionRef prefix for well-formed refs but additionally rejects the no-/leading-'#' cases with
  *  a 400 at the HTTP boundary — keep the two in sync if the format changes. */
-export function sectionRefOf(documentId: string): string {
-  const i = documentId.indexOf("#");
-  return i === -1 ? documentId : documentId.slice(0, i);
+export function sectionRefOf(pageRef: string): string {
+  const i = pageRef.indexOf("#");
+  return i === -1 ? pageRef : pageRef.slice(0, i);
 }
 
-/** The subpath portion of a viewer documentId ("<sectionRef>#<subpath>").
+/** The subpath portion of a pageRef ("<sectionRef>#<subpath>").
  *  Returns empty string when there is no "#". */
-export function subpathOf(documentId: string): string {
-  const i = documentId.indexOf("#");
-  return i === -1 ? "" : documentId.slice(i + 1);
+export function subpathOf(pageRef: string): string {
+  const i = pageRef.indexOf("#");
+  return i === -1 ? "" : pageRef.slice(i + 1);
 }

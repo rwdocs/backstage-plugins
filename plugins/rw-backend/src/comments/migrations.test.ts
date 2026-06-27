@@ -13,7 +13,7 @@ describe("comments migration", () => {
     for (const col of [
       "id",
       "site_ref",
-      "document_id",
+      "page_ref",
       "section_ref",
       "parent_id",
       "author_ref",
@@ -29,6 +29,27 @@ describe("comments migration", () => {
       "deleted_at",
     ]) {
       expect(await knex.schema.hasColumn("comments", col)).toBe(true);
+    }
+  });
+
+  it("preserves the composite indexes across the document_id→page_ref rename", async () => {
+    // The rename migration uses native ALTER TABLE RENAME COLUMN, which keeps the
+    // indexes (by name) and auto-rewrites their column reference to page_ref. Guard
+    // against a future knex/SQLite change silently dropping them (→ full table scans).
+    const knex = await databases.init("SQLITE_3");
+    const directory = resolvePackagePath("@rwdocs/backstage-plugin-rw-backend", "migrations");
+    await knex.migrate.latest({ directory });
+
+    const indexes: Array<{ name: string; sql: string | null }> = await knex
+      .from("sqlite_master")
+      .where({ type: "index", tbl_name: "comments" })
+      .select("name", "sql");
+    const byName = new Map(indexes.map((i) => [i.name, i.sql ?? ""]));
+
+    for (const name of ["comments_site_doc_idx", "comments_site_doc_status_idx"]) {
+      expect(byName.has(name)).toBe(true);
+      expect(byName.get(name)).toContain("page_ref");
+      expect(byName.get(name)).not.toContain("document_id");
     }
   });
 

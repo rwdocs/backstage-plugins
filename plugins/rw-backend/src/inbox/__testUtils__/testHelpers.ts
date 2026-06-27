@@ -15,7 +15,7 @@ export async function insertComment(
   await knex("comments").insert({
     id,
     site_ref: overrides.site_ref,
-    document_id: overrides.document_id ?? `${overrides.section_ref}#guide`,
+    page_ref: overrides.page_ref ?? `${overrides.section_ref}#guide`,
     section_ref: overrides.section_ref,
     parent_id: overrides.parent_id ?? null,
     author_ref: overrides.author_ref ?? "user:default/alice",

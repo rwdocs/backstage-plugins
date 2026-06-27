@@ -37,7 +37,7 @@ function makePayload(over: Partial<CommentEventPayload> = {}): CommentEventPaylo
     parentId: null,
     siteRef: "component:default/site",
     sectionRef: "sec-1",
-    documentId: "sec-1#guide",
+    pageRef: "sec-1#guide",
     actorRef: "user:default/alice",
     actorName: "Alice",
     pageTitle: null,

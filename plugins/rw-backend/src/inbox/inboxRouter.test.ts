@@ -121,7 +121,7 @@ describe("inbox router", () => {
   const SITE_REF = "component:default/arch";
   const SECTION_REF = "section:default/root";
   const SECTION_PATH = "usage";
-  const DOC_ID = `${SECTION_REF}#guide`;
+  const PAGE_REF = `${SECTION_REF}#guide`;
 
   it("GET /comments/inbox returns built:false when siteRefreshStore.anyBuilt() is false", async () => {
     const { server } = await buildApp({ built: false });
@@ -152,7 +152,7 @@ describe("inbox router", () => {
     expect(res.body.built).toBe(true);
   });
 
-  it("GET /comments/inbox returns owned open thread with correct entityRef, viewerPath, and documentTitle", async () => {
+  it("GET /comments/inbox returns owned open thread with correct entityRef, viewerPath, and pageTitle", async () => {
     const { server, knex } = await buildApp({ built: true });
 
     // Register effective ownership for group:default/bill
@@ -176,7 +176,7 @@ describe("inbox router", () => {
     const commentId = await insertComment(knex, {
       site_ref: SITE_REF,
       section_ref: SECTION_REF,
-      document_id: DOC_ID,
+      page_ref: PAGE_REF,
     });
 
     const res = await request(server).get("/comments/inbox");
@@ -188,14 +188,14 @@ describe("inbox router", () => {
     expect(item.entityRef).toBe("component:default/arch");
     // section_path="usage" + subpath of "section:default/root#guide" = "guide" → "usage/guide"
     expect(item.viewerPath).toBe("usage/guide");
-    expect(item.documentTitle).toBe("Architecture Guide");
+    expect(item.pageTitle).toBe("Architecture Guide");
     expect(item.siteRef).toBe(SITE_REF);
-    expect(item.documentId).toBe(DOC_ID);
+    expect(item.pageRef).toBe(PAGE_REF);
     expect(item.replyCount).toBe(0);
     expect(res.body.openCount).toBe(1);
   });
 
-  it("GET /comments/inbox falls back documentTitle to viewerPath when no page title", async () => {
+  it("GET /comments/inbox falls back pageTitle to viewerPath when no page title", async () => {
     const { server, knex } = await buildApp({ built: true });
 
     await knex("sections").insert({
@@ -209,14 +209,14 @@ describe("inbox router", () => {
     await insertComment(knex, {
       site_ref: SITE_REF,
       section_ref: SECTION_REF,
-      document_id: DOC_ID,
+      page_ref: PAGE_REF,
     });
 
     const res = await request(server).get("/comments/inbox");
     expect(res.status).toBe(200);
     expect(res.body.items).toHaveLength(1);
-    // No page seeded → document_title is null → fallback to viewerPath
-    expect(res.body.items[0].documentTitle).toBe("usage/guide");
+    // No page seeded → page_title is null → fallback to viewerPath
+    expect(res.body.items[0].pageTitle).toBe("usage/guide");
   });
 
   it("GET /comments/inbox excludes a comment owned by another group", async () => {

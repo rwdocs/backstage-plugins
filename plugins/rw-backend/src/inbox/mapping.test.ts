@@ -20,10 +20,10 @@ describe("toInboxItem", () => {
   const baseRow = {
     id: "comment-1",
     site_ref: "component:default/arch",
-    document_id: "section:default/root#guide",
+    page_ref: "section:default/root#guide",
     entity_ref: "component:default/arch",
     section_path: "usage",
-    document_title: "Guide",
+    page_title: "Guide",
     author_ref: "user:default/alice",
     author_profile: null,
     body: "Hello world",
@@ -32,20 +32,20 @@ describe("toInboxItem", () => {
     updated_at: new Date("2026-01-02T00:00:00Z"),
   };
 
-  it("constructs viewerPath from section_path and documentId subpath", () => {
+  it("constructs viewerPath from section_path and page_ref subpath", () => {
     const item = toInboxItem(baseRow as any, 0);
     expect(item.viewerPath).toBe("usage/guide");
   });
 
-  it("exposes documentTitle from the row, viewerPath from section_path + subpath", () => {
+  it("exposes pageTitle from the row, viewerPath from section_path + subpath", () => {
     const item = toInboxItem(baseRow as any, 0);
     expect(item.viewerPath).toBe("usage/guide");
-    expect(item.documentTitle).toBe("Guide");
+    expect(item.pageTitle).toBe("Guide");
   });
 
-  it("falls back documentTitle to the viewerPath slug when null", () => {
-    const item = toInboxItem({ ...baseRow, document_title: null } as any, 0);
-    expect(item.documentTitle).toBe("usage/guide");
+  it("falls back pageTitle to the viewerPath slug when null", () => {
+    const item = toInboxItem({ ...baseRow, page_title: null } as any, 0);
+    expect(item.pageTitle).toBe("usage/guide");
   });
 
   it("falls back name to the humanized entity name when no profile", () => {
@@ -97,17 +97,17 @@ describe("toInboxItem", () => {
     expect(item.viewerPath).toBe("guide");
   });
 
-  it("viewerPath is only section_path when documentId has no subpath", () => {
-    const row = { ...baseRow, document_id: "section:default/root" };
+  it("viewerPath is only section_path when pageRef has no subpath", () => {
+    const row = { ...baseRow, page_ref: "section:default/root" };
     const item = toInboxItem(row as any, 0);
     expect(item.viewerPath).toBe("usage");
   });
 
-  it("exposes commentId, siteRef, documentId, entityRef", () => {
+  it("exposes commentId, siteRef, pageRef, entityRef", () => {
     const item = toInboxItem(baseRow as any, 0);
     expect(item.commentId).toBe("comment-1");
     expect(item.siteRef).toBe("component:default/arch");
-    expect(item.documentId).toBe("section:default/root#guide");
+    expect(item.pageRef).toBe("section:default/root#guide");
     expect(item.entityRef).toBe("component:default/arch");
   });
 });

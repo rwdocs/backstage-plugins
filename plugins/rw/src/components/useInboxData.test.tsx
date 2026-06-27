@@ -12,10 +12,10 @@ function makeItem(commentId: string): InboxItem {
   return {
     commentId,
     siteRef: "component:default/docs",
-    documentId: "doc-1",
+    pageRef: "doc-1",
     entityRef: "component:default/docs",
     viewerPath: "guide",
-    documentTitle: "Guide",
+    pageTitle: "Guide",
     author: { id: "user:default/alice", name: "Alice Anderson" },
     bodySnippet: `snippet ${commentId}`,
     createdAt: new Date().toISOString(),

@@ -13,8 +13,8 @@ export class CommentStore {
     const row: CommentRow = {
       id: uuidv7(),
       site_ref: siteRef,
-      document_id: input.documentId,
-      section_ref: sectionRefOf(input.documentId),
+      page_ref: input.pageRef,
+      section_ref: sectionRefOf(input.pageRef),
       parent_id: input.parentId ?? null,
       author_ref: input.authorRef,
       author_profile: input.authorProfile ? JSON.stringify(input.authorProfile) : null,
@@ -57,7 +57,7 @@ export class CommentStore {
   /**
    * Site-scoped; ALWAYS excludes soft-deleted rows; ORDER BY created_at ASC.
    *
-   * Forward hook: the router currently reads only by `documentId`. The additional
+   * Forward hook: the router currently reads only by `pageRef`. The additional
    * `ListFilter` fields (`sectionRef`, `status`, `parentId`, `topLevelOnly`) and the
    * corresponding `section_ref` column + `comments_section_idx` index are intentional
    * forward hooks for the planned cross-section / entity-scoped querying direction (v1
@@ -65,7 +65,7 @@ export class CommentStore {
    */
   async list(siteRef: string, filter: ListFilter): Promise<CommentRow[]> {
     const q = this.knex<CommentRow>(TABLE).where({ site_ref: siteRef }).whereNull("deleted_at");
-    if (filter.documentId !== undefined) q.andWhere({ document_id: filter.documentId });
+    if (filter.pageRef !== undefined) q.andWhere({ page_ref: filter.pageRef });
     if (filter.sectionRef !== undefined) q.andWhere({ section_ref: filter.sectionRef });
     if (filter.status !== undefined) q.andWhere({ status: filter.status });
     if (filter.parentId !== undefined) q.andWhere({ parent_id: filter.parentId });

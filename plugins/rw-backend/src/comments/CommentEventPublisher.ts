@@ -80,7 +80,7 @@ export class CommentEventPublisher {
     if (!section || !section.entity_owner_ref) return; // new/unowned section: inbox catches it
     const recipients = [section.entity_owner_ref].filter((ref) => ref !== actorRef);
     if (recipients.length === 0) return;
-    const subpath = subpathOf(row.document_id);
+    const subpath = subpathOf(row.page_ref);
     const viewerPath = joinNonEmpty([section.section_path, subpath], "/");
     const actorName = authorFromRow(row).name;
     const [pageTitle, sectionTitle] = await Promise.all([
@@ -109,7 +109,7 @@ export class CommentEventPublisher {
     if (recipients.length === 0) return;
     // The section row provides entityRef (link target) + section_path (path prefix); degrade gracefully if absent: entityRef -> null (module emits no link), viewerPath -> bare subpath.
     const section = await this.sections.getSection(row.site_ref, row.section_ref);
-    const subpath = subpathOf(row.document_id);
+    const subpath = subpathOf(row.page_ref);
     const viewerPath = section ? joinNonEmpty([section.section_path, subpath], "/") : subpath;
     const actorName =
       kind === "resolved"
@@ -152,7 +152,7 @@ export class CommentEventPublisher {
       parentId: row.parent_id,
       siteRef: row.site_ref,
       sectionRef: row.section_ref,
-      documentId: row.document_id,
+      pageRef: row.page_ref,
       actorRef,
       recipients,
       entityRef: link.entityRef,
