@@ -4,7 +4,15 @@
   "scripts": {
     "dev": "concurrently \"yarn start\" \"yarn start-backend\"",
     "start": "yarn workspace app start",
-    "start-backend": "yarn workspace backend start"
+    "start-backend": "yarn workspace backend start",
+    "typecheck": "tsc --project tsconfig.json",
+    "build": "yarn workspaces foreach -A -ptv --include '@rwdocs/*' run build",
+    "lint": "yarn workspaces foreach -A -pv --include '@rwdocs/*' run lint",
+    "test": "yarn workspaces foreach -A -pv --include '@rwdocs/*' run test --watchAll=false",
+    "format": "yarn workspaces foreach -A -pv --include '@rwdocs/*' run format",
+    "format:check": "yarn workspaces foreach -A -pv --include '@rwdocs/*' run format:check",
+    "clean": "yarn workspaces foreach -A -pv --include '@rwdocs/*' run clean",
+    "publish:all": "yarn workspaces foreach -A -tv --no-private npm publish --provenance"
   },
   "workspaces": [
     "plugins/*",
