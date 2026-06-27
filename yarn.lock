@@ -23296,6 +23296,7 @@ __metadata:
     "@jest/environment-jsdom-abstract": "npm:^30.2.0"
     concurrently: "npm:^10.0.0"
     jsdom: "npm:^29.0.0"
+    typescript: "npm:^5.7.0"
   dependenciesMeta:
     better-sqlite3:
       built: true
