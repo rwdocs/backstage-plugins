@@ -218,8 +218,12 @@ describe("CommentEventPublisher", () => {
     expect(published[0].eventPayload).toMatchObject({
       kind: "created",
       audience: "participants",
+      commentId: "c2",
       rootId: "c1",
       recipients: ["user:default/alice"],
+      // deeplink anchors on the thread root (c1), not the reply (c2),
+      // so opening the notification lands on the whole thread.
+      deepLinkSuffix: "/docs/guide/setup#comment-c1",
     });
   });
 
