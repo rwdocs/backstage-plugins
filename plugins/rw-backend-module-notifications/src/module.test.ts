@@ -101,6 +101,7 @@ describe("rw notifications module — real startTestBackend integration", () => 
     expect(send.mock.calls[0][0].recipients).toEqual({
       type: "entity",
       entityRef: ["group:default/team"],
+      excludeEntityRef: "user:default/alice",
     });
   });
 

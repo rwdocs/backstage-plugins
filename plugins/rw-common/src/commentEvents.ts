@@ -13,8 +13,8 @@ export interface CommentEventPayload {
   siteRef: string;
   sectionRef: string;
   pageRef: string; // identifies the page within the section ("<sectionRef>#<subpath>")
-  actorRef: string; // already removed from `recipients`
-  recipients: string[]; // catalog entity refs, non-empty
+  actorRef: string; // the user who triggered the event; forwarded as excludeEntityRef so the resolver drops them (see CommentNotifier)
+  recipients: string[]; // catalog entity refs, non-empty; raw owner/participants — may include actorRef
   entityRef: string | null; // owning entity (sections.entity_ref); null = degraded link
   // prefix-free deep-link suffix, always "/docs/<viewerPath>#comment-<id>". Normal: viewerPath = section_path + "/" + subpath. Degraded (no section row): viewerPath = subpath only (section prefix omitted).
   deepLinkSuffix: string;

@@ -36,12 +36,26 @@ describe("CommentNotifier", () => {
 
     expect(send).toHaveBeenCalledTimes(1);
     const arg = send.mock.calls[0][0];
-    expect(arg.recipients).toEqual({ type: "entity", entityRef: ["group:default/team"] });
+    // The recipient is a group and the actor is forwarded as excludeEntityRef: this is what
+    // lets Backstage's resolver drop a group-owning actor from the expanded set (so a member
+    // commenting on their own entity is not self-notified).
+    expect(arg.recipients).toEqual({
+      type: "entity",
+      entityRef: ["group:default/team"],
+      excludeEntityRef: "user:default/alice",
+    });
     expect(arg.payload.title).toBe("Alice Smith commented on Setup Guide · My Service");
     expect(arg.payload.description).toBe("please review");
     expect(arg.payload.link).toBe("/catalog/default/component/site/docs/guide/setup#comment-c1");
     expect(arg.payload.scope).toBe("rw:comment:c1");
     expect(arg.payload.severity).toBe("normal");
+  });
+
+  it("drops a payload with no actorRef without sending (exclusion would be a no-op)", async () => {
+    const send = jest.fn().mockResolvedValue(undefined);
+    const notifier = new CommentNotifier({ notifications: { send } as any, logger });
+    await notifier.handle(payload({ actorRef: "" }));
+    expect(send).not.toHaveBeenCalled();
   });
 
   it("participants/created → '<actor> replied on <subject>'", async () => {

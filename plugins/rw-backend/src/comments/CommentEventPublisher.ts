@@ -16,10 +16,13 @@ import { authorFromRow } from "./author";
 import { CommentRow, subpathOf } from "./types";
 
 /** Publishes self-contained `rw.comments` domain events after a comment write commits.
- *  Owns recipient + deep-link resolution (it has the comments + sections tables) so the
- *  notifications module can stay a thin sender. Best-effort: every method catches and
- *  logs, and always resolves, so a publish failure can never affect the comment write.
- *  Callers invoke fire-and-forget. */
+ *  Owns recipient + deep-link resolution from the comments + sections tables, so the
+ *  notifications module stays a thin sender. `recipients` are the raw section owner / thread
+ *  participants and may include the actor; actor exclusion is done entirely subscriber-side via
+ *  `excludeEntityRef` (see CommentNotifier), which the recipient resolver applies after expanding
+ *  groups — the one place that also catches an actor who owns the section through a group.
+ *  Best-effort: every method catches and logs, and always resolves, so a publish failure can
+ *  never affect the comment write. Callers invoke fire-and-forget. */
 export class CommentEventPublisher {
   private readonly events: EventsService;
   private readonly sections: SectionsReader;
@@ -78,8 +81,8 @@ export class CommentEventPublisher {
   private async publishOwnerSide(row: CommentRow, actorRef: string): Promise<void> {
     const section = await this.sections.getSection(row.site_ref, row.section_ref);
     if (!section || !section.entity_owner_ref) return; // new/unowned section: inbox catches it
-    const recipients = [section.entity_owner_ref].filter((ref) => ref !== actorRef);
-    if (recipients.length === 0) return;
+    // Actor left in even when they own the section; excluded at delivery (see class doc).
+    const recipients = [section.entity_owner_ref];
     const subpath = subpathOf(row.page_ref);
     const viewerPath = joinNonEmpty([section.section_path, subpath], "/");
     const actorName = authorFromRow(row).name;
@@ -103,10 +106,10 @@ export class CommentEventPublisher {
     actorRef: string,
     resolvedActorName?: string,
   ): Promise<void> {
-    // participantsOf already returns distinct refs, so no extra dedup is needed here.
-    const participants = await this.comments.participantsOf(rootId);
-    const recipients = participants.filter((ref) => ref !== actorRef);
-    if (recipients.length === 0) return;
+    // participantsOf returns distinct refs (no extra dedup); the actor is left in and excluded
+    // at delivery (see class doc).
+    const recipients = await this.comments.participantsOf(rootId);
+    if (recipients.length === 0) return; // defensive: thread with no live participants (e.g. root deleted)
     // The section row provides entityRef (link target) + section_path (path prefix); degrade gracefully if absent: entityRef -> null (module emits no link), viewerPath -> bare subpath.
     const section = await this.sections.getSection(row.site_ref, row.section_ref);
     const subpath = subpathOf(row.page_ref);
