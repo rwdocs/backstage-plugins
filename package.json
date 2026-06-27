@@ -5,6 +5,7 @@
     "dev": "concurrently \"yarn start\" \"yarn start-backend\"",
     "start": "yarn workspace app start",
     "start-backend": "yarn workspace backend start",
+    "all": "yarn typecheck && yarn lint && yarn test && yarn format && yarn build",
     "typecheck": "tsc --project tsconfig.json",
     "build": "yarn workspaces foreach -A -ptv --include '@rwdocs/*' run build",
     "lint": "yarn workspaces foreach -A -pv --include '@rwdocs/*' run lint",
@@ -12,7 +13,8 @@
     "format": "yarn workspaces foreach -A -pv --include '@rwdocs/*' run format",
     "format:check": "yarn workspaces foreach -A -pv --include '@rwdocs/*' run format:check",
     "clean": "yarn workspaces foreach -A -pv --include '@rwdocs/*' run clean",
-    "publish:all": "yarn workspaces foreach -A -tv --no-private npm publish --provenance"
+    "publish:all": "yarn workspaces foreach -A -tv --no-private npm publish --provenance",
+    "version:all": "yarn workspaces foreach -A --include '@rwdocs/*' version"
   },
   "workspaces": [
     "plugins/*",

@@ -14,21 +14,35 @@ Backstage plugins for embedding RW documentation sites. Yarn 4.12.0 workspace mo
 
 ## Commands
 
+The root `package.json` exposes workspace-wide scripts that fan out to every
+`@rwdocs/*` plugin via `yarn workspaces foreach` (so adding a plugin needs no
+script changes):
+
 ```bash
-# Full build + typecheck + lint + format
-make all
+# Full typecheck + lint + test + format + build
+yarn all
 
-# Build all plugins (install deps, backstage-cli build)
-make build
+# Build all plugins (topological order)
+yarn build
 
-# Type-check (tsc --noEmit across all plugins)
-make typecheck
+# Type-check (tsc across all plugins)
+yarn typecheck
 
 # Lint (ESLint via backstage-cli package lint)
-make lint
+yarn lint
 
-# Format (Prettier, printWidth: 100)
-make format
+# Test (backstage-cli package test, --watchAll=false)
+yarn test
+
+# Format (Prettier, printWidth: 100) / check-only
+yarn format
+yarn format:check
+
+# Publish all publishable plugins to npm (release CI uses this)
+yarn publish:all
+
+# Bump every plugin to a version (e.g. release prep)
+yarn version:all 0.2.0
 
 # Build a single plugin
 yarn workspace @rwdocs/backstage-plugin-rw run build
