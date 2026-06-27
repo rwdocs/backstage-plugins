@@ -156,9 +156,11 @@ export class CommentEventPublisher {
       actorRef,
       recipients,
       entityRef: link.entityRef,
+      // Anchor on the thread root, not the triggering row: a reply notification
+      // should open the whole thread (rootId === row.id for top-level + resolve events).
       deepLinkSuffix: buildCommentDeepLinkSuffix({
         viewerPath: link.viewerPath,
-        commentId: row.id,
+        commentId: rootId,
       }),
       bodySnippet: snippetFromHtml(row.body_html),
       actorName: link.actorName,
