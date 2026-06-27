@@ -144,7 +144,7 @@ describe("comments router", () => {
   it("GET /comments returns the full thread for a page", async () => {
     const { server, store } = await buildApp();
     await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "1",
       selectors: [],
@@ -181,7 +181,7 @@ describe("comments router", () => {
   it("404 when the site entity is not visible to the caller", async () => {
     const { server, store } = await buildApp({ entities: [] }); // catalog returns undefined
     await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "1",
       selectors: [],
@@ -223,7 +223,7 @@ describe("comments router", () => {
   it("GET /comments/:id returns a comment by id", async () => {
     const { server, store } = await buildApp();
     const row = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "hello",
       selectors: [],
@@ -245,7 +245,7 @@ describe("comments router", () => {
     // directly into that same app's store, then verify GET /comments/:id → 404.
     const { server, store } = await buildApp({ entities: [] });
     const row = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "hello",
       selectors: [],
@@ -257,13 +257,13 @@ describe("comments router", () => {
   it("GET /comments/:id returns 404 for soft-deleted comment", async () => {
     const { server, store } = await buildApp();
     const parent = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "parent",
       selectors: [],
     });
     const reply = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "reply",
       selectors: [],
@@ -278,7 +278,7 @@ describe("comments router", () => {
     const { server, store } = await buildApp();
     // comment authored by user:default/a; caller is user:default/mock (default mock user)
     const row = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "thread",
       selectors: [],
@@ -292,7 +292,7 @@ describe("comments router", () => {
     const { server, store } = await buildApp();
     // comment authored by user:default/a; caller is user:default/mock
     const row = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "original",
       selectors: [],
@@ -305,13 +305,13 @@ describe("comments router", () => {
   it("DELETE /comments/:id by non-author returns 403 (author floor)", async () => {
     const { server, store } = await buildApp();
     const parent = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "parent",
       selectors: [],
     });
     const reply = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "reply",
       selectors: [],
@@ -325,13 +325,13 @@ describe("comments router", () => {
     const { server, store } = await buildApp();
     // create as mock user (the default caller)
     const parent = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "parent",
       selectors: [],
     });
     const reply = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "reply",
       selectors: [],
@@ -346,13 +346,13 @@ describe("comments router", () => {
   it("DELETE /comments/:id a second time on an already-deleted reply returns 404", async () => {
     const { server, store } = await buildApp();
     const parent = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "parent",
       selectors: [],
     });
     const reply = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "reply",
       selectors: [],
@@ -367,13 +367,13 @@ describe("comments router", () => {
   it("PATCH /comments/:id edit on soft-deleted row returns 400", async () => {
     const { server, store } = await buildApp();
     const parent = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "parent",
       selectors: [],
     });
     const reply = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "reply",
       selectors: [],
@@ -389,7 +389,7 @@ describe("comments router", () => {
   it("PATCH /comments/:id with empty body {} returns 400 (no editable fields)", async () => {
     const { server, store } = await buildApp();
     const row = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "original",
       selectors: [],
@@ -405,7 +405,7 @@ describe("comments router", () => {
   it("PATCH /comments/:id with only unknown fields returns 400 (no editable fields)", async () => {
     const { server, store } = await buildApp();
     const row = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "original",
       selectors: [],
@@ -422,13 +422,13 @@ describe("comments router", () => {
   it("PATCH /comments/:id status:resolved on a reply returns 400 (cannot resolve reply)", async () => {
     const { server, store } = await buildApp();
     const parent = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "parent",
       selectors: [],
     });
     const reply = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "reply",
       selectors: [],
@@ -498,7 +498,7 @@ describe("comments router", () => {
 
     // Seed a comment so we reach assertSiteVisible
     await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "x",
       selectors: [],
@@ -511,7 +511,7 @@ describe("comments router", () => {
     // entities: [] causes catalogServiceMock to return undefined from getEntityByRef
     const { server, store } = await buildApp({ entities: [] });
     await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "x",
       selectors: [],
@@ -523,7 +523,7 @@ describe("comments router", () => {
   it("assertAuthorFloor: edit by non-author → 403, store NOT mutated, denied log emitted", async () => {
     const { server, store } = await buildApp();
     const row = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a", // different from mock caller user:default/mock
       body: "original",
       selectors: [],
@@ -540,13 +540,13 @@ describe("comments router", () => {
   it("assertAuthorFloor: delete by non-author → 403, store NOT mutated, denied log emitted", async () => {
     const { server, store } = await buildApp();
     const parent = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "parent",
       selectors: [],
     });
     const reply = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "reply",
       selectors: [],
@@ -562,13 +562,13 @@ describe("comments router", () => {
   it("assertAuthorFloor: restore by non-author → 403, store NOT mutated", async () => {
     const { server, store } = await buildApp();
     const parent = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "parent",
       selectors: [],
     });
     const reply = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "reply",
       selectors: [],
@@ -591,7 +591,7 @@ describe("comments router", () => {
     // before the store is queried.  Removing that check would let the request through (200).
     const { server, store } = await buildDenyApp();
     await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "should not be visible",
       selectors: [],
@@ -617,7 +617,7 @@ describe("comments router", () => {
     // would pass — the permission check fires before assertSiteVisible.
     const { server, store } = await buildDenyApp();
     const row = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "private",
       selectors: [],
@@ -652,7 +652,7 @@ describe("comments router", () => {
     const { server, store } = await buildApp();
     const OTHER_SITE = "component:default/other";
     const parent = await store.create(OTHER_SITE, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "root in other site",
       selectors: [],
@@ -669,12 +669,12 @@ describe("comments router", () => {
   });
 
   it("POST /comments with parentId belonging to a different documentId returns 400", async () => {
-    // Locks in `parent.document_id !== documentId` branch at router.ts ~:170.
+    // Locks in `parent.page_ref !== pageRef` branch at router.ts ~:170.
     // The parent is in the same site but a different document.
     const { server, store } = await buildApp();
     const OTHER_DOC = "section:default/root#other";
     const parent = await store.create(ARCH, {
-      documentId: OTHER_DOC,
+      pageRef: OTHER_DOC,
       authorRef: "user:default/mock",
       body: "root in other doc",
       selectors: [],
@@ -695,13 +695,13 @@ describe("comments router", () => {
     // Nested replies are disallowed — only root comments may be parents.
     const { server, store } = await buildApp();
     const root = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "root comment",
       selectors: [],
     });
     const existingReply = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "first reply",
       selectors: [],
@@ -723,7 +723,7 @@ describe("comments router", () => {
     // Replying to a deleted comment must be rejected.
     const { server, store } = await buildApp();
     const root = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "root that will be deleted",
       selectors: [],
@@ -746,7 +746,7 @@ describe("comments router", () => {
 
   it("POST /comments with parentId: '' (empty string) returns 400 and creates no row", async () => {
     const { server, store } = await buildApp();
-    const before = await store.list(ARCH, { documentId: DOC });
+    const before = await store.list(ARCH, { pageRef: DOC });
     const res = await request(server).post("/comments").send({
       siteRef: ARCH,
       documentId: DOC,
@@ -755,7 +755,7 @@ describe("comments router", () => {
       parentId: "",
     });
     expect(res.status).toBe(400);
-    const after = await store.list(ARCH, { documentId: DOC });
+    const after = await store.list(ARCH, { pageRef: DOC });
     expect(after.length).toBe(before.length);
   });
 
@@ -814,7 +814,7 @@ describe("comments router", () => {
   it("PATCH /comments/:id with body just over 16 KiB returns 400", async () => {
     const { server, store } = await buildApp();
     const row = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "original",
       selectors: [],
@@ -827,7 +827,7 @@ describe("comments router", () => {
   it("PATCH /comments/:id with body exactly at 16 KiB succeeds", async () => {
     const { server, store } = await buildApp();
     const row = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "original",
       selectors: [],
@@ -920,7 +920,7 @@ describe("comments router", () => {
 
     // Seed a top-level comment directly in the store
     const row = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "to be resolved",
       selectors: [],
@@ -947,7 +947,7 @@ describe("comments router", () => {
 
     // Seed a resolved top-level comment to reopen
     const row = await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/mock",
       body: "comment to test reopen/edit",
       selectors: [],
@@ -972,6 +972,29 @@ describe("comments router", () => {
   });
 
   // ── End Task 6: publisher wiring ─────────────────────────────────────────
+
+  // ── Preserved-seam guard (Task 1) ────────────────────────────────────────
+  // This test locks the viewer wire: GET ?documentId= / POST body.documentId /
+  // response field documentId must never change, regardless of internal renames.
+  it("viewer wire: GET ?documentId= and POST body.documentId; response uses documentId", async () => {
+    const { server } = await buildApp();
+
+    // POST a comment using the viewer wire field `documentId`
+    const created = await request(server)
+      .post("/comments")
+      .send({ siteRef: ARCH, documentId: DOC, body: "hi", selectors: [] })
+      .expect(201);
+    expect(created.body.documentId).toBe(DOC);
+
+    // GET list filters via ?documentId=
+    const listed = await request(server)
+      .get("/comments")
+      .query({ siteRef: ARCH, documentId: DOC })
+      .expect(200);
+    expect(listed.body).toHaveLength(1);
+    expect(listed.body[0].documentId).toBe(DOC);
+  });
+  // ── End preserved-seam guard ──────────────────────────────────────────────
 
   it("disabled app returns 404 on /comments and enabled:false on /comments/config", async () => {
     const knex = await databases.init("SQLITE_3");

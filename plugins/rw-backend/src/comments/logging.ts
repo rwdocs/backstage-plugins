@@ -10,7 +10,7 @@ export type CommentLogEvent =
   | { kind: "mutation"; op: string; siteRef: string; commentId: string; parentId?: string }
   | { kind: "denied"; op: string; permission: string; userEntityRef: string }
   | { kind: "entity-not-visible"; op: string; siteRef: string; userEntityRef: string }
-  | { kind: "oversized-list"; siteRef: string; documentId: string; count: number; bytes: number }
+  | { kind: "oversized-list"; siteRef: string; pageRef: string; count: number; bytes: number }
   | { kind: "error"; op: string; err: unknown };
 
 /** Single funnel for comment-op logging. PII (body/html/profile/selectors/tokens) is
@@ -46,7 +46,7 @@ export function logCommentOp(logger: LoggerService, event: CommentLogEvent): voi
       logger.warn("comment list oversized", {
         op: "list",
         siteRef: event.siteRef,
-        documentId: event.documentId,
+        pageRef: event.pageRef,
         count: event.count,
         bytes: event.bytes,
       });

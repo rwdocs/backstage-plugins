@@ -66,12 +66,15 @@ export interface CommentsRouterDeps {
   publisher?: CommentEventPublisher;
 }
 
-/** Split a viewer documentId; throws InputError(400) on a non-string, missing or leading '#'. */
-export function parseDocumentId(documentId: unknown): { sectionRef: string; subpath: string } {
-  if (typeof documentId !== "string") throw new InputError("documentId must be a string");
-  const i = documentId.indexOf("#");
-  if (i <= 0) throw new InputError(`Malformed documentId: ${documentId}`);
-  return { sectionRef: documentId.slice(0, i), subpath: documentId.slice(i + 1) };
+/** Split a viewer pageRef ("<sectionRef>#<subpath>"); throws InputError(400) on a
+ *  non-string, missing or leading '#'. The error messages intentionally say
+ *  "documentId" — they are returned verbatim to the viewer, which only knows the
+ *  frozen wire field name (not the internal `pageRef`). */
+export function parsePageRef(pageRef: unknown): { sectionRef: string; subpath: string } {
+  if (typeof pageRef !== "string") throw new InputError("documentId must be a string");
+  const i = pageRef.indexOf("#");
+  if (i <= 0) throw new InputError(`Malformed documentId: ${pageRef}`);
+  return { sectionRef: pageRef.slice(0, i), subpath: pageRef.slice(i + 1) };
 }
 
 export function createCommentsRouter(deps: CommentsRouterDeps): Router {
@@ -156,8 +159,8 @@ export function createCommentsRouter(deps: CommentsRouterDeps): Router {
     const siteRef = req.query.siteRef;
     validateSiteRef(siteRef);
     if (typeof req.query.documentId !== "string") throw new InputError("documentId is required");
-    const documentId = req.query.documentId;
-    parseDocumentId(documentId); // 400 guard
+    const pageRef = req.query.documentId; // viewer wire: req.query.documentId → internal pageRef
+    parsePageRef(pageRef); // 400 guard
     const credentials = await httpAuth.credentials(req);
     const decision = await permissions.authorize([{ permission: rwCommentReadPermission }], {
       credentials,
@@ -167,15 +170,17 @@ export function createCommentsRouter(deps: CommentsRouterDeps): Router {
       return;
     }
     await assertSiteVisible(req, siteRef);
-    const rows = await store.list(siteRef, { documentId });
+    const rows = await store.list(siteRef, { pageRef });
     const callerRef = await callerUserRef(req).catch(() => undefined);
     res.json(rows.map((r) => toCommentResponse(r, callerRef)));
   });
 
   router.post("/comments", async (req, res) => {
-    const { siteRef, documentId, parentId, body, selectors } = req.body ?? {};
+    // documentId is the viewer wire field name — kept frozen on the wire and
+    // renamed to the internal pageRef at the destructure so it never leaks into internals.
+    const { siteRef, documentId: pageRef, parentId, body, selectors } = req.body ?? {};
     validateSiteRef(siteRef);
-    parseDocumentId(documentId); // 400 guard
+    parsePageRef(pageRef); // 400 guard
     if (!body || typeof body !== "string") throw new InputError("body must be a non-empty string");
     if (Buffer.byteLength(body, "utf8") > MAX_BODY_BYTES)
       throw new InputError("body exceeds maximum length");
@@ -203,7 +208,7 @@ export function createCommentsRouter(deps: CommentsRouterDeps): Router {
       if (
         !parent ||
         parent.site_ref !== siteRef ||
-        parent.document_id !== documentId ||
+        parent.page_ref !== pageRef ||
         parent.parent_id !== null ||
         parent.deleted_at !== null
       ) {
@@ -211,7 +216,7 @@ export function createCommentsRouter(deps: CommentsRouterDeps): Router {
       }
     }
     const row = await store.create(siteRef, {
-      documentId,
+      pageRef,
       parentId,
       authorRef,
       authorProfile,
@@ -413,8 +418,9 @@ export function createCommentsRouter(deps: CommentsRouterDeps): Router {
       commentId: row.id,
     });
     // Return the full soft-deleted row so the viewer can evict the reply from its
-    // local cache by documentId. A 204 No Content would leave the viewer without
-    // the documentId it needs to locate and remove the reply from state.
+    // local cache by documentId (viewer wire field, emitted by toCommentResponse).
+    // A 204 No Content would leave the viewer without the documentId it needs to
+    // locate and remove the reply from state.
     res.json(toCommentResponse(deleted!, userRef));
   });
 

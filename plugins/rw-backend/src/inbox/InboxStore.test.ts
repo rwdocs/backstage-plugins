@@ -14,7 +14,7 @@ const SECTION_REF = "section:default/billing";
 const OWNER_REF = "group:default/team";
 const ENTITY_REF = "domain:default/billing";
 const SECTION_PATH = "systems/billing";
-const DOCUMENT_ID = `${SECTION_REF}#tobe`;
+const PAGE_REF = `${SECTION_REF}#tobe`;
 
 async function freshStore(databases: TestDatabases): Promise<{ store: InboxStore; knex: Knex }> {
   const knex = await databases.init("SQLITE_3");
@@ -47,7 +47,7 @@ async function seedComment(
   knex: Knex,
   overrides: Partial<{
     id: string;
-    document_id: string;
+    page_ref: string;
     section_ref: string;
     site_ref: string;
     status: string;
@@ -61,7 +61,7 @@ async function seedComment(
   await knex("comments").insert({
     id,
     site_ref: overrides.site_ref ?? SITE_REF,
-    document_id: overrides.document_id ?? DOCUMENT_ID,
+    page_ref: overrides.page_ref ?? PAGE_REF,
     section_ref: overrides.section_ref ?? SECTION_REF,
     parent_id: overrides.parent_id ?? null,
     author_ref: overrides.author_ref ?? "user:default/alice",
@@ -113,7 +113,7 @@ describe("InboxStore", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].entity_ref).toBe(ENTITY_REF);
     expect(rows[0].section_path).toBe(SECTION_PATH);
-    expect(rows[0].document_title).toBe("To Be");
+    expect(rows[0].page_title).toBe("To Be");
   });
 
   it("excludes threads owned by others, replies, resolved, and deleted", async () => {
@@ -145,7 +145,7 @@ describe("InboxStore", () => {
     // Other-owner section — should be excluded
     await seedComment(knex, {
       section_ref: "section:default/other",
-      document_id: "section:default/other#x",
+      page_ref: "section:default/other#x",
     });
 
     const { rows } = await store.ownedOpenThreadsPage([OWNER_REF], {
@@ -156,7 +156,7 @@ describe("InboxStore", () => {
     expect(rows.map((r) => r.id)).toEqual([goodId]);
   });
 
-  it("returns document_title null when no matching page row exists", async () => {
+  it("returns page_title null when no matching page row exists", async () => {
     const { store, knex } = await freshStore(databases);
     await seedOwnership(knex);
     // Seed a comment but deliberately omit the pages row.
@@ -168,7 +168,7 @@ describe("InboxStore", () => {
       limit: 1000,
     });
     expect(rows).toHaveLength(1);
-    expect(rows[0].document_title).toBeNull();
+    expect(rows[0].page_title).toBeNull();
   });
 
   it("returns [] for empty ownerRefs", async () => {
@@ -200,7 +200,7 @@ describe("InboxStore", () => {
       id: `comment-${n}-${uuidv7()}`,
       site_ref: SITE_REF,
       section_ref: SECTION_REF,
-      document_id: `${SECTION_REF}#subpath-${n}`,
+      page_ref: `${SECTION_REF}#subpath-${n}`,
       parent_id: null,
       author_ref: "user:default/alice",
       author_profile: null,
@@ -230,7 +230,7 @@ describe("InboxStore", () => {
     ).resolves.not.toThrow();
     expect(rows!).toHaveLength(COUNT);
     // Spot-check: every row has a title (no nulls due to chunking errors)
-    expect(rows!.every((r) => r.document_title !== null)).toBe(true);
+    expect(rows!.every((r) => r.page_title !== null)).toBe(true);
   });
 });
 

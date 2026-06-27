@@ -5,7 +5,7 @@ import { sectionRefOf, subpathOf } from "../comments/types";
 export type OwnedThreadRow = CommentRow & {
   entity_ref: string;
   section_path: string;
-  document_title: string | null;
+  page_title: string | null;
 };
 
 export interface InboxPageParams {
@@ -55,21 +55,21 @@ export class InboxStore {
     return map;
   }
 
-  /** Resolves document_title for each raw row via titlesFor, returning OwnedThreadRow[]. */
+  /** Resolves page_title for each raw row via titlesFor, returning OwnedThreadRow[]. */
   private async resolveRows(
     rows: Array<CommentRow & { entity_ref: string; section_path: string }>,
   ): Promise<OwnedThreadRow[]> {
     const keys = rows.map((r) => ({
       site_ref: r.site_ref,
-      section_ref: sectionRefOf(r.document_id),
-      subpath: subpathOf(r.document_id),
+      section_ref: sectionRefOf(r.page_ref),
+      subpath: subpathOf(r.page_ref),
     }));
     const titles = await this.titlesFor(keys);
     return rows.map((r, j) => {
       const k = keys[j];
       return {
         ...r, // already carries entity_ref + section_path (typed onto the row)
-        document_title:
+        page_title:
           titles.get(InboxStore.titleKeyFor(r.site_ref, k.section_ref, k.subpath)) ?? null,
       };
     });

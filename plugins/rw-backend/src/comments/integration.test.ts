@@ -184,7 +184,7 @@ describe("comments integration (page + comments routers as siblings)", () => {
     // entity-visibility guard is actually exercised over real data (not a separate DB).
     const { server, store } = await buildApp({ entities: [] });
     await store.create(ARCH, {
-      documentId: DOC,
+      pageRef: DOC,
       authorRef: "user:default/a",
       body: "x",
       selectors: [],

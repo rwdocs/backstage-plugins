@@ -25,7 +25,7 @@ function row(over: Partial<CommentRow>): CommentRow {
   return {
     id: "c1",
     site_ref: "component:default/site",
-    document_id: "sec-1#setup",
+    page_ref: "sec-1#setup",
     section_ref: "sec-1",
     parent_id: null,
     author_ref: "user:default/alice",
@@ -78,6 +78,7 @@ describe("CommentEventPublisher", () => {
       audience: "owner",
       recipients: ["group:default/team"],
       entityRef: "component:default/site",
+      pageRef: "sec-1#setup",
       deepLinkSuffix: "/docs/guide/setup#comment-c1",
       bodySnippet: "hello",
       actorName: "Alice Smith",
@@ -123,7 +124,7 @@ describe("CommentEventPublisher", () => {
 
   it("owner-side: deepLinkSuffix prepends section_path (not just subpath)", async () => {
     // Regression: viewerPath must be joinNonEmpty([section_path, subpath]), not just subpath.
-    // With section_path="guide" and document_id subpath "setup", the suffix must be
+    // With section_path="guide" and page_ref subpath "setup", the suffix must be
     // "/docs/guide/setup#comment-c1", not "/docs/setup#comment-c1".
     const { events, published } = fakeEvents();
     const sections = {

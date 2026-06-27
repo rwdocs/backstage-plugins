@@ -12,7 +12,7 @@ function payload(over: Partial<CommentEventPayload>): CommentEventPayload {
     parentId: null,
     siteRef: "component:default/site",
     sectionRef: "sec-1",
-    documentId: "sec-1#guide/setup",
+    pageRef: "sec-1#guide/setup",
     actorRef: "user:default/alice",
     actorName: "Alice Smith",
     pageTitle: "Setup Guide",

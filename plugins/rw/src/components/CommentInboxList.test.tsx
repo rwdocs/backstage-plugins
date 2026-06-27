@@ -92,10 +92,10 @@ function makeItem(overrides?: Partial<InboxItem>): InboxItem {
   return {
     commentId: "c1",
     siteRef: "component:default/billing",
-    documentId: "doc-1",
+    pageRef: "doc-1",
     entityRef: "domain:default/billing",
     viewerPath: "usage/guide",
-    documentTitle: "Usage Guide",
+    pageTitle: "Usage Guide",
     author: { id: "user:default/alice", name: "Alice Anderson" },
     bodySnippet: "Great point here",
     createdAt: new Date(Date.now() - 60000).toISOString(),
@@ -323,15 +323,15 @@ describe("CommentInboxList", () => {
     expect(screen.queryByText("system:payments/gateway")).not.toBeInTheDocument();
   });
 
-  it("falls back to the placeholder when documentTitle is an empty string", async () => {
+  it("falls back to the placeholder when pageTitle is an empty string", async () => {
     // Empty string is falsy; the component falls through to docTitlePlaceholder(viewerPath).
     // The last segment "guide" humanizes to "Guide".
-    await renderList([makeItem({ documentTitle: "", viewerPath: "usage/guide" })]);
+    await renderList([makeItem({ pageTitle: "", viewerPath: "usage/guide" })]);
     expect(screen.getByText("Guide")).toBeInTheDocument();
   });
 
-  it("shows the server documentTitle, not the path-slug placeholder", async () => {
-    await renderList([makeItem({ documentTitle: "Billing Overview", viewerPath: "usage/guide" })]);
+  it("shows the server pageTitle, not the path-slug placeholder", async () => {
+    await renderList([makeItem({ pageTitle: "Billing Overview", viewerPath: "usage/guide" })]);
     expect(screen.getByText("Billing Overview")).toBeInTheDocument();
     expect(screen.queryByText("Guide")).not.toBeInTheDocument();
   });

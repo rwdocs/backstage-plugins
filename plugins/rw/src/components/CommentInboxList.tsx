@@ -45,8 +45,8 @@ function replyState(replyCount: number): string {
 }
 
 /**
- * Fallback document title derived from the viewer path: humanize the last path
- * segment. Defensive fallback; the backend always populates documentTitle, so
+ * Fallback page title derived from the viewer path: humanize the last path
+ * segment. Defensive fallback; the backend always populates pageTitle, so
  * this triggers only for malformed/pre-migration payloads.
  */
 function docTitlePlaceholder(viewerPath: string): string {
@@ -223,7 +223,7 @@ const CommentInboxRow = memo(function CommentInboxRow({
             display name. */}
         <Flex direction="row" align="center" gap="1" style={{ flexWrap: "wrap" }}>
           <Text variant="body-small" color="secondary">
-            {item.documentTitle || docTitlePlaceholder(item.viewerPath)}
+            {item.pageTitle || docTitlePlaceholder(item.viewerPath)}
           </Text>
           <Dot />
           <Text variant="body-small" color="secondary">

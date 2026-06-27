@@ -22,14 +22,14 @@ export function rawSortValue(updatedAt: Date | string | number): string | number
 }
 
 export function toInboxItem(row: OwnedThreadRow, replyCount: number): InboxItem {
-  const viewerPath = joinNonEmpty([row.section_path, subpathOf(row.document_id)], "/");
+  const viewerPath = joinNonEmpty([row.section_path, subpathOf(row.page_ref)], "/");
   return {
     commentId: row.id,
     siteRef: row.site_ref,
-    documentId: row.document_id,
+    pageRef: row.page_ref,
     entityRef: row.entity_ref,
     viewerPath,
-    documentTitle: row.document_title ?? viewerPath,
+    pageTitle: row.page_title ?? viewerPath,
     author: authorFromRow(row),
     bodySnippet: snippetFromHtml(row.body_html),
     createdAt: toIso(row.created_at)!,

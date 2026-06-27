@@ -26,7 +26,7 @@ export function toCommentResponse(row: CommentRow, callerRef: string | undefined
 
   return {
     id: row.id,
-    documentId: row.document_id,
+    documentId: row.page_ref, // viewer wire field — preserved until @rwdocs/viewer is updated
     ...(row.parent_id !== null ? { parentId: row.parent_id } : {}),
     author: authorFromRow(row),
     body: row.body,

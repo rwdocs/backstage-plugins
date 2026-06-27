@@ -1,10 +1,10 @@
 export interface InboxItem {
   commentId: string;
   siteRef: string;
-  documentId: string;
+  pageRef: string;
   entityRef: string;
   viewerPath: string;
-  documentTitle: string;
+  pageTitle: string;
   author: { id: string; name: string; avatarUrl?: string };
   bodySnippet: string;
   createdAt: string;

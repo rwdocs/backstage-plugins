@@ -124,7 +124,7 @@ async function buildConditionalApp(authorRef: string) {
 
   // Pre-seed a comment with the given authorRef
   const row = await store.create(ARCH, {
-    documentId: DOC,
+    pageRef: DOC,
     authorRef,
     body: "original",
     selectors: [],
