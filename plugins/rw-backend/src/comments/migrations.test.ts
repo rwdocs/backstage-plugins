@@ -32,10 +32,10 @@ describe("comments migration", () => {
     }
   });
 
-  it("preserves the composite indexes across the document_id→page_ref rename", async () => {
-    // The rename migration uses native ALTER TABLE RENAME COLUMN, which keeps the
-    // indexes (by name) and auto-rewrites their column reference to page_ref. Guard
-    // against a future knex/SQLite change silently dropping them (→ full table scans).
+  it("creates the page-scoped composite indexes referencing page_ref", async () => {
+    // Guards the squashed baseline: the two composite indexes the inbox/page
+    // queries rely on must exist under their page_ref names. A future knex/SQLite
+    // change silently dropping them would turn those reads into full table scans.
     const knex = await databases.init("SQLITE_3");
     const directory = resolvePackagePath("@rwdocs/backstage-plugin-rw-backend", "migrations");
     await knex.migrate.latest({ directory });
@@ -46,7 +46,7 @@ describe("comments migration", () => {
       .select("name", "sql");
     const byName = new Map(indexes.map((i) => [i.name, i.sql ?? ""]));
 
-    for (const name of ["comments_site_doc_idx", "comments_site_doc_status_idx"]) {
+    for (const name of ["comments_site_page_idx", "comments_site_page_status_idx"]) {
       expect(byName.has(name)).toBe(true);
       expect(byName.get(name)).toContain("page_ref");
       expect(byName.get(name)).not.toContain("document_id");
