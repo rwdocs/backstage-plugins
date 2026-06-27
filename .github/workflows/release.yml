@@ -34,11 +34,13 @@ jobs:
           yarn workspace @rwdocs/backstage-plugin-rw-backend run lint
           yarn workspace @rwdocs/backstage-plugin-rw-common run lint
           yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run lint
+          yarn workspace @rwdocs/backstage-plugin-rw-backend-module-notifications run lint
 
       - name: Test
         run: |
           yarn workspace @rwdocs/backstage-plugin-rw-backend run test --watchAll=false
           yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run test --watchAll=false
+          yarn workspace @rwdocs/backstage-plugin-rw-backend-module-notifications run test --watchAll=false
 
       - name: Format check
         run: |
@@ -46,6 +48,7 @@ jobs:
           yarn workspace @rwdocs/backstage-plugin-rw-backend run format:check
           yarn workspace @rwdocs/backstage-plugin-rw-common run format:check
           yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run format:check
+          yarn workspace @rwdocs/backstage-plugin-rw-backend-module-notifications run format:check
 
       - name: Build common
         run: yarn workspace @rwdocs/backstage-plugin-rw-common run build
@@ -59,6 +62,9 @@ jobs:
       - name: Build search collator
         run: yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run build
 
+      - name: Build notifications module
+        run: yarn workspace @rwdocs/backstage-plugin-rw-backend-module-notifications run build
+
       - name: Publish common to npm
         run: yarn workspace @rwdocs/backstage-plugin-rw-common npm publish --provenance
 
@@ -70,6 +76,9 @@ jobs:
 
       - name: Publish search collator to npm
         run: yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw npm publish --provenance
+
+      - name: Publish notifications module to npm
+        run: yarn workspace @rwdocs/backstage-plugin-rw-backend-module-notifications npm publish --provenance
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
