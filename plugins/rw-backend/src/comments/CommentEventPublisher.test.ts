@@ -77,6 +77,7 @@ describe("CommentEventPublisher", () => {
       kind: "created",
       audience: "owner",
       recipients: ["group:default/team"],
+      actorRef: "user:default/alice", // forwarded as excludeEntityRef by the notifier
       entityRef: "component:default/site",
       pageRef: "sec-1#setup",
       deepLinkSuffix: "/docs/guide/setup#comment-c1",
@@ -187,7 +188,43 @@ describe("CommentEventPublisher", () => {
     expect(published).toHaveLength(0);
   });
 
-  it("commenter-side: reply notifies prior participants minus the actor", async () => {
+  it("owner-side: still publishes when the section owner IS the actor (recipients=[actor], dropped at delivery)", async () => {
+    // Guards the refactor: the publisher no longer strips the actor from owner recipients, so an
+    // owner commenting on their own section still emits an owner-side event (recipients=[actor]);
+    // the notifier's excludeEntityRef drops them at delivery. If the literal-ref filter were
+    // re-added here, recipients would empty out and this event would silently stop publishing —
+    // re-opening the self-notify hole. (The other owner-side fixtures use owner=group != actor,
+    // so the deleted filter was a no-op in them and would NOT catch such a regression.)
+    const { events, published } = fakeEvents();
+    const sections = {
+      getSection: async () => ({
+        site_ref: "component:default/site",
+        section_ref: "sec-1",
+        section_path: "guide",
+        parent_section_ref: null,
+        entity_ref: "component:default/site",
+        entity_owner_ref: "user:default/alice",
+      }),
+    } as any;
+    const pub = new CommentEventPublisher({
+      events,
+      sections,
+      comments: { participantsOf: async () => [] } as any,
+      logger,
+      pages: fakePages(),
+    });
+
+    await pub.onCommentCreated(row({ parent_id: null }), "user:default/alice");
+
+    expect(published).toHaveLength(1);
+    expect(published[0].eventPayload).toMatchObject({
+      audience: "owner",
+      recipients: ["user:default/alice"],
+      actorRef: "user:default/alice",
+    });
+  });
+
+  it("commenter-side: reply recipients include all thread participants (actor not stripped here)", async () => {
     const { events, published } = fakeEvents();
     const sections = {
       getSection: async () => ({
@@ -221,14 +258,19 @@ describe("CommentEventPublisher", () => {
       audience: "participants",
       commentId: "c2",
       rootId: "c1",
-      recipients: ["user:default/alice"],
+      // The actor (bob) is NOT stripped here — recipients are the raw participant set; the
+      // notifier forwards the actor as excludeEntityRef so the resolver drops them at delivery.
+      recipients: ["user:default/alice", "user:default/bob"],
       // deeplink anchors on the thread root (c1), not the reply (c2),
       // so opening the notification lands on the whole thread.
       deepLinkSuffix: "/docs/guide/setup#comment-c1",
     });
   });
 
-  it("commenter-side: no publish when the actor is the only participant", async () => {
+  it("commenter-side: still publishes when the actor is the only participant (resolver drops them at delivery)", async () => {
+    // The publisher no longer short-circuits the actor-only case; it emits the raw participant
+    // set and the notifier's excludeEntityRef makes the resolver drop the actor, yielding no
+    // notification. (Slightly more work than the old early-exit, but a single exclusion path.)
     const { events, published } = fakeEvents();
     const comments = { participantsOf: async () => ["user:default/bob"] } as any;
     const pub = new CommentEventPublisher({
@@ -242,7 +284,8 @@ describe("CommentEventPublisher", () => {
       row({ id: "c2", parent_id: "c1", author_ref: "user:default/bob" }),
       "user:default/bob",
     );
-    expect(published).toHaveLength(0);
+    expect(published).toHaveLength(1);
+    expect(published[0].eventPayload).toMatchObject({ recipients: ["user:default/bob"] });
   });
 
   it("owner-side: actorName comes from author_profile in the row", async () => {
@@ -271,7 +314,7 @@ describe("CommentEventPublisher", () => {
     expect(published[0].eventPayload).toMatchObject({ actorName: "Alice Smith" });
   });
 
-  it("resolve: notifies all participants minus the resolver; uses passed-in actorName", async () => {
+  it("resolve: recipients include all participants (resolver not stripped here); uses passed-in actorName", async () => {
     const { events, published } = fakeEvents();
     const sections = { getSection: async () => undefined } as any; // degraded link OK
     const comments = {
@@ -295,7 +338,8 @@ describe("CommentEventPublisher", () => {
     expect(published[0].eventPayload).toMatchObject({
       kind: "resolved",
       audience: "participants",
-      recipients: ["user:default/alice"],
+      // resolver (bob) is not stripped here; excludeEntityRef drops them at delivery.
+      recipients: ["user:default/alice", "user:default/bob"],
       entityRef: null, // degraded: no section row
       actorName: "Bob Builder",
     });

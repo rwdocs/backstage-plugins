@@ -4,10 +4,12 @@ import { NotificationService } from "@backstage/plugin-notifications-node";
 import { CommentEventPayload } from "@rwdocs/backstage-plugin-rw-common";
 
 /** Subscriber-side: turns a self-contained `rw.comments` event into a native notification.
- *  Pure presentation + delivery — no DB, no recipient resolution. The one catalog-path
- *  convention (`/catalog/<ns>/<kind>/<name>`) is isolated here: the backend can't resolve
- *  the frontend's catalog routeRef, so the app-relative link is composed from the entity ref
- *  by convention. Best-effort: catches + logs, always resolves. */
+ *  Presentation + delivery — no DB. The publisher emits raw owner/participant recipients (which may
+ *  include the actor); this is the single point of actor exclusion: the actor is forwarded as
+ *  `excludeEntityRef` so Backstage's resolver drops them after expanding groups. The one catalog-path
+ *  convention (`/catalog/<ns>/<kind>/<name>`) is isolated here: the backend can't resolve the
+ *  frontend's catalog routeRef, so the app-relative link is composed from the entity ref by
+ *  convention. Best-effort: catches + logs, always resolves. */
 export class CommentNotifier {
   private readonly notifications: NotificationService;
   private readonly logger: LoggerService;
@@ -26,7 +28,13 @@ export class CommentNotifier {
     }
     try {
       await this.notifications.send({
-        recipients: { type: "entity", entityRef: payload.recipients },
+        // Single point of actor exclusion (see class doc): the resolver drops the actor from
+        // the resolved recipients, including from an expanded group.
+        recipients: {
+          type: "entity",
+          entityRef: payload.recipients,
+          excludeEntityRef: payload.actorRef,
+        },
         payload: {
           title: this.title(payload),
           description: this.description(payload),
@@ -51,12 +59,16 @@ export class CommentNotifier {
 
   /** Defensive shape guard at the subscriber boundary: the module casts the raw event
    *  payload to `CommentEventPayload`, so a malformed or foreign event on the topic would
-   *  otherwise flow straight into `send`. Validates the fields this notifier relies on. */
+   *  otherwise flow straight into `send`. Validates the fields this notifier relies on —
+   *  including `actorRef`, the sole basis for actor exclusion (passed as `excludeEntityRef`);
+   *  without it the exclusion silently becomes a no-op and the actor self-notifies. */
   private isValid(payload: CommentEventPayload): boolean {
     return (
       !!payload &&
       (payload.kind === "created" || payload.kind === "resolved") &&
       typeof payload.rootId === "string" &&
+      typeof payload.actorRef === "string" &&
+      payload.actorRef.length > 0 &&
       Array.isArray(payload.recipients) &&
       payload.recipients.length > 0
     );
