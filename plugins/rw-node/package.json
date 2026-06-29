@@ -1,11 +1,11 @@
 {
-  "name": "@rwdocs/backstage-plugin-rw-backend-module-notifications",
+  "name": "@rwdocs/backstage-plugin-rw-node",
   "version": "0.1.7",
   "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rwdocs/backstage-plugins.git",
-    "directory": "plugins/rw-backend-module-notifications"
+    "directory": "plugins/rw-node"
   },
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -16,12 +16,12 @@
   "publishConfig": {
     "access": "public",
     "main": "dist/index.cjs.js",
+    "module": "dist/index.esm.js",
     "types": "dist/index.d.ts"
   },
   "backstage": {
-    "role": "backend-plugin-module",
-    "pluginId": "rw",
-    "pluginPackage": "@rwdocs/backstage-plugin-rw-backend"
+    "role": "node-library",
+    "pluginId": "rw"
   },
   "files": [
     "dist",
@@ -40,19 +40,10 @@
     "postpack": "backstage-cli package postpack"
   },
   "dependencies": {
-    "@backstage/catalog-model": "^1.7.6",
-    "@rwdocs/backstage-plugin-rw-common": "workspace:^",
-    "@rwdocs/backstage-plugin-rw-node": "workspace:^"
-  },
-  "peerDependencies": {
-    "@backstage/backend-plugin-api": "^1.0.0",
-    "@backstage/plugin-notifications-node": "^0.2.27"
+    "@backstage/backend-plugin-api": "^1.0.0"
   },
   "devDependencies": {
-    "@backstage/backend-plugin-api": "^1.0.0",
-    "@backstage/backend-test-utils": "^1.11.0",
     "@backstage/cli": "^0.36.0",
-    "@backstage/plugin-notifications-node": "^0.2.27",
     "@types/jest": "^30.0.0",
     "jest": "^30.2.0",
     "prettier": "^3.4.2",

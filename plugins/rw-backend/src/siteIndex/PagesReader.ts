@@ -2,8 +2,8 @@ import type { Knex } from "knex";
 
 const TABLE = "pages";
 
-/** By-key reader for the `pages` registry. Used by the comment-event publisher
- *  to resolve the page title (pageTitle) for a given (siteRef, sectionRef, subpath). */
+/** By-key reader for the `pages` registry. Used by CommentActivityResolver to resolve the page
+ *  title for a given (siteRef, sectionRef, subpath). */
 export class PagesReader {
   constructor(private readonly knex: Knex) {}
 

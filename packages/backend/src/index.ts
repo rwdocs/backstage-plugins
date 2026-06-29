@@ -17,8 +17,8 @@ backend.add(import('@backstage/plugin-search-backend-module-catalog'));
 backend.add(import('@rwdocs/backstage-plugin-rw-backend'));
 backend.add(import('@rwdocs/backstage-plugin-search-backend-module-rw'));
 // Doc-comment notifications: the native notifications + signals backends, plus
-// the opt-in rw notifications module that turns rw.comments events into
-// notifications. (eventsServiceRef ships in-process with backend-defaults.)
+// the opt-in rw notifications module that registers a CommentProcessor on rw-backend's
+// comment-processing extension point.
 backend.add(import('@backstage/plugin-notifications-backend'));
 backend.add(import('@backstage/plugin-signals-backend'));
 backend.add(import('@rwdocs/backstage-plugin-rw-backend-module-notifications'));

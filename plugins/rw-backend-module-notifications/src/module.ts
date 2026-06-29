@@ -1,34 +1,25 @@
 import { coreServices, createBackendModule } from "@backstage/backend-plugin-api";
-import { eventsServiceRef } from "@backstage/plugin-events-node";
 import { notificationService } from "@backstage/plugin-notifications-node";
-import { RW_COMMENTS_TOPIC, CommentEventPayload } from "@rwdocs/backstage-plugin-rw-common";
+import { rwCommentProcessingExtensionPoint } from "@rwdocs/backstage-plugin-rw-node";
 import { CommentNotifier } from "./CommentNotifier";
 
-/** Opt-in backend module: subscribes to rw-backend's `rw.comments` domain events and
- *  delivers native notifications. Installing this module is the opt-in; omitting it is the
- *  opt-out (rw-backend still publishes harmlessly). pluginId is `rw` (it augments the rw
- *  plugin, driven by rw's events) — it is a notification *sender*, not a *processor*, so it
- *  registers into no notifications-plugin extension point. */
+/** Opt-in backend module: registers a CommentProcessor on rw-backend's comment-processing
+ *  extension point and delivers native notifications. Installing this module is the opt-in;
+ *  omitting it means rw-backend resolves nothing extra. pluginId is `rw` (it augments the rw
+ *  plugin). No DB, events, or catalog — it only formats a resolved CommentActivity and sends. */
 export default createBackendModule({
   pluginId: "rw",
   moduleId: "notifications",
   register(env) {
     env.registerInit({
       deps: {
-        events: eventsServiceRef,
-        notifications: notificationService,
         logger: coreServices.logger,
+        notifications: notificationService,
+        comments: rwCommentProcessingExtensionPoint,
       },
-      async init({ events, notifications, logger }) {
-        const notifier = new CommentNotifier({ notifications, logger });
-        await events.subscribe({
-          id: "rw-comment-notifications",
-          topics: [RW_COMMENTS_TOPIC],
-          onEvent: async (params) => {
-            await notifier.handle(params.eventPayload as CommentEventPayload);
-          },
-        });
-        logger.info("rw notifications module subscribed to rw.comments");
+      async init({ logger, notifications, comments }) {
+        comments.addProcessor(new CommentNotifier({ notifications, logger }));
+        logger.info("rw notifications module registered a comment processor");
       },
     });
   },

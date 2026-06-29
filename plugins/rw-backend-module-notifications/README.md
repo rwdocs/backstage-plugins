@@ -1,8 +1,9 @@
 # @rwdocs/backstage-plugin-rw-backend-module-notifications
 
-Opt-in backend module that delivers **doc-comment notifications**. It subscribes to the
-`rw.comments` domain events published by `@rwdocs/backstage-plugin-rw-backend` and sends
-native Backstage notifications:
+Opt-in backend module that delivers **doc-comment notifications**. It registers a
+`CommentProcessor` on `@rwdocs/backstage-plugin-rw-backend`'s comment-processing extension
+point (`rwCommentProcessingExtensionPoint`); rw-backend resolves each comment action into a
+`CommentActivity` and hands it to the processor, which sends native Backstage notifications:
 
 - **Owner-side:** a new top-level comment on docs owned by a group notifies that group.
 - **Commenter-side:** a reply to a thread, or resolution of a thread, notifies all prior
@@ -24,13 +25,15 @@ backend.add(import('@backstage/plugin-signals-backend')); // real-time updates
 // packages/app/src/App.tsx — add the notifications + signals frontend plugins
 ```
 
-### Events
+### Same-backend requirement
 
-`rw-backend` publishes `rw.comments` via the core `eventsServiceRef`, which ships in-process
-with `backend-defaults` — **no extra package is required** for single-backend deployments.
-Install `@backstage/plugin-events-backend` only if your backend runs as multiple instances
-and you need cross-process event distribution.
-(rw-backend's publish and this module's subscription must run in the same backend process for the in-process events service to route between them — the default single-backend setup.)
+This module is wired to rw-backend through an **in-process extension point**, not an event
+bus. The processor must therefore run in the **same backend process** as
+`@rwdocs/backstage-plugin-rw-backend` (which registers `rwCommentProcessingExtensionPoint`).
+There is no `@backstage/plugin-events-backend` dependency and nothing crosses a process
+boundary, so no extra package is needed — but a multi-process deployment that splits this
+module out from rw-backend would leave its extension-point dependency unsatisfied and is not
+supported.
 
 ### Notification topics
 
@@ -75,5 +78,5 @@ are cleaned up by `notifications.retention` (default `1y`).
 ### Notes
 
 - Notification links resolve into the entity's RW docs tab at the comment anchor.
-- If you don't install this module, `rw-backend` still publishes events harmlessly and
-  commenting is unaffected.
+- If you don't install this module, rw-backend simply has no comment processor registered;
+  commenting is unaffected and no notifications are sent.
