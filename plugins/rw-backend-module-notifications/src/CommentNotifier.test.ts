@@ -51,14 +51,34 @@ describe("CommentNotifier", () => {
     expect(arg.payload.topic).toBe("comment:thread:created");
     expect(arg.payload.title).toBe("Jane Doe commented on Guide · Docs");
     expect(arg.payload.description).toBe("hello");
-    expect(arg.payload.scope).toBe("rw:comment:c1");
+    expect(arg.payload.scope).toBe("rw:page:component:default/site|sec-1#guide");
     expect(arg.payload.severity).toBe("normal");
     expect(arg.payload.link).toBe("/catalog/default/component/my-docs/docs/guide#comment-c1");
+  });
+
+  it("two top-level creates on the same page → identical scope (per-page coalescing)", async () => {
+    // The point of per-page scope: distinct threads on one page share a scope so the
+    // backend deduplicates them to one self-updating row. A scope that included rootId
+    // would defeat this and still pass the single-create test above.
+    await notifier.process(makeActivity({ commentId: "c1", rootId: "c1" }));
+    await notifier.process(makeActivity({ commentId: "c2", rootId: "c2" }));
+
+    expect(send.mock.calls[0][0].payload.scope).toBe("rw:page:component:default/site|sec-1#guide");
+    expect(send.mock.calls[1][0].payload.scope).toBe(send.mock.calls[0][0].payload.scope);
+  });
+
+  it("top-level create vs reply on the same thread → disjoint scopes (reply not coalesced into owner row)", async () => {
+    await notifier.process(makeActivity()); // owner-side, top-level create
+    await notifier.process(makeActivity({ commentId: "c2", parentId: "c1" })); // participant-side reply
+
+    expect(send.mock.calls[0][0].payload.scope).toBe("rw:page:component:default/site|sec-1#guide");
+    expect(send.mock.calls[1][0].payload.scope).toBe("rw:comment:c1");
   });
 
   it("reply create → recipients from participants, topic:reply:created, title 'replied on'", async () => {
     await notifier.process(
       makeActivity({
+        commentId: "c2", // the reply's own id; rootId stays "c1" so scope must key on rootId
         parentId: "c1",
         participants: ["user:default/jane", "user:default/bob"],
       }),
@@ -73,12 +93,14 @@ describe("CommentNotifier", () => {
     });
     expect(arg.payload.topic).toBe("comment:reply:created");
     expect(arg.payload.title).toBe("Jane Doe replied on Guide · Docs");
+    expect(arg.payload.scope).toBe("rw:comment:c1");
   });
 
   it("resolve → recipients from participants, topic:thread:resolved, title 'resolved a thread', description prefixed Re:", async () => {
     await notifier.process(
       makeActivity({
         action: "resolved",
+        commentId: "c2", // the resolve's own id; rootId stays "c1" so scope must key on rootId
         rootId: "c1",
         participants: ["user:default/jane", "user:default/bob"],
         bodySnippet: "all set",
@@ -95,6 +117,7 @@ describe("CommentNotifier", () => {
     expect(arg.payload.topic).toBe("comment:thread:resolved");
     expect(arg.payload.title).toBe("Jane Doe resolved a thread on Guide · Docs");
     expect(arg.payload.description).toBe("Re: all set");
+    expect(arg.payload.scope).toBe("rw:comment:c1");
   });
 
   it("null entityRef → link: undefined", async () => {
