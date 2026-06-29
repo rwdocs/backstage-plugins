@@ -16,9 +16,9 @@ the native notifications + signals plugins in the host app:
 
 ```ts
 // packages/backend/src/index.ts
-backend.add(import('@rwdocs/backstage-plugin-rw-backend-module-notifications'));
-backend.add(import('@backstage/plugin-notifications-backend'));
-backend.add(import('@backstage/plugin-signals-backend')); // real-time updates
+backend.add(import("@rwdocs/backstage-plugin-rw-backend-module-notifications"));
+backend.add(import("@backstage/plugin-notifications-backend"));
+backend.add(import("@backstage/plugin-signals-backend")); // real-time updates
 ```
 
 ```ts
@@ -74,6 +74,59 @@ notifications:
 Supply human-readable labels via the settings card's `originNames` / `topicNames`
 props (see `packages/app/src/notificationSettings.tsx` in this repo). Stale topics
 are cleaned up by `notifications.retention` (default `1y`).
+
+### Coalescing & burst control
+
+Each notification carries a coalescing `scope`. The backend dedups on
+`(user, scope, origin)`, overwriting the prior row in place rather than adding a new
+one. The two sides use different scope namespaces:
+
+- **Owner-side** (a new top-level comment → the owning group): **per-page**
+  (`rw:page:<siteRef>|<pageRef>`). A burst of new comments on one doc collapses into a
+  **single self-updating notification** — the row shows the latest event, last-write-wins.
+  This is the flood control: an owning group accumulates one inbox row per doc, not one per
+  comment, during a hot-doc burst.
+- **Participant-side** (replies + resolves → prior participants): **per-thread**
+  (`rw:comment:<rootId>`), so each thread keeps its own self-updating row.
+
+The owner-side notification therefore reads as _"which docs need attention"_ (doc-level); the
+**Comments inbox tab** remains the _"what specifically"_ worklist. Note: Backstage re-fires the
+realtime `new_notification` signal on every event even when it only updates an existing row, so
+the Web badge still blinks per event (one row, repeated signal).
+
+### Optional: Slack delivery
+
+The official `@backstage/plugin-notifications-backend-module-slack` (a first-party
+`NotificationProcessor`) delivers these same notifications to Slack with **no code change
+here** — install and configure it in the host backend:
+
+```ts
+// packages/backend/src/index.ts
+backend.add(import("@backstage/plugin-notifications-backend-module-slack"));
+```
+
+```yaml
+# app-config.yaml
+notifications:
+  processors:
+    slack:
+      - token: ${SLACK_BOT_TOKEN}
+```
+
+Resolve a recipient to a Slack target via a `slack.com/bot-notify` annotation (Slack
+user/channel ID, recommended), with a fallback to `spec.profile.email` →
+`users.lookupByEmail` for User entities.
+
+Because this module already routes owner-side notifications to a **group** and
+participant-side to **users**, the Slack module's routing falls out for free:
+
+- A **group** recipient → **one post to that team's Slack channel**.
+- A **user** recipient → a **DM**.
+
+Note: the per-page coalescing above is a property of the Web inbox; the Slack module does not
+fold a hot-doc burst into a single channel post, so owner-side bursts still produce one channel
+message per comment. Time-windowed digests, quiet hours, and per-user frequency caps are not
+native to Backstage and are out of scope for this module.
 
 ### Notes
 

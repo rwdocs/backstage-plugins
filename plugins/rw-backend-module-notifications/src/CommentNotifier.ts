@@ -25,10 +25,17 @@ export class CommentNotifier implements CommentProcessor {
 
   async process(comment: CommentActivity): Promise<void> {
     let recipients: string[];
+    let scope: string;
     if (comment.action === "created" && comment.parentId === null) {
+      // Owner-side burst path: coalesce per-page so a hot doc collapses into one
+      // self-updating Web inbox row per recipient group, not one row per comment.
       recipients = comment.sectionOwnerRef ? [comment.sectionOwnerRef] : [];
+      scope = `rw:page:${comment.siteRef}|${comment.pageRef}`;
     } else {
+      // Participant-side (replies + resolves): per-thread, so each conversation keeps its
+      // own self-updating row rather than coalescing across threads on the same page.
       recipients = comment.participants;
+      scope = `rw:comment:${comment.rootId}`;
     }
     if (recipients.length === 0) return; // nothing to notify
 
@@ -47,9 +54,10 @@ export class CommentNotifier implements CommentProcessor {
           link: this.link(comment),
           severity: "normal",
           topic: this.topic(comment),
-          // Per-thread collapse: activities on one thread share this scope, and the backend
-          // dedups on (user, scope, origin) — not topic — overwriting the prior row in place.
-          scope: `rw:comment:${comment.rootId}`,
+          // The backend dedups on (user, scope, origin) — not topic — overwriting the prior
+          // row in place. The two namespaces (rw:page:… vs rw:comment:…) are disjoint, so a
+          // reply is never swallowed by the page-level owner row.
+          scope,
         },
       });
     } catch (error) {
