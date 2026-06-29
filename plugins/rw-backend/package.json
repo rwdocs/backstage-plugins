@@ -13,10 +13,15 @@
     ".": "./src/index.ts",
     "./package.json": "./package.json"
   },
+  "typesVersions": {
+    "*": {
+      "package.json": [
+        "package.json"
+      ]
+    }
+  },
   "publishConfig": {
-    "access": "public",
-    "main": "dist/index.cjs.js",
-    "types": "dist/index.d.ts"
+    "access": "public"
   },
   "backstage": {
     "role": "backend-plugin",
@@ -24,7 +29,8 @@
     "pluginPackages": [
       "@rwdocs/backstage-plugin-rw",
       "@rwdocs/backstage-plugin-rw-backend",
-      "@rwdocs/backstage-plugin-rw-common"
+      "@rwdocs/backstage-plugin-rw-common",
+      "@rwdocs/backstage-plugin-rw-node"
     ]
   },
   "files": [
