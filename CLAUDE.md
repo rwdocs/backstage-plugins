@@ -4,13 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Backstage plugins for embedding RW documentation sites. Yarn 4.12.0 workspace monorepo with five packages:
+Backstage plugins for embedding RW documentation sites. Yarn 4.12.0 workspace monorepo with six packages:
 
 - **`@rwdocs/backstage-plugin-rw`** (frontend) — Renders RW docs in Backstage UI via `@rwdocs/viewer`
 - **`@rwdocs/backstage-plugin-rw-backend`** (backend) — Express-based API serving docs via `@rwdocs/core`
 - **`@rwdocs/backstage-plugin-search-backend-module-rw`** (search) — Indexes RW documentation for Backstage search via a collator module
 - **`@rwdocs/backstage-plugin-rw-common`** (common) — Shared utilities: entity path construction, annotation parsing, S3 config reading
-- **`@rwdocs/backstage-plugin-rw-backend-module-notifications`** (notifications) — Opt-in backend module: subscribes to `rw.comments` events and delivers doc-comment notifications via the native notifications plugin
+- **`@rwdocs/backstage-plugin-rw-node`** (node-library) — Knex-free shared library: the comment-processing extension point (`rwCommentProcessingExtensionPoint`) plus the `CommentProcessor` / `CommentActivity` types. rw-backend registers the extension point and pushes a resolved `CommentActivity`; the notifications module registers a `CommentProcessor`. No `@rwdocs/core`, no DB.
+- **`@rwdocs/backstage-plugin-rw-backend-module-notifications`** (notifications) — Opt-in backend module: registers a `CommentProcessor` on rw-backend's comment-processing extension point that formats a resolved `CommentActivity` and delivers doc-comment notifications via the native notifications plugin. No DB, events, or catalog.
 
 ## Commands
 

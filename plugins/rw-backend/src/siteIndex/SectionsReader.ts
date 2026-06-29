@@ -3,7 +3,7 @@ import { SectionRow } from "./types";
 
 const TABLE = "sections";
 
-/** By-key reader for the dense `sections` registry. Used by the comment-event publisher
+/** By-key reader for the dense `sections` registry. Used by CommentActivityResolver
  *  to resolve a section's effective owner (`entity_owner_ref`), its owning entity
  *  (`entity_ref`), and its owner-relative `section_path` for the deep link. One indexed
  *  point-read on PK (site_ref, section_ref); no RwSite load. Kept separate from the

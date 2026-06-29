@@ -5,6 +5,7 @@
     "plugins/rw-common/src",
     "plugins/rw-backend/src",
     "plugins/rw-common/config.d.ts",
+    "plugins/rw-node/src",
     "plugins/rw-backend-module-notifications/src",
     "plugins/search-backend-module-rw/src",
     "plugins/search-backend-module-rw/config.d.ts",

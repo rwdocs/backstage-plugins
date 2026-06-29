@@ -17,12 +17,16 @@ import {
   toEntityPath,
 } from "@rwdocs/backstage-plugin-rw-common";
 import { catalogServiceRef } from "@backstage/plugin-catalog-node";
-import { eventsServiceRef } from "@backstage/plugin-events-node";
+import {
+  rwCommentProcessingExtensionPoint,
+  CommentProcessor,
+} from "@rwdocs/backstage-plugin-rw-node";
 import { createRouter } from "./router";
 import { Hub, type HubOptions } from "./hub";
 import { CommentStore } from "./comments/CommentStore";
 import { createCommentsRouter } from "./comments/router";
-import { CommentEventPublisher } from "./comments/CommentEventPublisher";
+import { CommentActivityResolver } from "./comments/CommentActivityResolver";
+import { CommentPostProcessor } from "./comments/CommentPostProcessor";
 import { SectionsReader } from "./siteIndex/SectionsReader";
 import { PagesReader } from "./siteIndex/PagesReader";
 import { commentResourceRef, isCommentAuthor } from "./comments/permissions";
@@ -33,6 +37,12 @@ import { createInboxRouter } from "./inbox/inboxRouter";
 export const rwPlugin = createBackendPlugin({
   pluginId: "rw",
   register(env) {
+    const commentProcessors = new Array<CommentProcessor>();
+    env.registerExtensionPoint(rwCommentProcessingExtensionPoint, {
+      addProcessor: (...processors) => {
+        commentProcessors.push(...processors.flat());
+      },
+    });
     env.registerInit({
       deps: {
         httpRouter: coreServices.httpRouter,
@@ -46,7 +56,6 @@ export const rwPlugin = createBackendPlugin({
         userInfo: coreServices.userInfo,
         auth: coreServices.auth,
         catalog: catalogServiceRef,
-        events: eventsServiceRef,
       },
       async init({
         httpRouter,
@@ -60,7 +69,6 @@ export const rwPlugin = createBackendPlugin({
         userInfo,
         auth,
         catalog,
-        events,
       }) {
         const siteConfig = readRwSiteConfig(config);
         const cacheSize = config.getOptionalNumber("rw.cacheSize");
@@ -109,12 +117,18 @@ export const rwPlugin = createBackendPlugin({
         const siteRefreshStore = new SiteRefreshStore(client);
         const sectionsReader = new SectionsReader(client);
         const pagesReader = new PagesReader(client);
-        const publisher = new CommentEventPublisher({
-          events,
+        const resolver = new CommentActivityResolver({
           sections: sectionsReader,
-          comments: store,
-          logger,
           pages: pagesReader,
+          comments: store,
+          catalog,
+          auth,
+          logger,
+        });
+        const postProcessor = new CommentPostProcessor({
+          resolver,
+          processors: commentProcessors,
+          logger,
         });
         const makeSite = makeSiteFactory(siteConfig);
 
@@ -194,7 +208,7 @@ export const rwPlugin = createBackendPlugin({
             permissionsRegistry,
             catalog,
             commentsEnabled,
-            publisher,
+            postProcessor,
           }),
         );
         httpRouter.addAuthPolicy({

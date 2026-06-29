@@ -143,7 +143,7 @@ export class CommentStore {
   /**
    * Distinct author refs participating in a thread: the root comment plus its direct,
    * non-deleted replies (threads are one level deep, so `rootId` is the parent of every
-   * reply). Used by the comment-event publisher to address commenter-side notifications.
+   * reply). Used by CommentActivityResolver to address commenter-side notifications.
    * Order is stable (creation order) so notification recipient lists are deterministic.
    */
   async participantsOf(rootId: string): Promise<string[]> {

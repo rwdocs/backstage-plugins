@@ -9,7 +9,7 @@ import { AuthorizeResult } from "@backstage/plugin-permission-common";
 import type { PermissionsService } from "@backstage/backend-plugin-api";
 import { CommentStore } from "./CommentStore";
 import { createCommentsRouter } from "./router";
-import { CommentEventPublisher } from "./CommentEventPublisher";
+import { CommentPostProcessor } from "./CommentPostProcessor";
 
 jest.mock("@rwdocs/core", () => ({
   renderCommentBody: jest.fn(async (md: string) => `<p>${md}</p>`),
@@ -846,9 +846,9 @@ describe("comments router", () => {
     expect(res.body).toEqual({ enabled: true });
   });
 
-  // ── Task 6: publisher wiring ─────────────────────────────────────────────
+  // ── post-processing wiring ───────────────────────────────────────────────
 
-  async function buildAppWithPublisher(publisher: CommentEventPublisher) {
+  async function buildAppWithPostProcessor(postProcessor: CommentPostProcessor) {
     const knex = await databases.init("SQLITE_3");
     await knex.migrate.latest({
       directory: resolvePackagePath("@rwdocs/backstage-plugin-rw-backend", "migrations"),
@@ -875,7 +875,7 @@ describe("comments router", () => {
           ],
         }),
         commentsEnabled: true,
-        publisher,
+        postProcessor,
       }),
     );
     app.use(
@@ -891,32 +891,28 @@ describe("comments router", () => {
     return { server, store };
   }
 
-  it("fire-and-forgets onCommentCreated after a successful create", async () => {
-    const onCommentCreated = jest.fn().mockResolvedValue(undefined);
-    const onCommentResolved = jest.fn().mockResolvedValue(undefined);
-    const publisher = { onCommentCreated, onCommentResolved } as unknown as CommentEventPublisher;
-    const { server } = await buildAppWithPublisher(publisher);
+  it("calls postProcess('created', ...) after a successful create", async () => {
+    const postProcess = jest.fn();
+    const postProcessor = { postProcess } as unknown as CommentPostProcessor;
+    const { server } = await buildAppWithPostProcessor(postProcessor);
 
     const res = await request(server)
       .post("/comments")
-      .send({ siteRef: ARCH, documentId: DOC, body: "hello publisher", selectors: [] });
+      .send({ siteRef: ARCH, documentId: DOC, body: "hello postProcessor", selectors: [] });
     expect(res.status).toBe(201);
 
-    // Let the fire-and-forget settle before asserting
-    await new Promise((resolve) => setImmediate(resolve));
-
-    expect(onCommentCreated).toHaveBeenCalledTimes(1);
-    const [rowArg, actorArg] = onCommentCreated.mock.calls[0];
-    expect(rowArg.parent_id).toBeNull();
-    expect(typeof actorArg).toBe("string");
-    expect(onCommentResolved).not.toHaveBeenCalled();
+    expect(postProcess).toHaveBeenCalledWith(
+      "created",
+      expect.objectContaining({ id: expect.any(String) }),
+      expect.any(String),
+    );
+    expect(postProcess).toHaveBeenCalledTimes(1);
   });
 
-  it("fire-and-forgets onCommentResolved after a resolve PATCH", async () => {
-    const onCommentCreated = jest.fn().mockResolvedValue(undefined);
-    const onCommentResolved = jest.fn().mockResolvedValue(undefined);
-    const publisher = { onCommentCreated, onCommentResolved } as unknown as CommentEventPublisher;
-    const { server, store } = await buildAppWithPublisher(publisher);
+  it("calls postProcess('resolved', ...) after a resolve PATCH", async () => {
+    const postProcess = jest.fn();
+    const postProcessor = { postProcess } as unknown as CommentPostProcessor;
+    const { server, store } = await buildAppWithPostProcessor(postProcessor);
 
     // Seed a top-level comment directly in the store
     const row = await store.create(ARCH, {
@@ -929,21 +925,14 @@ describe("comments router", () => {
     const res = await request(server).patch(`/comments/${row.id}`).send({ status: "resolved" });
     expect(res.status).toBe(200);
 
-    await new Promise((resolve) => setImmediate(resolve));
-
-    expect(onCommentResolved).toHaveBeenCalledTimes(1);
-    const [resolvedRowArg, actorArg, resolverNameArg] = onCommentResolved.mock.calls[0];
-    expect(resolvedRowArg.id).toBe(row.id);
-    expect(typeof actorArg).toBe("string");
-    // resolverName is the third arg: string (display name) or undefined (if not resolvable)
-    expect(resolverNameArg === undefined || typeof resolverNameArg === "string").toBe(true);
+    expect(postProcess).toHaveBeenCalledWith("resolved", expect.anything(), expect.any(String));
+    expect(postProcess).toHaveBeenCalledTimes(1);
   });
 
-  it("does NOT call onCommentResolved on reopen (status:'open') or edit (body)", async () => {
-    const onCommentCreated = jest.fn().mockResolvedValue(undefined);
-    const onCommentResolved = jest.fn().mockResolvedValue(undefined);
-    const publisher = { onCommentCreated, onCommentResolved } as unknown as CommentEventPublisher;
-    const { server, store } = await buildAppWithPublisher(publisher);
+  it("does NOT call postProcess('resolved', ...) on reopen (status:'open') or edit (body)", async () => {
+    const postProcess = jest.fn();
+    const postProcessor = { postProcess } as unknown as CommentPostProcessor;
+    const { server, store } = await buildAppWithPostProcessor(postProcessor);
 
     // Seed a resolved top-level comment to reopen
     const row = await store.create(ARCH, {
@@ -958,8 +947,7 @@ describe("comments router", () => {
     const reopenRes = await request(server).patch(`/comments/${row.id}`).send({ status: "open" });
     expect(reopenRes.status).toBe(200);
 
-    await new Promise((resolve) => setImmediate(resolve));
-    expect(onCommentResolved).not.toHaveBeenCalled();
+    expect(postProcess).not.toHaveBeenCalledWith("resolved", expect.anything(), expect.anything());
 
     // Edit (body change by author)
     const editRes = await request(server)
@@ -967,11 +955,10 @@ describe("comments router", () => {
       .send({ body: "edited body" });
     expect(editRes.status).toBe(200);
 
-    await new Promise((resolve) => setImmediate(resolve));
-    expect(onCommentResolved).not.toHaveBeenCalled();
+    expect(postProcess).not.toHaveBeenCalledWith("resolved", expect.anything(), expect.anything());
   });
 
-  // ── End Task 6: publisher wiring ─────────────────────────────────────────
+  // ── End post-processing wiring ───────────────────────────────────────────
 
   // ── Preserved-seam guard (Task 1) ────────────────────────────────────────
   // This test locks the viewer wire: GET ?documentId= / POST body.documentId /
