@@ -16,7 +16,7 @@ export interface CommentActivity {
   actorRef: string; // the user who triggered the activity
   actorName: string; // resolved display name
   participants: string[]; // distinct author refs, creation order
-  sectionOwnerRef: string | null; // recipient for top-level creates
+  sectionOwnerRef: string | null; // the section's effective owner ref (null => no owner)
   entityRef: string | null; // deep-link target (null => no link)
   pageTitle: string | null;
   sectionTitle: string | null;

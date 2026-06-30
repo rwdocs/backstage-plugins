@@ -3,20 +3,29 @@ import { parseEntityRef } from "@backstage/catalog-model";
 import { NotificationService } from "@backstage/plugin-notifications-node";
 import { buildCommentDeepLinkSuffix } from "@rwdocs/backstage-plugin-rw-common";
 import { CommentActivity, CommentProcessor } from "@rwdocs/backstage-plugin-rw-node";
+import { CommentRecipientResolver } from "./CommentRecipientResolver";
+import { DefaultCommentRecipientResolver } from "./DefaultCommentRecipientResolver";
+import { isNewThread } from "./activityKind";
 
 /** CommentProcessor that turns a resolved CommentActivity into a native notification.
- *  Presentation + delivery only — no DB, events, or catalog. Computes recipients from the
- *  activity's raw owner/participants fields; the actor is forwarded as excludeEntityRef so the
- *  notifications resolver drops them after expanding groups (the single point of actor
+ *  Presentation + delivery only — no DB, events, or catalog. Delegates recipient selection to a
+ *  CommentRecipientResolver (custom-or-default); the actor is forwarded as excludeEntityRef so
+ *  the notifications resolver drops them after expanding groups (the single point of actor
  *  exclusion). The one catalog-path convention (`/catalog/<ns>/<kind>/<name>`) is isolated here.
  *  Best-effort: catches + logs on send failure, never throws. */
 export class CommentNotifier implements CommentProcessor {
   private readonly notifications: NotificationService;
   private readonly logger: LoggerService;
+  private readonly recipientResolver: CommentRecipientResolver;
 
-  constructor(opts: { notifications: NotificationService; logger: LoggerService }) {
+  constructor(opts: {
+    notifications: NotificationService;
+    logger: LoggerService;
+    recipientResolver?: CommentRecipientResolver;
+  }) {
     this.notifications = opts.notifications;
     this.logger = opts.logger;
+    this.recipientResolver = opts.recipientResolver ?? new DefaultCommentRecipientResolver();
   }
 
   getName(): string {
@@ -25,24 +34,28 @@ export class CommentNotifier implements CommentProcessor {
 
   async process(comment: CommentActivity): Promise<void> {
     let recipients: string[];
-    let scope: string;
-    if (comment.action === "created" && comment.parentId === null) {
-      // Owner-side burst path: coalesce per-page so a hot doc collapses into one
-      // self-updating Web inbox row per recipient group, not one row per comment.
-      recipients = comment.sectionOwnerRef ? [comment.sectionOwnerRef] : [];
-      scope = `rw:page:${comment.siteRef}|${comment.pageRef}`;
-    } else {
-      // Participant-side (replies + resolves): per-thread, so each conversation keeps its
-      // own self-updating row rather than coalescing across threads on the same page.
-      recipients = comment.participants;
-      scope = `rw:comment:${comment.rootId}`;
+    try {
+      recipients = await this.recipientResolver.resolveRecipients(comment);
+    } catch (error) {
+      // Fail-closed: a custom resolver exists to change/restrict the audience, so never fall
+      // back to the broader default on error — discard rather than risk notifying the wrong people.
+      this.logger.error(
+        `rw.comments recipient resolver ${this.recipientResolver.getName()} threw; discarding notification (comment ${comment.commentId}): ${error}`,
+      );
+      return;
     }
     if (recipients.length === 0) return; // nothing to notify
 
+    // Coalescing scope is a property of the activity kind, not the recipients: a new top-level
+    // thread coalesces per-page; replies/resolves coalesce per-thread.
+    const scope = isNewThread(comment)
+      ? `rw:page:${comment.siteRef}|${comment.pageRef}`
+      : `rw:comment:${comment.rootId}`;
+
     try {
       await this.notifications.send({
-        // Single point of actor exclusion: the resolver drops the actor from the resolved
-        // recipients, including from an expanded group.
+        // Single point of actor exclusion: Backstage's notification resolver drops the actor
+        // from the recipients via this field, including from an expanded group.
         recipients: {
           type: "entity",
           entityRef: recipients,
@@ -82,7 +95,7 @@ export class CommentNotifier implements CommentProcessor {
     const s = this.subject(comment);
     const a = this.actor(comment);
     if (comment.action === "resolved") return `${a} resolved a thread on ${s}`;
-    if (comment.parentId === null) return `${a} commented on ${s}`;
+    if (isNewThread(comment)) return `${a} commented on ${s}`;
     return `${a} replied on ${s}`;
   }
 
@@ -91,7 +104,7 @@ export class CommentNotifier implements CommentProcessor {
    *  settings key hash). Mirrors the title() branch. */
   private topic(comment: CommentActivity): string {
     if (comment.action === "resolved") return "comment:thread:resolved";
-    if (comment.parentId === null) return "comment:thread:created";
+    if (isNewThread(comment)) return "comment:thread:created";
     return "comment:reply:created";
   }
 

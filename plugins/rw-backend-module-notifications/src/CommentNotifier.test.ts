@@ -189,4 +189,72 @@ describe("CommentNotifier", () => {
 
     expect(send).not.toHaveBeenCalled();
   });
+
+  describe("with a custom recipient resolver", () => {
+    it("uses the resolver's recipients verbatim (default policy ignored)", async () => {
+      const custom = {
+        getName: () => "custom",
+        resolveRecipients: jest.fn(async () => [
+          "user:default/maintainer-a",
+          "user:default/maintainer-b",
+        ]),
+      };
+      const n = new CommentNotifier({
+        notifications: { send } as any,
+        logger,
+        recipientResolver: custom,
+      });
+
+      await n.process(makeActivity()); // sectionOwnerRef is group:default/docs — must be ignored
+
+      expect(custom.resolveRecipients).toHaveBeenCalledTimes(1);
+      expect(send).toHaveBeenCalledTimes(1);
+      expect(send.mock.calls[0][0].recipients).toEqual({
+        type: "entity",
+        entityRef: ["user:default/maintainer-a", "user:default/maintainer-b"],
+        excludeEntityRef: "user:default/jane",
+      });
+      // scope/topic still derive from the activity kind, not the recipients
+      expect(send.mock.calls[0][0].payload.topic).toBe("comment:thread:created");
+      expect(send.mock.calls[0][0].payload.scope).toBe(
+        "rw:page:component:default/site|sec-1#guide",
+      );
+    });
+
+    it("resolver returns [] → send NOT called", async () => {
+      const custom = {
+        getName: () => "custom",
+        resolveRecipients: jest.fn(async () => [] as string[]),
+      };
+      const n = new CommentNotifier({
+        notifications: { send } as any,
+        logger,
+        recipientResolver: custom,
+      });
+
+      await n.process(makeActivity());
+
+      expect(send).not.toHaveBeenCalled();
+    });
+
+    it("resolver throws → discards (send NOT called), logs at error, never throws", async () => {
+      const boom = new Error("catalog down");
+      const custom = {
+        getName: () => "custom",
+        resolveRecipients: jest.fn(async () => {
+          throw boom;
+        }),
+      };
+      const n = new CommentNotifier({
+        notifications: { send } as any,
+        logger,
+        recipientResolver: custom,
+      });
+
+      await expect(n.process(makeActivity())).resolves.toBeUndefined();
+
+      expect(send).not.toHaveBeenCalled();
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("custom"));
+    });
+  });
 });
