@@ -33,6 +33,8 @@ import { commentResourceRef, isCommentAuthor } from "./comments/permissions";
 import { toCommentResponse } from "./comments/mapping";
 import { InboxStore } from "./inbox/InboxStore";
 import { createInboxRouter } from "./inbox/inboxRouter";
+import { LatestChangesStore } from "./latestChanges/LatestChangesStore";
+import { createLatestChangesRouter } from "./latestChanges/latestChangesRouter";
 
 export const rwPlugin = createBackendPlugin({
   pluginId: "rw",
@@ -111,6 +113,8 @@ export const rwPlugin = createBackendPlugin({
         }
         const store = new CommentStore(client);
         const inboxStore = new InboxStore(client);
+
+        const latestChangesStore = new LatestChangesStore(client);
 
         const sectionOwnershipStore = new SectionOwnershipStore(client);
         const registryStore = new RegistryStore(client);
@@ -195,6 +199,12 @@ export const rwPlugin = createBackendPlugin({
             store: inboxStore,
             commentStore: store,
             siteRefreshStore,
+          }),
+        );
+        httpRouter.use(
+          createLatestChangesRouter({
+            httpAuth,
+            store: latestChangesStore,
           }),
         );
         httpRouter.use(

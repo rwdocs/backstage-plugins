@@ -1,6 +1,11 @@
 import { createApiRef } from "@backstage/core-plugin-api";
 import type { DiscoveryApi, FetchApi } from "@backstage/core-plugin-api";
-import type { InboxQuery, InboxResponse } from "@rwdocs/backstage-plugin-rw-common";
+import type {
+  InboxQuery,
+  InboxResponse,
+  LatestChangesQuery,
+  LatestChangesResponse,
+} from "@rwdocs/backstage-plugin-rw-common";
 import type {
   CommentApiClient,
   Comment,
@@ -8,7 +13,14 @@ import type {
   UpdateCommentRequest,
 } from "@rwdocs/viewer";
 
-export type { InboxItem, InboxQuery, InboxResponse } from "@rwdocs/backstage-plugin-rw-common";
+export type {
+  InboxItem,
+  InboxQuery,
+  InboxResponse,
+  LatestChangeItem,
+  LatestChangesQuery,
+  LatestChangesResponse,
+} from "@rwdocs/backstage-plugin-rw-common";
 
 export interface RwApi {
   getBaseUrl(): Promise<string>;
@@ -16,6 +28,7 @@ export interface RwApi {
   getFetch(): typeof fetch;
   getCommentsEnabled(): Promise<boolean>;
   getCommentInbox(query?: InboxQuery): Promise<InboxResponse>;
+  getLatestChanges(query?: LatestChangesQuery): Promise<LatestChangesResponse>;
   createCommentClient(siteRef: string): CommentApiClient;
 }
 
@@ -63,6 +76,17 @@ export class RwClient implements RwApi {
     const qs = params.toString();
     const res = await this.fetchApi.fetch(`${base}/comments/inbox${qs ? `?${qs}` : ""}`);
     if (!res.ok) throw new Error(`Inbox request failed: ${res.status}`);
+    return res.json();
+  }
+
+  async getLatestChanges(query: LatestChangesQuery = {}): Promise<LatestChangesResponse> {
+    const base = await this.discoveryApi.getBaseUrl("rw");
+    const params = new URLSearchParams();
+    if (query.cursor) params.set("cursor", query.cursor);
+    if (query.limit) params.set("limit", String(query.limit));
+    const qs = params.toString();
+    const res = await this.fetchApi.fetch(`${base}/pages/latest${qs ? `?${qs}` : ""}`);
+    if (!res.ok) throw new Error(`Latest changes request failed: ${res.status}`);
     return res.json();
   }
 
