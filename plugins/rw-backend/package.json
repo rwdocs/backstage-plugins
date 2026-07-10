@@ -60,7 +60,7 @@
     "@backstage/types": "^1.2.2",
     "@rwdocs/backstage-plugin-rw-common": "workspace:^",
     "@rwdocs/backstage-plugin-rw-node": "workspace:^",
-    "@rwdocs/core": "^0.1.28",
+    "@rwdocs/core": "^0.1.30",
     "express": "^4.21.0",
     "express-promise-router": "^4.1.0",
     "luxon": "^3.7.2",

@@ -7305,7 +7305,7 @@ __metadata:
     "@backstage/types": "npm:^1.2.2"
     "@rwdocs/backstage-plugin-rw-common": "workspace:^"
     "@rwdocs/backstage-plugin-rw-node": "workspace:^"
-    "@rwdocs/core": "npm:^0.1.28"
+    "@rwdocs/core": "npm:^0.1.30"
     "@types/express": "npm:^4.17.0"
     "@types/jest": "npm:^30.0.0"
     "@types/supertest": "npm:^7.2.0"
@@ -7373,7 +7373,7 @@ __metadata:
     "@backstage/ui": "npm:^0.16.0"
     "@material-ui/icons": "npm:^4.11.3"
     "@rwdocs/backstage-plugin-rw-common": "workspace:^"
-    "@rwdocs/viewer": "npm:^0.1.27"
+    "@rwdocs/viewer": "npm:^0.1.30"
     "@testing-library/dom": "npm:^10.0.0"
     "@testing-library/jest-dom": "npm:^6.0.0"
     "@testing-library/react": "npm:^16.0.0"
@@ -7414,7 +7414,7 @@ __metadata:
     "@backstage/plugin-search-backend-node": "npm:^1.3.10"
     "@backstage/plugin-search-common": "npm:^1.2.16"
     "@rwdocs/backstage-plugin-rw-common": "workspace:^"
-    "@rwdocs/core": "npm:^0.1.28"
+    "@rwdocs/core": "npm:^0.1.30"
     "@types/jest": "npm:^30.0.0"
     jest: "npm:^30.2.0"
     prettier: "npm:^3.4.2"
@@ -7426,34 +7426,34 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@rwdocs/core-darwin-arm64@npm:0.1.28":
-  version: 0.1.28
-  resolution: "@rwdocs/core-darwin-arm64@npm:0.1.28"
+"@rwdocs/core-darwin-arm64@npm:0.1.30":
+  version: 0.1.30
+  resolution: "@rwdocs/core-darwin-arm64@npm:0.1.30"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@rwdocs/core-linux-x64-gnu@npm:0.1.28":
-  version: 0.1.28
-  resolution: "@rwdocs/core-linux-x64-gnu@npm:0.1.28"
+"@rwdocs/core-linux-x64-gnu@npm:0.1.30":
+  version: 0.1.30
+  resolution: "@rwdocs/core-linux-x64-gnu@npm:0.1.30"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@rwdocs/core-linux-x64-musl@npm:0.1.28":
-  version: 0.1.28
-  resolution: "@rwdocs/core-linux-x64-musl@npm:0.1.28"
+"@rwdocs/core-linux-x64-musl@npm:0.1.30":
+  version: 0.1.30
+  resolution: "@rwdocs/core-linux-x64-musl@npm:0.1.30"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@rwdocs/core@npm:^0.1.28":
-  version: 0.1.28
-  resolution: "@rwdocs/core@npm:0.1.28"
+"@rwdocs/core@npm:^0.1.30":
+  version: 0.1.30
+  resolution: "@rwdocs/core@npm:0.1.30"
   dependencies:
-    "@rwdocs/core-darwin-arm64": "npm:0.1.28"
-    "@rwdocs/core-linux-x64-gnu": "npm:0.1.28"
-    "@rwdocs/core-linux-x64-musl": "npm:0.1.28"
+    "@rwdocs/core-darwin-arm64": "npm:0.1.30"
+    "@rwdocs/core-linux-x64-gnu": "npm:0.1.30"
+    "@rwdocs/core-linux-x64-musl": "npm:0.1.30"
   dependenciesMeta:
     "@rwdocs/core-darwin-arm64":
       optional: true
@@ -7461,19 +7461,18 @@ __metadata:
       optional: true
     "@rwdocs/core-linux-x64-musl":
       optional: true
-  checksum: 10c0/c4fc52bdc6ca6554c9eadb218a8365df0098f2bdd63903a3ce2f92b4491bfd6fad76b34309bfda8db044f6a47601249700b1f07652c576d18edb5bd87e8043fb
+  checksum: 10c0/c06b249fdf23535315e6b3fbc23e4e431b169098baaec3be881aa14a2cf8e654a7dff1fb132a824daca53562ec0aed58376511e55e4d469879b2611e6383f22e
   languageName: node
   linkType: hard
 
-"@rwdocs/viewer@npm:^0.1.27":
-  version: 0.1.28
-  resolution: "@rwdocs/viewer@npm:0.1.28"
+"@rwdocs/viewer@npm:^0.1.30":
+  version: 0.1.30
+  resolution: "@rwdocs/viewer@npm:0.1.30"
   dependencies:
     "@fontsource/jetbrains-mono": "npm:^5.2.8"
     "@fontsource/roboto": "npm:^5.2.10"
-    "@types/diff-match-patch": "npm:^1.0.36"
-    diff-match-patch: "npm:^1.0.5"
-  checksum: 10c0/da18c4ae328fbb86863da61c20866292c07044374d141701dd3fdd117a46cb872779ec0ae7f0d1dacbe771d2ea335a9c9a06f53c6f970fb72734a2600fd6aaa9
+    approx-string-match: "npm:^2.0.0"
+  checksum: 10c0/d128d34923a3ce52bda2ced3d5c8d174846eb5ab0772372adb2f0abd86992aa275daa37206d22844c224e48083b995d7255b5593ef81a610a5285536eca9bddb
   languageName: node
   linkType: hard
 
@@ -8667,13 +8666,6 @@ __metadata:
   dependencies:
     "@types/ms": "npm:*"
   checksum: 10c0/5dcd465edbb5a7f226e9a5efd1f399c6172407ef5840686b73e3608ce135eeca54ae8037dcd9f16bdb2768ac74925b820a8b9ecc588a58ca09eca6acabe33e2f
-  languageName: node
-  linkType: hard
-
-"@types/diff-match-patch@npm:^1.0.36":
-  version: 1.0.36
-  resolution: "@types/diff-match-patch@npm:1.0.36"
-  checksum: 10c0/0bad011ab138baa8bde94e7815064bb881f010452463272644ddbbb0590659cb93f7aa2776ff442c6721d70f202839e1053f8aa62d801cc4166f7a3ea9130055
   languageName: node
   linkType: hard
 
@@ -10225,6 +10217,13 @@ __metadata:
   version: 1.0.0
   resolution: "append-field@npm:1.0.0"
   checksum: 10c0/1b5abcc227e5179936a9e4f7e2af4769fa1f00eda85bbaed907f7964b0fd1f7d61f0f332b35337f391389ff13dd5310c2546ba670f8e5a743b23ec85185c73ef
+  languageName: node
+  linkType: hard
+
+"approx-string-match@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "approx-string-match@npm:2.0.0"
+  checksum: 10c0/afb7fb87f4d4817c78aac8cc5df8c848ccaf68e5ab8157015154db699f076953e41e701e1515abac2e313232778568967a6aa8b3177f9eec9d704a1f288fc86a
   languageName: node
   linkType: hard
 
@@ -13136,13 +13135,6 @@ __metadata:
     asap: "npm:^2.0.0"
     wrappy: "npm:1"
   checksum: 10c0/8a870ed42eade9a397e6141fe5c025148a59ed52f1f28b1db5de216b4d57f0af7a257070c3af7ce3d5508c1ce9dd5009028a76f4b2cc9370dc56551d2355fad8
-  languageName: node
-  linkType: hard
-
-"diff-match-patch@npm:^1.0.5":
-  version: 1.0.5
-  resolution: "diff-match-patch@npm:1.0.5"
-  checksum: 10c0/142b6fad627b9ef309d11bd935e82b84c814165a02500f046e2773f4ea894d10ed3017ac20454900d79d4a0322079f5b713cf0986aaf15fce0ec4a2479980c86
   languageName: node
   linkType: hard
 

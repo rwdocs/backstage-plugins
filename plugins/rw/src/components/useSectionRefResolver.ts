@@ -2,7 +2,7 @@ import { useCallback, useRef } from "react";
 import { useApi, useRouteRef } from "@backstage/core-plugin-api";
 import { catalogApiRef, entityRouteRef } from "@backstage/plugin-catalog-react";
 import { parseEntityRef } from "@backstage/catalog-model";
-import { ANNOTATION_KEY, ROOT_SECTION_REF, entityDocsPath } from "./constants";
+import { ANNOTATION_KEY, isRootSectionRef, entityDocsPath } from "./constants";
 
 export function useSectionRefResolver(
   sourceEntityRef: string,
@@ -17,7 +17,7 @@ export function useSectionRefResolver(
 
       const catalogRefs: string[] = [];
       for (const ref of unknown) {
-        if (ref === ROOT_SECTION_REF) {
+        if (isRootSectionRef(ref)) {
           const { kind, namespace, name } = parseEntityRef(sourceEntityRef);
           const routeUrl = entityDocsPath(entityRoute, { kind, namespace, name });
           cache.current.set(ref, routeUrl);
