@@ -142,6 +142,34 @@ describe("RwClient comment methods", () => {
     expect(url).not.toContain("filter=");
   });
 
+  describe("getLatestChanges", () => {
+    it("GETs /pages/latest with no params", async () => {
+      const { client, fetchMock } = makeClient();
+      const payload = { hasAnyDated: true, items: [], pageInfo: {} };
+      fetchMock.mockResolvedValue({ ok: true, json: async () => payload });
+      const result = await client.getLatestChanges();
+      expect(fetchMock).toHaveBeenCalledWith("http://backstage/api/rw/pages/latest");
+      expect(result).toEqual(payload);
+    });
+
+    it("encodes limit and cursor query params when present", async () => {
+      const { client, fetchMock } = makeClient();
+      const payload = { hasAnyDated: true, items: [], pageInfo: {} };
+      fetchMock.mockResolvedValue({ ok: true, json: async () => payload });
+      await client.getLatestChanges({ limit: 25, cursor: "ABC123" });
+      const url = fetchMock.mock.calls[0][0] as string;
+      expect(url).toContain("/pages/latest?");
+      expect(url).toContain("cursor=ABC123");
+      expect(url).toContain("limit=25");
+    });
+
+    it("throws when the response is not ok", async () => {
+      const { client, fetchMock } = makeClient();
+      fetchMock.mockResolvedValue({ ok: false, status: 503 });
+      await expect(client.getLatestChanges()).rejects.toThrow("Latest changes request failed: 503");
+    });
+  });
+
   it("createCommentClient stays on the documentId viewer wire", async () => {
     const { client, fetchMock } = makeClient();
     fetchMock.mockResolvedValue({ ok: true, json: async () => [] });

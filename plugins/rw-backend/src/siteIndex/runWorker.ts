@@ -7,6 +7,7 @@ import type { RegistryStore } from "./RegistryStore";
 import type { SectionOwnershipStore } from "./SectionOwnershipStore";
 import type { SectionRow, PageRow } from "./types";
 import { registryHash } from "./registryHash";
+import { parseMtime } from "./mtime";
 import { computeSectionRows } from "./effectiveOwnership";
 import { jitteredNextUpdate, BATCH_SIZE, CONCURRENCY, LEASE_MS, INTERVAL_MS } from "./schedule";
 
@@ -62,6 +63,7 @@ export async function runWorker(deps: {
               section_ref: p.sectionRef,
               subpath: p.subpath,
               title: p.title,
+              last_modified: parseMtime(p.lastModified),
             })),
           );
           const hash = registryHash(sections, pages);

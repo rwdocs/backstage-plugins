@@ -19,25 +19,7 @@ import type { ShowFilter, SortOrder } from "./useInboxFilters";
 import { useInboxFilters } from "./useInboxFilters";
 import { useInboxData } from "./useInboxData";
 import { bucketByActivity } from "./inboxBuckets";
-
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
-  return `${Math.floor(days / 365)}y ago`;
-}
-
-/** Absolute local timestamp for the hover tooltip behind the relative time. */
-function absoluteTime(iso: string): string {
-  return new Date(iso).toLocaleString();
-}
+import { relativeTime, absoluteTime } from "./timeAgo";
 
 function replyState(replyCount: number): string {
   if (replyCount <= 0) return "No replies yet";

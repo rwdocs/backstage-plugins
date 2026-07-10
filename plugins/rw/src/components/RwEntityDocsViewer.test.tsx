@@ -38,6 +38,11 @@ function createMockRwApi(overrides?: Partial<RwApi>): RwApi {
       openCount: 0,
       unansweredCount: 0,
     }),
+    getLatestChanges: jest.fn().mockResolvedValue({
+      hasAnyDated: true,
+      items: [],
+      pageInfo: {},
+    }),
     createCommentClient: jest.fn().mockReturnValue(undefined),
     ...overrides,
   };

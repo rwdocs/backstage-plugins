@@ -25,6 +25,8 @@ export interface PageRow {
   section_ref: string;
   subpath: string;
   title: string;
+  /** Last-modified epoch millis, or null when unknown (excluded from the feed). */
+  last_modified: number | null;
 }
 
 /** A row claimed off the queue for processing. */

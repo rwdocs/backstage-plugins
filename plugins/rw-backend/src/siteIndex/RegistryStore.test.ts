@@ -23,7 +23,15 @@ describe("RegistryStore", () => {
     await store.swapSite(
       "component:default/a",
       [section({ section_ref: "s1" })],
-      [{ site_ref: "component:default/a", section_ref: "s1", subpath: "", title: "Home" }],
+      [
+        {
+          site_ref: "component:default/a",
+          section_ref: "s1",
+          subpath: "",
+          title: "Home",
+          last_modified: null,
+        },
+      ],
     );
     // seed site b before second swap on a
     await store.swapSite(
@@ -36,12 +44,28 @@ describe("RegistryStore", () => {
           entity_ref: "component:default/b",
         }),
       ],
-      [{ site_ref: "component:default/b", section_ref: "sb1", subpath: "bp", title: "B Home" }],
+      [
+        {
+          site_ref: "component:default/b",
+          section_ref: "sb1",
+          subpath: "bp",
+          title: "B Home",
+          last_modified: null,
+        },
+      ],
     );
     await store.swapSite(
       "component:default/a",
       [section({ section_ref: "s2", section_path: "x", parent_section_ref: "s1" })],
-      [{ site_ref: "component:default/a", section_ref: "s2", subpath: "p", title: "P" }],
+      [
+        {
+          site_ref: "component:default/a",
+          section_ref: "s2",
+          subpath: "p",
+          title: "P",
+          last_modified: null,
+        },
+      ],
     );
 
     expect(
@@ -73,6 +97,7 @@ describe("RegistryStore", () => {
           section_ref: "section:default/s1",
           subpath: "",
           title: "S1",
+          last_modified: null,
         },
       ],
     );
@@ -95,6 +120,7 @@ describe("RegistryStore", () => {
           section_ref: "section:default/s2",
           subpath: "",
           title: "S2",
+          last_modified: null,
         },
       ],
     );

@@ -6,4 +6,9 @@ export type { RwSiteConfig, S3Config, RwDiagramsConfig } from "./config";
 export * from "./permissions";
 export { iterateAnnotatedEntities, RW_ANNOTATION } from "./iterateAnnotatedEntities";
 export type { InboxItem, InboxResponse, InboxQuery } from "./inboxTypes";
-export { buildCommentDeepLinkSuffix } from "./commentLink";
+export type {
+  LatestChangeItem,
+  LatestChangesResponse,
+  LatestChangesQuery,
+} from "./latestChangesTypes";
+export { buildCommentDeepLinkSuffix, buildDocsPageLinkSuffix } from "./commentLink";

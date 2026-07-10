@@ -27,6 +27,9 @@ export const docsRouteRef = createRouteRef();
 // standalone page so the ref stays resolvable at its new, nested location.
 export const commentInboxRouteRef = createRouteRef();
 
+// Route ref for the Latest Changes tab (/docs/changes).
+export const latestChangesRouteRef = createRouteRef();
+
 const rwApi = ApiBlueprint.make({
   params: (defineParams) =>
     defineParams(
@@ -103,6 +106,21 @@ const rwCommentsSubPage = SubPageBlueprint.make({
   },
 });
 
+// The "Latest Changes" tab — global feed of recently-updated pages at
+// /docs/changes. Attached explicitly to the Docs page's `pages` input by id for
+// the same named-parent reason as the Comments tab (the default relative
+// attachTo resolves to "page:rw", not the named "page:rw/docs").
+const rwLatestChangesSubPage = SubPageBlueprint.make({
+  name: "changes",
+  attachTo: { id: "page:rw/docs", input: "pages" },
+  params: {
+    path: "changes",
+    title: "Changes",
+    routeRef: latestChangesRouteRef,
+    loader: () => import("./components/LatestChangesPage").then((m) => <m.LatestChangesPage />),
+  },
+});
+
 export const rwPlugin: FrontendPlugin = createFrontendPlugin({
   pluginId: "rw",
   extensions: [
@@ -112,6 +130,7 @@ export const rwPlugin: FrontendPlugin = createFrontendPlugin({
     rwSearchResultType,
     rwDocsPage,
     rwCommentsSubPage,
+    rwLatestChangesSubPage,
   ],
 });
 

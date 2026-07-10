@@ -1,4 +1,14 @@
-import { buildCommentDeepLinkSuffix } from "./commentLink";
+import { buildCommentDeepLinkSuffix, buildDocsPageLinkSuffix } from "./commentLink";
+
+describe("buildDocsPageLinkSuffix", () => {
+  it("builds the Documentation-tab path plus the viewer path", () => {
+    expect(buildDocsPageLinkSuffix("guides/setup")).toBe("/docs/guides/setup");
+  });
+
+  it("returns the bare /docs tab when the viewerPath is empty (section root)", () => {
+    expect(buildDocsPageLinkSuffix("")).toBe("/docs");
+  });
+});
 
 describe("buildCommentDeepLinkSuffix", () => {
   it("builds the docs suffix with the comment anchor", () => {
