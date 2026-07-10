@@ -86,6 +86,46 @@ describe("useSectionRefResolver", () => {
     });
   });
 
+  it("resolves a custom-namespace root section ref to the source entity", async () => {
+    // rw names every site-root section "root" but carries the site's namespace,
+    // so a custom-namespace site emits section:<ns>/root, not section:default/root.
+    // The host must still map it to the root entity (the ancestry backstop).
+    const catalogApi = createMockCatalogApi({});
+    const { result } = renderWithCatalog(catalogApi);
+
+    let resolved: Record<string, string> = {};
+    await act(async () => {
+      resolved = await result.current(["section:acme/root"]);
+    });
+
+    expect(catalogApi.getEntitiesByRefs).not.toHaveBeenCalled();
+    expect(resolved).toEqual({
+      "section:acme/root": "/catalog/default/component/arch/docs",
+    });
+  });
+
+  it("does not treat a non-section entity named 'root' as the site root", async () => {
+    // Only the implicit site-root section (kind "section") is the backstop. A
+    // content section whose last path segment is "root" (e.g. a docs/root/ folder
+    // with kind: domain) must be resolved through the catalog, not short-circuited
+    // to the source entity.
+    const entity = makeEntity({ [ANNOTATION_KEY]: "." });
+    const catalogApi = createMockCatalogApi({ "domain:default/root": entity });
+    const { result } = renderWithCatalog(catalogApi);
+
+    let resolved: Record<string, string> = {};
+    await act(async () => {
+      resolved = await result.current(["domain:default/root"]);
+    });
+
+    expect(catalogApi.getEntitiesByRefs).toHaveBeenCalledWith({
+      entityRefs: ["domain:default/root"],
+    });
+    expect(resolved).toEqual({
+      "domain:default/root": "/catalog/default/domain/root/docs",
+    });
+  });
+
   it("returns empty map for entities without rwdocs annotation", async () => {
     const entity = makeEntity({});
     const catalogApi = createMockCatalogApi({ "domain:default/billing": entity });

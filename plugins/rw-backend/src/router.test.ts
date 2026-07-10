@@ -120,9 +120,17 @@ describe("createRouter", () => {
       expect(mockSite.renderPage).not.toHaveBeenCalled();
     });
 
-    it("returns 404 when page not found", async () => {
+    it("returns 404 when page not found (missing markdown file)", async () => {
       mockSite.renderPage.mockRejectedValue(new Error("Content not found"));
       const res = await request(server).get(`${prefix}/pages/nonexistent`);
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 404 when the path is not in the site structure", async () => {
+      // @rwdocs/core's ordinary missing-URL case (RenderError::PageNotFound) —
+      // e.g. a stale or doubled link. Must be a clean 404, not a 500.
+      mockSite.renderPage.mockRejectedValue(new Error("Page not found: /parent/child"));
+      const res = await request(server).get(`${prefix}/pages/parent/child`);
       expect(res.status).toBe(404);
     });
 
@@ -160,6 +168,16 @@ describe("createRouter", () => {
 
     it("returns 503 when renderPage throws storage error", async () => {
       mockSite.renderPage.mockRejectedValue(new Error("Storage error: S3: storage unavailable"));
+      const res = await request(server).get(`${prefix}/pages/guide`);
+      expect(res.status).toBe(503);
+      expect(res.body.error.name).toBe("ServiceUnavailableError");
+    });
+
+    it("prefers 503 over 404 when a storage error message embeds a not-found phrase", async () => {
+      // Storage (availability) is checked before the not-found phrases, so a
+      // transient failure whose inner text happens to contain "Page not found"
+      // still surfaces as 503, not 404.
+      mockSite.renderPage.mockRejectedValue(new Error("Storage error: Page not found in cache"));
       const res = await request(server).get(`${prefix}/pages/guide`);
       expect(res.status).toBe(503);
       expect(res.body.error.name).toBe("ServiceUnavailableError");

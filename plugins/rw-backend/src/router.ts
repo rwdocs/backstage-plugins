@@ -86,13 +86,19 @@ async function renderPageOrThrow(site: RwSite, pagePath: string) {
     return await site.renderPage(pagePath);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    if (message.includes("Content not found")) {
-      throw new NotFoundError(`Page not found: /${pagePath}`);
-    }
-    // Message prefix comes from @rwdocs/core native addon (RenderError::Storage).
-    // Must be updated if the upstream error format changes.
+    // Message prefixes come from the @rwdocs/core native addon (RenderError).
+    // Must be updated if the upstream error format changes. Check the storage
+    // (availability) case first so a transient failure whose inner text happens
+    // to embed a not-found phrase still surfaces as a 503, not a 404.
     if (message.includes("Storage error")) {
       throw toStorageError(err);
+    }
+    // Two distinct not-found cases, both a 404: "Content not found" (page in the
+    // structure but its markdown file is missing) and "Page not found" (no page
+    // at this URL — the ordinary missing/stale/doubled path). Matching only the
+    // former surfaced the common case as a 500.
+    if (message.includes("Content not found") || message.includes("Page not found")) {
+      throw new NotFoundError(`Page not found: /${pagePath}`);
     }
     throw err;
   }
