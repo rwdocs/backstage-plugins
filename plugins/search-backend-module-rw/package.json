@@ -1,6 +1,6 @@
 {
   "name": "@rwdocs/backstage-plugin-search-backend-module-rw",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
