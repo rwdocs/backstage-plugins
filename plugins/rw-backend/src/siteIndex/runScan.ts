@@ -1,27 +1,13 @@
-import {
-  stringifyEntityRef,
-  getCompoundEntityRef,
-  parseEntityRef,
-  RELATION_OWNED_BY,
-  type Entity,
-} from "@backstage/catalog-model";
 import type { AuthService, LoggerService } from "@backstage/backend-plugin-api";
 import type { CatalogService } from "@backstage/plugin-catalog-node";
 import {
-  iterateAnnotatedEntities,
-  parseAnnotation,
+  collectSiteClaims,
   toEntityPath,
-  RW_ANNOTATION,
   type RwSiteConfig,
 } from "@rwdocs/backstage-plugin-rw-common";
 import type { SectionOwnershipStore } from "./SectionOwnershipStore";
 import type { SiteRefreshStore } from "./SiteRefreshStore";
 import type { SectionOwnershipRow } from "./types";
-
-function ownerOf(entity: Entity): string | null {
-  const rel = (entity.relations ?? []).find((r) => r.type === RELATION_OWNED_BY);
-  return rel?.targetRef ?? null;
-}
 
 export async function runScan(deps: {
   catalog: Pick<CatalogService, "queryEntities">;
@@ -37,53 +23,49 @@ export async function runScan(deps: {
   const credentials = await auth.getOwnServiceCredentials();
 
   // projectDir mode serves exactly one site; constrain discovery to it.
-  const onlySiteRef =
-    siteConfig.projectDir && siteConfig.entity
-      ? stringifyEntityRef(parseEntityRef(siteConfig.entity))
-      : undefined;
+  const onlySiteEntityPath =
+    siteConfig.projectDir && siteConfig.entity ? toEntityPath(siteConfig.entity) : undefined;
 
   const scanStart = now();
-  // Dedup per-site links by section_ref (last-claim-wins) to avoid a PK violation on swap.
   const linksBySite = new Map<string, Map<string, SectionOwnershipRow>>();
   let completed = false;
   let writeFailed = false;
 
   try {
-    for await (const { entity } of iterateAnnotatedEntities(catalog, credentials)) {
-      const selfRef = stringifyEntityRef(getCompoundEntityRef(entity));
-      const parsed = parseAnnotation(
-        entity.metadata?.annotations?.[RW_ANNOTATION],
-        toEntityPath(selfRef),
-      );
-      if (!parsed) continue;
-      const siteRef = parsed.entityRef;
-      if (onlySiteRef && siteRef !== onlySiteRef) continue;
+    // Who documents what is decided in rw-common, so the scan, the search collator
+    // and every read path agree on it — including which entity wins a section two
+    // entities claim, which this used to resolve by catalog iteration order.
+    const sites = await collectSiteClaims({
+      catalog,
+      credentials,
+      onlySiteEntityPath,
+      onConflict: (message) => logger.warn(message),
+    });
 
-      let link: SectionOwnershipRow | undefined;
-      if (parsed.sectionRef) {
-        link = {
+    for (const [siteRef, claims] of sites) {
+      const links = new Map<string, SectionOwnershipRow>();
+      for (const [sectionRef, claim] of claims.bySection) {
+        links.set(sectionRef, {
           site_ref: siteRef,
-          section_ref: parsed.sectionRef,
-          entity_ref: selfRef,
-          entity_owner_ref: ownerOf(entity),
-        };
-      } else if (parsed.entityRef === selfRef) {
-        // Self-host root claim: no explicit section ref, so use the site ref itself as the
-        // section_ref sentinel. At read time, ownership resolution falls back to this sentinel
-        // when no more-specific section link is found.
-        link = {
+          section_ref: sectionRef,
+          entity_ref: claim.entityRef,
+          entity_owner_ref: claim.ownerRef,
+        });
+      }
+      // The self-host claim is stored under the site ref as its section_ref: a
+      // sentinel the ownership rollup falls back to when no section claim matches.
+      // Only a true host is stored — an entity merely pointing at someone else's
+      // site does not own its sections (search still surfaces those pages under it;
+      // ownership, and the deep links built from it, belong to the host).
+      if (claims.host) {
+        links.set(siteRef, {
           site_ref: siteRef,
           section_ref: siteRef,
-          entity_ref: selfRef,
-          entity_owner_ref: ownerOf(entity),
-        };
+          entity_ref: claims.host.entityRef,
+          entity_owner_ref: claims.host.ownerRef,
+        });
       }
-      // section-less claim on another site: ignored (matches legacy behavior)
-      if (!link) continue;
-
-      const inner = linksBySite.get(siteRef) ?? new Map<string, SectionOwnershipRow>();
-      inner.set(link.section_ref, link); // last-claim-wins dedup by section_ref
-      linksBySite.set(siteRef, inner);
+      if (links.size > 0) linksBySite.set(siteRef, links);
     }
     completed = true;
   } catch (err) {

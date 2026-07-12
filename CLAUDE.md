@@ -71,9 +71,16 @@ yarn workspace @rwdocs/backstage-plugin-search-backend-module-rw run test --watc
 Shared utilities used by both frontend and backend plugins:
 - **`entityPath`** — Converts between entity refs (`kind:namespace/name`) and URL path segments (`namespace/kind/name`) using `@backstage/catalog-model`
 - **`parseAnnotation`** — Parses `rwdocs.org/ref` entity annotations into site ref and optional section ref
+- **`attribution`** — **Which catalog entity documents which part of a site.** The single source of that rule (see below)
 - **`config`** — Reads S3 configuration (`S3Config`) from Backstage config
 
 Also owns the Backstage configuration schema (`config.d.ts`).
+
+#### Attribution (`attribution.ts`)
+
+A page belongs to exactly one entity: the one claiming the nearest section at or above it (`nearestClaim`), else the entity documenting the site as a whole (`rootClaimOf`). Several entities can *reach* a page — a system, its domain and the site root all show it in their Docs tab — but only the nearest owns it.
+
+Consumers: `siteIndex/runScan` + `siteIndex/effectiveOwnership` (comment inbox, changes feed, notifications) and `RwDocsCollatorFactory` (search). **A new surface must call this, not re-derive it** — it was implemented twice before and the copies silently disagreed, attributing one page to different entities depending on where you looked.
 
 ### Frontend Plugin (`plugins/rw/`)
 
@@ -132,6 +139,7 @@ Key backend classes:
 - `GET /site/:namespace/:kind/:name/config` — returns `{ liveReloadEnabled: false }`
 - `GET /site/:namespace/:kind/:name/navigation?sectionRef=` — navigation tree from `RwSite`
 - `GET /site/:namespace/:kind/:name/pages/:path(*)` — rendered page content (with path traversal protection)
+- `GET /site/:namespace/:kind/:name/markdown?sectionRef=&subpath=` — a page's Markdown source, addressed by its `(sectionRef, subpath)` identity rather than a site path, so a search hit can be read back directly. An omitted `subpath` is the section root.
 
 Middleware resolves the entity path from URL params to look up the corresponding `RwSite` from the Hub.
 
@@ -140,7 +148,11 @@ Middleware resolves the entity path from URL params to look up the corresponding
 Backstage backend module (`pluginId: "search"`, `moduleId: "rw-collator"`) that indexes RW documentation for search.
 
 Key classes:
-- **`RwDocsCollatorFactory`** — Implements `DocumentCollatorFactory`. Discovers entities annotated with `rwdocs.org/ref` via `catalogServiceRef` (paginated with `queryEntities`), creates `RwSite` instances to render pages, and emits `IndexableDocument` entries. Supports configurable result type (`search.collators.rw.type`, default `"rw"`), location URL template, and schedule.
+- **`RwDocsCollatorFactory`** — Implements `DocumentCollatorFactory`. Discovers entities annotated with `rwdocs.org/ref` via `catalogServiceRef` (paginated with `queryEntities`), creates `RwSite` instances to render pages, and emits `RwIndexableDocument` entries. Supports configurable result type (`search.collators.rw.type`, default `"rw"`), location URL template, and schedule.
+
+  Pages come from `listPages()`, which carries each page's `path`, `hasContent` and `anchors` (every enclosing section paired with the page's path relative to it). `getNavigation()` is not a substitute: it stops at a section boundary and never yields the pages below one. Ownership per page is `attribution` (see rw-common); each site is loaded once, not once per annotated entity.
+
+  Each document carries the page's identity — `siteRef` + `(sectionRef, subpath)` — so a consumer can read it back via rw-backend's `/markdown`. `location` can't serve that (configurable route, relative to the owning entity), and `authorization` can't either (the search backend strips it before results reach callers).
 
 `module.ts` registers the collator with the search index via `searchIndexRegistryExtensionPoint` from `@backstage/plugin-search-backend-node/alpha`.
 

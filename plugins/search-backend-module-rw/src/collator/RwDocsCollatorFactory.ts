@@ -5,40 +5,64 @@ import type { CatalogService } from "@backstage/plugin-catalog-node";
 import type { DocumentCollatorFactory, IndexableDocument } from "@backstage/plugin-search-common";
 import type { Permission } from "@backstage/plugin-permission-common";
 import { catalogEntityReadPermission } from "@backstage/plugin-catalog-common/alpha";
-import { stringifyEntityRef } from "@backstage/catalog-model";
-import type { Entity } from "@backstage/catalog-model";
-import { createSite, type RwSite, type NavItemResponse } from "@rwdocs/core";
+import { parseEntityRef } from "@backstage/catalog-model";
+import { createSite, type RwSite } from "@rwdocs/core";
 import {
-  iterateAnnotatedEntities,
-  RW_ANNOTATION,
-  parseAnnotation,
+  collectSiteClaims,
+  rootClaimOf,
   toEntityPath,
   readRwSiteConfig,
   type RwSiteConfig,
+  type SiteClaims,
 } from "@rwdocs/backstage-plugin-rw-common";
 
 const DEFAULT_LOCATION_TEMPLATE = "/catalog/:namespace/:kind/:name/docs/:path";
+
+/**
+ * An indexed RW page.
+ *
+ * Beyond the fields Backstage itself reads, each document carries the page's
+ * canonical RW identity — `siteRef` plus the `(sectionRef, subpath)` pair that
+ * `@rwdocs/core` hands out — so a consumer holding a search hit can read the
+ * page it describes:
+ *
+ * ```
+ * GET /api/rw/site/<namespace>/<kind>/<name>/markdown?sectionRef=…&subpath=…
+ * ```
+ *
+ * `location` cannot serve that purpose: it is a frontend route, it is
+ * configurable via `search.collators.rw.locationTemplate`, and its path is
+ * relative to the entity's section scope rather than the site root.
+ * `authorization` cannot either — the search backend strips it before results
+ * reach any caller.
+ */
+export interface RwIndexableDocument extends IndexableDocument {
+  /** Entity ref of the site the page lives in — the annotation's target. */
+  siteRef: string;
+  /** Canonical ref of the section containing the page (an entity ref). */
+  sectionRef: string;
+  /** The page's path relative to its section root (`""` for the section root). */
+  subpath: string;
+  /** Entity ref of the catalog entity that owns the page: the one claiming the
+   *  nearest section at or above it, else the entity hosting the site. A page is
+   *  indexed once, for this entity alone, even though the entities above it can
+   *  also reach it — the same attribution rw-backend's siteIndex gives comments and
+   *  the changes feed. `location` points into this entity's docs, and it is what
+   *  `authorization.resourceRef` carries (callers can't see that field). */
+  entityRef: string;
+}
 
 function applyLocationTemplate(
   template: string,
   params: { namespace: string; kind: string; name: string; path: string },
 ): string {
+  // Function replacers: a page path is author-controlled, and `$&` (or `$1`) in a
+  // string replacement is a substitution pattern, not a literal.
   return template
-    .replace(":namespace", encodeURIComponent(params.namespace))
-    .replace(":kind", encodeURIComponent(params.kind))
-    .replace(":name", encodeURIComponent(params.name))
-    .replace(":path", params.path);
-}
-
-function collectPaths(items: NavItemResponse[]): string[] {
-  const paths: string[] = [];
-  for (const item of items) {
-    paths.push(item.path.replace(/^\//, ""));
-    if (item.children) {
-      paths.push(...collectPaths(item.children));
-    }
-  }
-  return paths;
+    .replace(":namespace", () => encodeURIComponent(params.namespace))
+    .replace(":kind", () => encodeURIComponent(params.kind))
+    .replace(":name", () => encodeURIComponent(params.name))
+    .replace(":path", () => params.path);
 }
 
 export class RwDocsCollatorFactory implements DocumentCollatorFactory {
@@ -87,78 +111,113 @@ export class RwDocsCollatorFactory implements DocumentCollatorFactory {
   private async *execute(): AsyncGenerator<IndexableDocument> {
     this.logger.info("Starting RW docs indexing");
     const credentials = await this.auth.getOwnServiceCredentials();
-    const localEntityPath = this.siteConfig.entity
-      ? toEntityPath(this.siteConfig.entity)
-      : undefined;
+    // `rw.entity` only names a site in projectDir mode; in s3 mode every annotated
+    // site is served (see Hub), so a leftover `entity` there must not narrow the
+    // index to one site.
+    const localEntityPath =
+      this.siteConfig.projectDir && this.siteConfig.entity
+        ? toEntityPath(this.siteConfig.entity)
+        : undefined;
 
+    // Who documents what — the rule search shares with the comment inbox and the
+    // changes feed, so one page is attributed to one entity on every surface.
+    const sites = await collectSiteClaims({
+      catalog: this.catalog,
+      credentials,
+      onlySiteEntityPath: localEntityPath,
+      onConflict: (message) => this.logger.warn(message),
+    });
     let docCount = 0;
 
-    for await (const { entity } of iterateAnnotatedEntities(this.catalog, credentials)) {
+    for (const site of sites.values()) {
       try {
-        for await (const doc of this.indexEntity(entity, localEntityPath)) {
+        for await (const doc of this.indexSite(site)) {
           docCount++;
           yield doc;
         }
       } catch (err) {
-        const ref = stringifyEntityRef(entity);
-        this.logger.warn(`Failed to index entity ${ref}: ${err}`);
+        this.logger.warn(`Failed to index site ${site.siteRef}: ${err}`);
       }
     }
 
     this.logger.info(`RW docs indexing complete: ${docCount} documents indexed`);
   }
 
-  private async *indexEntity(
-    entity: Entity,
-    localEntityPath: string | undefined,
-  ): AsyncGenerator<IndexableDocument> {
-    const annotationValue = entity.metadata?.annotations?.[RW_ANNOTATION];
-    const selfEntityPath = toEntityPath(stringifyEntityRef(entity));
-    const parsed = parseAnnotation(annotationValue, selfEntityPath);
-    if (!parsed) return;
+  private async *indexSite(claims: SiteClaims): AsyncGenerator<RwIndexableDocument> {
+    const site = this.createSite(claims.entityPath);
+    const pages = await site.listPages();
 
-    // In projectDir mode, skip entities whose target doesn't match the configured entity
-    if (localEntityPath && parsed.entityPath !== localEntityPath) {
-      return;
-    }
+    this.logger.info(`Indexing site ${claims.siteRef} (${pages.length} pages)`);
 
-    const site = this.createSite(parsed.entityPath);
-    const navigation = await site.getNavigation(parsed.sectionRef ?? null);
-    const scopePath = navigation.scope?.path?.replace(/^\//, "") ?? "";
-    const paths = collectPaths(navigation.items);
+    const rootOwner = rootClaimOf(claims);
+    const matchedClaims = new Set<string>();
+    let unowned = 0;
 
-    const entityRef = stringifyEntityRef(entity);
-    this.logger.info(`Indexing entity ${entityRef} (${paths.length} pages)`);
-    const ref = {
-      kind: entity.kind.toLocaleLowerCase("en-US"),
-      namespace: entity.metadata?.namespace ?? "default",
-      name: entity.metadata?.name as string,
-    };
+    for (const page of pages) {
+      // Virtual pages (a directory with no markdown behind it) have nothing to index.
+      if (!page.hasContent) continue;
 
-    for (const path of paths) {
+      // `anchors` is every section enclosing the page, innermost first, each paired
+      // with the page's path relative to *that* section — so the nearest claiming
+      // entity and the path to show under it fall out of one lookup.
+      const anchor = page.anchors.find((a) => claims.bySection.has(a.sectionRef));
+      const claim = anchor ? claims.bySection.get(anchor.sectionRef)! : rootOwner;
+      if (!claim) {
+        // No entity surfaces this page, so a hit would have nowhere to link.
+        unowned++;
+        continue;
+      }
+      const entityRef = claim.entityRef;
+      if (anchor) matchedClaims.add(anchor.sectionRef);
+
       try {
-        const doc = await site.renderSearchDocument(path);
+        const doc = await site.renderSearchDocument(page.path);
         if (!doc) continue;
 
-        const relativePath =
-          scopePath && path.startsWith(scopePath) ? path.slice(scopePath.length + 1) : path;
+        const { kind, namespace, name } = parseEntityRef(entityRef);
 
         yield {
           title: doc.title,
           text: doc.text,
           location: applyLocationTemplate(this.locationTemplate, {
-            namespace: ref.namespace,
-            kind: ref.kind,
-            name: ref.name,
-            path: relativePath,
+            namespace,
+            kind,
+            name,
+            // Relative to the owning entity's docs root: the anchor's own subpath
+            // when an entity claims a section above the page, else the site path.
+            path: anchor ? anchor.subpath : page.path,
           }),
+          siteRef: claims.siteRef,
+          sectionRef: page.sectionRef,
+          subpath: page.subpath,
+          entityRef,
           authorization: {
             resourceRef: entityRef,
           },
         };
       } catch (err) {
-        this.logger.warn(`Failed to render page ${path} for ${entityRef}: ${err}`);
+        this.logger.warn(`Failed to render page ${page.path} for ${claims.siteRef}: ${err}`);
       }
+    }
+
+    for (const [sectionRef, { entityRef }] of claims.bySection) {
+      if (!matchedClaims.has(sectionRef)) {
+        // The usual cause is a typo, or a section the docs repo has since renamed:
+        // the entity's pages end up with the site's owner while its own Docs tab —
+        // which falls back to the whole site on an unresolvable ref — still shows
+        // them. Silent before this warning.
+        this.logger.warn(
+          `${entityRef} claims ${sectionRef}, which has no pages in ${claims.siteRef}; they will be attributed to the site's owner instead`,
+        );
+      }
+    }
+
+    if (unowned > 0) {
+      // One line per site, not per page: a misconfigured catalog would otherwise
+      // report "0 documents indexed" with nothing at all to grep for.
+      this.logger.warn(
+        `Skipped ${unowned} unowned page(s) in ${claims.siteRef}: no entity claims them and none documents the site as a whole (annotate the site entity with 'rwdocs.org/ref: .')`,
+      );
     }
   }
 

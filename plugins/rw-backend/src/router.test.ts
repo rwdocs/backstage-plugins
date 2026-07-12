@@ -35,6 +35,8 @@ describe("createRouter", () => {
   const mockSite = {
     getNavigation: jest.fn(),
     renderPage: jest.fn(),
+    pagePathFor: jest.fn(),
+    getPageMarkdown: jest.fn(),
     reload: jest.fn(),
   };
 
@@ -56,6 +58,8 @@ describe("createRouter", () => {
   beforeEach(() => {
     mockSite.getNavigation.mockReset();
     mockSite.renderPage.mockReset();
+    mockSite.pagePathFor.mockReset();
+    mockSite.getPageMarkdown.mockReset();
     mockCreateSite.mockReturnValue(mockSite as any);
   });
 
@@ -155,6 +159,132 @@ describe("createRouter", () => {
 
       await request(server).get(`${prefix}/pages/?sectionRef=domain:default/billing`);
       expect(mockSite.renderPage).toHaveBeenCalledWith("domains/billing");
+    });
+  });
+
+  describe(`GET ${prefix}/markdown`, () => {
+    it("resolves a page's identity and returns its markdown", async () => {
+      mockSite.pagePathFor.mockResolvedValue("domains/billing/overview");
+      mockSite.getPageMarkdown.mockResolvedValue({ markdown: "# Overview\n" });
+
+      const res = await request(server)
+        .get(`${prefix}/markdown`)
+        .query({ sectionRef: "domain:default/billing", subpath: "overview" });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ markdown: "# Overview\n" });
+      expect(mockSite.pagePathFor).toHaveBeenCalledWith("domain:default/billing", "overview");
+      expect(mockSite.getPageMarkdown).toHaveBeenCalledWith("domains/billing/overview");
+    });
+
+    it("serves a section root, whose resolved path is the falsy empty string", async () => {
+      // The site root resolves to "". Testing absence with `if (!path)` instead of
+      // `path === null` would 404 the homepage.
+      mockSite.pagePathFor.mockResolvedValue("");
+      mockSite.getPageMarkdown.mockResolvedValue({ markdown: "# Home\n" });
+
+      const res = await request(server)
+        .get(`${prefix}/markdown`)
+        .query({ sectionRef: "component:default/test" });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ markdown: "# Home\n" });
+      // An omitted subpath is the section root, not a bad request.
+      expect(mockSite.pagePathFor).toHaveBeenCalledWith("component:default/test", "");
+      expect(mockSite.getPageMarkdown).toHaveBeenCalledWith("");
+    });
+
+    it("returns 400 when sectionRef is missing", async () => {
+      const res = await request(server).get(`${prefix}/markdown`).query({ subpath: "overview" });
+      expect(res.status).toBe(400);
+      expect(mockSite.pagePathFor).not.toHaveBeenCalled();
+    });
+
+    it("returns 400 for a traversing subpath", async () => {
+      const res = await request(server)
+        .get(`${prefix}/markdown`)
+        .query({ sectionRef: "domain:default/billing", subpath: "../../etc/passwd" });
+      expect(res.status).toBe(400);
+      expect(mockSite.pagePathFor).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 when no section carries the ref", async () => {
+      mockSite.pagePathFor.mockResolvedValue(null);
+
+      const res = await request(server)
+        .get(`${prefix}/markdown`)
+        .query({ sectionRef: "domain:default/nope", subpath: "overview" });
+
+      expect(res.status).toBe(404);
+      expect(mockSite.getPageMarkdown).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 for a virtual page with no markdown source", async () => {
+      mockSite.pagePathFor.mockResolvedValue("domains/billing");
+      mockSite.getPageMarkdown.mockResolvedValue(null);
+
+      const res = await request(server)
+        .get(`${prefix}/markdown`)
+        .query({ sectionRef: "domain:default/billing", subpath: "" });
+
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 404 when the resolved path names no page", async () => {
+      // pagePathFor resolves, it does not verify: a real section ref with a
+      // subpath naming no page yields a well-formed path, and the read rejects.
+      mockSite.pagePathFor.mockResolvedValue("domains/billing/ghost");
+      mockSite.getPageMarkdown.mockRejectedValue(
+        new Error("Page not found: domains/billing/ghost"),
+      );
+
+      const res = await request(server)
+        .get(`${prefix}/markdown`)
+        .query({ sectionRef: "domain:default/billing", subpath: "ghost" });
+
+      expect(res.status).toBe(404);
+    });
+
+    it.each([["S3: storage unavailable"], ["some unexpected failure"]])(
+      "returns 503 when pagePathFor rejects with %p",
+      async (message) => {
+        // pagePathFor only rejects when the site can't be loaded — it resolves to
+        // null for an unknown ref — so every rejection is an availability failure,
+        // as with getNavigation. Anything else must not read as a missing page.
+        mockSite.pagePathFor.mockRejectedValue(new Error(message));
+
+        const res = await request(server)
+          .get(`${prefix}/markdown`)
+          .query({ sectionRef: "domain:default/billing", subpath: "overview" });
+
+        expect(res.status).toBe(503);
+        expect(res.body.error.name).toBe("ServiceUnavailableError");
+      },
+    );
+
+    it("returns 500 on an unexpected getPageMarkdown error", async () => {
+      mockSite.pagePathFor.mockResolvedValue("domains/billing/overview");
+      mockSite.getPageMarkdown.mockRejectedValue(new Error("kaboom"));
+
+      const res = await request(server)
+        .get(`${prefix}/markdown`)
+        .query({ sectionRef: "domain:default/billing", subpath: "overview" });
+
+      expect(res.status).toBe(500);
+    });
+
+    it("returns 503 when getPageMarkdown throws a storage error", async () => {
+      mockSite.pagePathFor.mockResolvedValue("domains/billing/overview");
+      mockSite.getPageMarkdown.mockRejectedValue(
+        new Error("Storage error: S3: storage unavailable"),
+      );
+
+      const res = await request(server)
+        .get(`${prefix}/markdown`)
+        .query({ sectionRef: "domain:default/billing", subpath: "overview" });
+
+      expect(res.status).toBe(503);
+      expect(res.body.error.name).toBe("ServiceUnavailableError");
     });
   });
 

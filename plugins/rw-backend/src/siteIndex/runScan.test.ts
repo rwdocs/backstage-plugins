@@ -80,17 +80,22 @@ describe("runScan", () => {
     expect(await knex("site_refresh").pluck("site_ref")).toEqual(["component:default/docs"]);
   });
 
-  it("deduplicates section links (last-claim-wins) when two entities share the same section", async () => {
-    // Both arch-a and arch-b claim section s1 of the same site; arch-b appears last → wins.
+  it("resolves a section two entities claim to the same one every scan", async () => {
+    // The catalog yields entities in metadata.uid order — arbitrary, and it changes
+    // when an entity is re-ingested. Taking whichever arrived last would silently
+    // reattribute the section's pages (and their comments and deep links) from one
+    // scan to the next, and would disagree with the search collator, which shares
+    // this rule via rw-common. The lexicographically first entity wins instead.
     const catalog = catalogReturning([
-      ent("arch-a", "component:default/docs#s1", "group:default/team-a"),
       ent("arch-b", "component:default/docs#s1", "group:default/team-b"),
+      ent("arch-a", "component:default/docs#s1", "group:default/team-a"),
     ]);
     await runScan(deps(knex, catalog));
 
     const links = await knex("section_ownership").where({ section_ref: "s1" });
     expect(links).toHaveLength(1);
-    expect(links[0].entity_ref).toBe("component:default/arch-b");
+    expect(links[0].entity_ref).toBe("component:default/arch-a");
+    expect(links[0].entity_owner_ref).toBe("group:default/team-a");
     // site_refresh row must exist (no PK crash)
     expect(await knex("site_refresh").pluck("site_ref")).toEqual(["component:default/docs"]);
   });
