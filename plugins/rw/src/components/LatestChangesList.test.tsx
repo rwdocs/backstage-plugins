@@ -198,6 +198,110 @@ describe("LatestChangesList", () => {
     expect(screen.getByRole("heading", { name: "Earlier" })).toBeInTheDocument();
   });
 
+  describe("service grouping", () => {
+    const minsAgo = (n: number) => new Date(Date.now() - n * 60 * 1000).toISOString();
+
+    it("collapses a service's multi-page deploy into one entry", async () => {
+      await renderList([
+        makeItem({
+          entityRef: "component:default/payments",
+          viewerPath: "p/a",
+          title: "Page A",
+          lastModified: minsAgo(2),
+        }),
+        makeItem({
+          entityRef: "component:default/payments",
+          viewerPath: "p/b",
+          title: "Page B",
+          lastModified: minsAgo(3),
+        }),
+        makeItem({
+          entityRef: "component:default/payments",
+          viewerPath: "p/c",
+          title: "Page C",
+          lastModified: minsAgo(4),
+        }),
+      ]);
+      // The service name appears once (in the caption), not once per page.
+      expect(screen.getAllByText("payments")).toHaveLength(1);
+      // Every page is still listed and linked.
+      for (const title of ["Page A", "Page B", "Page C"]) {
+        expect(screen.getByRole("link", { name: title })).toBeInTheDocument();
+      }
+    });
+
+    it("links a grouped page to the entity's Documentation tab at that page", async () => {
+      await renderList([
+        makeItem({
+          entityRef: "component:default/payments",
+          viewerPath: "p/a",
+          title: "Page A",
+          lastModified: minsAgo(2),
+        }),
+        makeItem({
+          entityRef: "component:default/payments",
+          viewerPath: "guides/deploy",
+          title: "Deploy",
+          lastModified: minsAgo(3),
+        }),
+      ]);
+      expect(screen.getByRole("link", { name: "Deploy" }).getAttribute("href")).toBe(
+        "/catalog/default/component/payments/docs/guides/deploy",
+      );
+    });
+
+    it("hides pages past the visible cap until the '+N more' toggle is clicked", async () => {
+      const items = Array.from({ length: 7 }, (_, i) =>
+        makeItem({
+          entityRef: "component:default/payments",
+          viewerPath: `p/${i}`,
+          title: `Page ${i}`,
+          lastModified: minsAgo(i + 1),
+        }),
+      );
+      await renderList(items);
+      // 7 pages, 5 shown, 2 hidden — the overflow pages aren't in the DOM yet.
+      expect(screen.queryByRole("link", { name: "Page 6" })).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Show all" }));
+
+      expect(screen.getByRole("link", { name: "Page 6" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Show less" })).toBeInTheDocument();
+    });
+
+    it("puts page titles above the service caption (content first)", async () => {
+      await renderList([
+        makeItem({
+          entityRef: "component:default/payments",
+          viewerPath: "p/a",
+          title: "Page A",
+          lastModified: minsAgo(2),
+        }),
+        makeItem({
+          entityRef: "component:default/payments",
+          viewerPath: "p/b",
+          title: "Page B",
+          lastModified: minsAgo(3),
+        }),
+        makeItem({
+          entityRef: "domain:default/billing",
+          viewerPath: "overview",
+          title: "Billing overview",
+          lastModified: minsAgo(4),
+        }),
+      ]);
+      // Both a batch (payments) and a lone change (billing) render content
+      // first: the page title precedes the service caption in DOM order.
+      const pageA = screen.getByRole("link", { name: "Page A" });
+      const paymentsCaption = screen.getByText("payments");
+      expect(
+        pageA.compareDocumentPosition(paymentsCaption) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(screen.getByText("billing")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Billing overview" })).toBeInTheDocument();
+    });
+  });
+
   describe("footer + pagination", () => {
     it("shows no Load more button and no sentinel when hasMore is false", async () => {
       await renderList([makeItem()], { hasMore: false });

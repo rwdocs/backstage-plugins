@@ -3,17 +3,9 @@ import { useRouteRef } from "@backstage/core-plugin-api";
 import { entityRouteRef, useEntityPresentation } from "@backstage/plugin-catalog-react";
 import { parseEntityRef } from "@backstage/catalog-model";
 import { buildCommentDeepLinkSuffix } from "@rwdocs/backstage-plugin-rw-common";
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Flex,
-  Text,
-  ToggleButton,
-  ToggleButtonGroup,
-} from "@backstage/ui";
+import { Button, Flex, Text, ToggleButton, ToggleButtonGroup } from "@backstage/ui";
 import { EmptyState, ErrorPanel, Link, Progress } from "@backstage/core-components";
+import { BucketCard } from "./BucketCard";
 import type { InboxItem } from "../api/RwClient";
 import type { ShowFilter, SortOrder } from "./useInboxFilters";
 import { useInboxFilters } from "./useInboxFilters";
@@ -90,7 +82,7 @@ function InboxToolbar({
       : "Sort by activity, oldest first. Activates newest first.";
 
   return (
-    <Flex direction="row" align="center" justify="between" pt="1" pb="3">
+    <Flex direction="row" align="center" justify="between" pt="1" pb="6">
       <ToggleButtonGroup
         aria-label="Filter comments"
         selectionMode="single"
@@ -235,15 +227,6 @@ const CommentInboxRow = memo(function CommentInboxRow({
 });
 
 /**
- * Widen the card's horizontal padding from BUI's default 12px (--bui-space-3),
- * which sits too tight against the card border at this reading width, to 20px.
- * Applied identically to the header and the body so the bucket heading and the
- * rows share one content edge. (Card/CardHeader/CardBody expose no padding prop,
- * so this overrides their class via inline style; vertical padding is untouched.)
- */
-const cardInset = { paddingInline: "var(--bui-space-5)" } as const;
-
-/**
  * Pagination footer with an IntersectionObserver sentinel for auto-loading on
  * scroll, a "Showing N of M" / "All N shown" status line, and a "Load more"
  * button as the keyboard / no-JS affordance.
@@ -358,28 +341,20 @@ export function CommentInboxList() {
         // page stays open. items is already filtered + sorted by the backend, and
         // bucket order is derived from that item order (not the `sort` flag) so the
         // headers can't flip ahead of the rows during a sort-change refetch.
-        <Flex direction="column" gap="3">
+        <Flex direction="column" gap="5">
           {bucketByActivity(items, Date.now()).map((bucket) => (
-            <Card key={bucket.key}>
-              <CardHeader style={cardInset}>
-                {/* The date period is the card's heading (h2 under the route's h1). */}
-                <Text as="h2" variant="title-small" weight="bold">
-                  {bucket.label}
-                </Text>
-              </CardHeader>
-              <CardBody style={cardInset}>
-                <Flex direction="column" gap="0">
-                  {bucket.items.map((item, index) => (
-                    <CommentInboxRow
-                      key={item.commentId}
-                      item={item}
-                      entityRoute={entityRoute}
-                      isLast={index === bucket.items.length - 1}
-                    />
-                  ))}
-                </Flex>
-              </CardBody>
-            </Card>
+            <BucketCard key={bucket.key} label={bucket.label}>
+              <Flex direction="column" gap="0">
+                {bucket.items.map((item, index) => (
+                  <CommentInboxRow
+                    key={item.commentId}
+                    item={item}
+                    entityRoute={entityRoute}
+                    isLast={index === bucket.items.length - 1}
+                  />
+                ))}
+              </Flex>
+            </BucketCard>
           ))}
         </Flex>
       )}
