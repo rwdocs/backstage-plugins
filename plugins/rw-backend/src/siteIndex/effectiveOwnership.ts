@@ -1,3 +1,9 @@
+import {
+  nearestClaim,
+  stripSectionPrefix,
+  type SiteClaim,
+  type SiteClaims,
+} from "@rwdocs/backstage-plugin-rw-common";
 import type { SectionOwnershipRow, SectionRow } from "./types";
 
 export interface RawSection {
@@ -6,44 +12,55 @@ export interface RawSection {
   ancestors: string[]; // nearest-first
 }
 
+/** Rebuilds the {@link SiteClaims} the scan wrote, from the rows it wrote them to.
+ *  The self-host claim is stored under the site ref as its `section_ref` (a
+ *  sentinel), so it has to be lifted back out before section lookups see it —
+ *  otherwise it would shadow a real claim on a section that happens to carry the
+ *  site's own ref. */
+function claimsFromRows(siteRef: string, rows: SectionOwnershipRow[]): SiteClaims {
+  const bySection = new Map<string, SiteClaim>();
+  let host: SiteClaim | undefined;
+
+  for (const row of rows) {
+    const claim: SiteClaim = { entityRef: row.entity_ref, ownerRef: row.entity_owner_ref };
+    if (row.section_ref === siteRef) host = claim;
+    else bySection.set(row.section_ref, claim);
+  }
+
+  return { siteRef, entityPath: "", bySection, host, unscoped: undefined };
+}
+
 /** Build the dense `sections` registry: one row per section carrying both structure
  *  (parent_section_ref) and effective ownership. A section is attributed to its nearest claiming
- *  ancestor (incl. itself), else the site-root sentinel (section_ref === siteRef), else a
- *  null-owner site fallback. The claimer's path is stripped so descendant paths become relative
- *  to the owning entity's docs root. */
+ *  ancestor (incl. itself), else the site-root sentinel, else a null-owner site fallback — the
+ *  rule `@rwdocs/backstage-plugin-rw-common` also gives the search collator, so one page is owned
+ *  by one entity on every surface. The claimer's path is stripped so descendant paths become
+ *  relative to the owning entity's docs root. */
 export function computeSectionRows(
   siteRef: string,
   sections: RawSection[],
   claims: SectionOwnershipRow[],
 ): SectionRow[] {
-  const sentinel = claims.find((c) => c.section_ref === siteRef);
-  // Sentinel excluded from realClaims so it doesn't shadow per-section claims;
-  // its owner is only the fallback for sections with no more-specific claim.
-  const realClaims = new Map(
-    claims.filter((c) => c.section_ref !== siteRef).map((c) => [c.section_ref, c]),
-  );
+  const siteClaims = claimsFromRows(siteRef, claims);
   const pathByRef = new Map(sections.map((s) => [s.sectionRef, s.path]));
-  const siteOwnerRef = sentinel?.entity_owner_ref ?? null;
 
   return sections.map((s) => {
-    const claimerRef = [s.sectionRef, ...s.ancestors].find((ref) => realClaims.has(ref));
-    const claim = claimerRef ? realClaims.get(claimerRef)! : null;
-    const entity_ref = claim?.entity_ref ?? siteRef;
-    const entity_owner_ref = claim ? claim.entity_owner_ref : siteOwnerRef;
-    const claimerPath = claimerRef ? (pathByRef.get(claimerRef) ?? "") : "";
+    const owner = nearestClaim(siteClaims, [s.sectionRef, ...s.ancestors]);
+    // A section nothing claims, on a site nothing hosts, still needs a row: comments
+    // and the changes feed join through it. It falls back to the site entity, whose
+    // Docs tab may not exist — see the dead-link case in the follow-up issue.
+    const entity_ref = owner?.claim.entityRef ?? siteRef;
+    const entity_owner_ref = owner?.claim.ownerRef ?? null;
+    // `nearestClaim` returns "" for the root fallback, which strips nothing.
+    const claimerPath = owner?.sectionRef ? (pathByRef.get(owner.sectionRef) ?? "") : "";
+
     return {
       site_ref: siteRef,
       section_ref: s.sectionRef,
-      section_path: stripPrefix(s.path, claimerPath),
+      section_path: stripSectionPrefix(s.path, claimerPath),
       parent_section_ref: s.ancestors[0] ?? null, // ancestors is nearest-first; [0] is immediate parent
       entity_ref,
       entity_owner_ref,
     };
   });
-}
-
-function stripPrefix(full: string, prefix: string): string {
-  if (!prefix) return full;
-  if (full === prefix) return "";
-  return full.startsWith(`${prefix}/`) ? full.slice(prefix.length + 1) : full;
 }
