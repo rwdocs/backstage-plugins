@@ -14,3 +14,5 @@ export type {
   LatestChangesQuery,
 } from "./latestChangesTypes";
 export { buildCommentDeepLinkSuffix, buildDocsPageLinkSuffix } from "./commentLink";
+export { stringifySitePageRef, parseSitePageRef } from "./sitePageRef";
+export type { SitePageRef } from "./sitePageRef";

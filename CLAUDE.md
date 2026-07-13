@@ -72,6 +72,7 @@ Shared utilities used by both frontend and backend plugins:
 - **`entityPath`** — Converts between entity refs (`kind:namespace/name`) and URL path segments (`namespace/kind/name`) using `@backstage/catalog-model`
 - **`parseAnnotation`** — Parses `rwdocs.org/ref` entity annotations into site ref and optional section ref
 - **`attribution`** — **Which catalog entity documents which part of a site.** The single source of that rule (see below)
+- **`sitePageRef`** — `SitePageRef` and its `stringifySitePageRef` / `parseSitePageRef` pair: a page's absolute identity (`<siteRef>#<sectionRef>[#<subpath>]`) as one string, for consumers that must pass a page handle around with no ambient site (e.g. an MCP search hit fed into a read tool)
 - **`config`** — Reads S3 configuration (`S3Config`) from Backstage config
 
 Also owns the Backstage configuration schema (`config.d.ts`).
