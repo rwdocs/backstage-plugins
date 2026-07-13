@@ -121,6 +121,10 @@ describe("parseAnnotation", () => {
       expect(parseAnnotation(":::", "default/component/x")).toBeUndefined();
     });
 
+    it("returns undefined for a self-ref whose own path is unusable", () => {
+      expect(parseAnnotation(".", "default/component/..")).toBeUndefined();
+    });
+
     it("treats empty hash as no sectionRef", () => {
       expect(parseAnnotation("component:default/arch#", "default/component/x")).toEqual({
         entityPath: "default/component/arch",

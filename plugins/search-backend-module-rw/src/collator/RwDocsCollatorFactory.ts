@@ -128,7 +128,7 @@ export class RwDocsCollatorFactory implements DocumentCollatorFactory {
       catalog: this.catalog,
       credentials,
       onlySiteEntityPath: localEntityPath,
-      onConflict: (message) => this.logger.warn(message),
+      onWarning: (message) => this.logger.warn(message),
     });
     let docCount = 0;
 

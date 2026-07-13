@@ -118,18 +118,31 @@ export async function collectSiteClaims(args: {
   catalog: Pick<CatalogService, "queryEntities">;
   credentials: BackstageCredentials;
   onlySiteEntityPath?: string;
-  onConflict?: (message: string) => void;
+  /** Reports a catalog-data problem rw cannot resolve: a doubly-claimed section,
+   *  or an entity whose ref is not a usable path. Both drop data, quietly. */
+  onWarning?: (message: string) => void;
 }): Promise<Map<string, SiteClaims>> {
   const { catalog, credentials, onlySiteEntityPath } = args;
-  const onConflict = args.onConflict ?? (() => {});
+  const onWarning = args.onWarning ?? (() => {});
   const sites = new Map<string, SiteClaims>();
 
   for await (const { entity } of iterateAnnotatedEntities(catalog, credentials)) {
     const entityRef = stringifyEntityRef(getCompoundEntityRef(entity));
-    const parsed = parseAnnotation(
-      entity.metadata?.annotations?.[RW_ANNOTATION],
-      toEntityPath(entityRef),
-    );
+
+    // `toEntityPath` can reject a ref the catalog itself admitted (a custom entity
+    // policy allows names our path rule doesn't). This runs once per annotated entity
+    // across a whole-catalog pass from which both callers attribute *every* site, so a
+    // bad ref must cost only its own entity — letting the throw escape would fail every
+    // site because of one. `parseAnnotation` already drops bad data this way.
+    let selfEntityPath: string;
+    try {
+      selfEntityPath = toEntityPath(entityRef);
+    } catch (err) {
+      onWarning(`Skipping ${entityRef}: ${err instanceof Error ? err.message : err}`);
+      continue;
+    }
+
+    const parsed = parseAnnotation(entity.metadata?.annotations?.[RW_ANNOTATION], selfEntityPath);
     if (!parsed) continue;
     if (onlySiteEntityPath && parsed.entityPath !== onlySiteEntityPath) continue;
 
@@ -154,13 +167,13 @@ export async function collectSiteClaims(args: {
       // both can own its unclaimed pages — but a self-hosting entity is the better
       // owner and wins in `rootClaimOf`.
       const slot = parsed.entityRef === entityRef ? "host" : "unscoped";
-      site[slot] = pickClaim(site[slot], claim, "the whole site", onConflict);
+      site[slot] = pickClaim(site[slot], claim, "the whole site", onWarning);
       continue;
     }
 
     site.bySection.set(
       parsed.sectionRef,
-      pickClaim(site.bySection.get(parsed.sectionRef), claim, parsed.sectionRef, onConflict),
+      pickClaim(site.bySection.get(parsed.sectionRef), claim, parsed.sectionRef, onWarning),
     );
   }
 
