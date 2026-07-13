@@ -78,7 +78,7 @@ describe("collectSiteClaims", () => {
   });
 
   it("resolves a doubly-claimed section deterministically, and says so", async () => {
-    const onConflict = jest.fn();
+    const onWarning = jest.fn();
     const sites = await collectSiteClaims({
       // Reverse order: the winner must not depend on which the catalog yielded last,
       // since it orders by metadata.uid and that changes on re-ingestion.
@@ -87,12 +87,31 @@ describe("collectSiteClaims", () => {
         entity("alpha", "component:default/arch#domain:default/billing", undefined, "Domain"),
       ]),
       credentials,
-      onConflict,
+      onWarning,
     });
 
     const claim = sites.get("component:default/arch")!.bySection.get("domain:default/billing");
     expect(claim?.entityRef).toBe("domain:default/alpha");
-    expect(onConflict).toHaveBeenCalledWith(expect.stringContaining("domain:default/billing"));
+    expect(onWarning).toHaveBeenCalledWith(expect.stringContaining("domain:default/billing"));
+  });
+
+  it("skips an entity whose own ref cannot be a path, and says so", async () => {
+    const malformed = {
+      apiVersion: "backstage.io/v1alpha1",
+      kind: "component",
+      metadata: { name: "..", namespace: "default", annotations: { "rwdocs.org/ref": "." } },
+      relations: [],
+    } as Entity;
+    const onWarning = jest.fn();
+
+    const sites = await collectSiteClaims({
+      catalog: catalogOf([malformed, entity("arch", ".")]),
+      credentials,
+      onWarning,
+    });
+
+    expect([...sites.keys()]).toEqual(["component:default/arch"]);
+    expect(onWarning).toHaveBeenCalledWith(expect.stringContaining("component:default/.."));
   });
 
   it("constrains discovery to one site when asked", async () => {

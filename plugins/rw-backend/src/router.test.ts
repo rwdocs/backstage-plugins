@@ -141,6 +141,20 @@ describe("createRouter", () => {
       expect(res.status).toBe(200);
       expect(authorizer.assertReadable).not.toHaveBeenCalled();
     });
+
+    it("rejects a traversing site path without reaching the authorizer or the hub", async () => {
+      const hub = new Hub({ projectDir: "/tmp/site", entity: "component:default/arch" });
+      const getSite = jest.spyOn(hub, "getSite");
+      const traversingServer = await makeServer(hub);
+
+      const res = await request(traversingServer).get("/site/default/component/%2e%2e%2f/config");
+
+      expect(res.status).toBe(400);
+      expect(authorizer.assertReadable).not.toHaveBeenCalled();
+      expect(getSite).not.toHaveBeenCalled();
+
+      await new Promise<void>((r) => traversingServer.close(() => r()));
+    });
   });
 
   describe("GET /health", () => {

@@ -2,6 +2,7 @@ import Router from "express-promise-router";
 import type { HttpAuthService, LoggerService } from "@backstage/backend-plugin-api";
 import { InputError, NotFoundError, ServiceUnavailableError } from "@backstage/errors";
 import type { RwSite } from "@rwdocs/core";
+import { toEntityPath } from "@rwdocs/backstage-plugin-rw-common";
 import type { SiteAuthorizer } from "./authorizeSite";
 import type { Hub } from "./hub";
 
@@ -26,7 +27,11 @@ export async function createRouter(options: RouterOptions) {
   // refused caller never causes a site load.
   router.use("/site/:namespace/:kind/:name", async (req, res, next) => {
     const { namespace, kind, name } = req.params;
-    const siteRef = `${namespace}/${kind}/${name}`.toLowerCase();
+    // Through the primitive, not a hand-rolled join: this is where an untrusted URL
+    // becomes a site key, so it is where the key must be proven safe. Deriving it any
+    // other way would leave the traversal gate to whichever downstream call happens to
+    // validate — and a cached authorization decision skips that call entirely.
+    const siteRef = toEntityPath({ namespace, kind, name });
 
     await authorizer.assertReadable(req, siteRef);
 

@@ -39,7 +39,7 @@ export async function runScan(deps: {
       catalog,
       credentials,
       onlySiteEntityPath,
-      onConflict: (message) => logger.warn(message),
+      onWarning: (message) => logger.warn(message),
     });
 
     for (const [siteRef, claims] of sites) {

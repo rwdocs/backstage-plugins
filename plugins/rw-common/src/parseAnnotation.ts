@@ -41,12 +41,16 @@ export function parseAnnotation(
     sectionRef = value.slice(hashIndex + 1) || undefined;
   }
 
-  if (entity === ".") {
-    if (!selfEntityPath) return undefined;
-    return { entityPath: selfEntityPath, entityRef: fromEntityPath(selfEntityPath), sectionRef };
-  }
-
+  // Bad data yields undefined, never a throw — callers treat an unparseable
+  // annotation as "this entity documents nothing". Both branches convert between a
+  // ref and a path, and both of those reject a segment that cannot be one, so both
+  // belong inside the catch.
   try {
+    if (entity === ".") {
+      if (!selfEntityPath) return undefined;
+      return { entityPath: selfEntityPath, entityRef: fromEntityPath(selfEntityPath), sectionRef };
+    }
+
     return {
       entityPath: toEntityPath(entity),
       entityRef: stringifyEntityRef(parseEntityRef(entity)),
