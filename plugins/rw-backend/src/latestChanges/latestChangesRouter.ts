@@ -24,8 +24,10 @@ export function createLatestChangesRouter(deps: LatestChangesRouterDeps): Router
   const { httpAuth, store } = deps;
   const router = PromiseRouter();
 
-  // Global feed — require an authenticated user, but no ownership filter and no
-  // per-page permission (consistent with the plugin's unguarded viewer routes).
+  // Global feed — require an authenticated user, but no ownership filter and no site-read check,
+  // so it still returns page titles and paths for sites the caller may not read. That makes it the
+  // outlier now that the viewer routes gate on the site entity: see issue #114 to filter this feed
+  // by the same rule.
   router.get("/pages/latest", async (req, res) => {
     await httpAuth.credentials(req, { allow: ["user"] });
     const limit = parseLimit(req.query.limit);

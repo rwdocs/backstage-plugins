@@ -1,5 +1,6 @@
 import * as http from "http";
 import { mockServices } from "@backstage/backend-test-utils";
+import { NotFoundError } from "@backstage/errors";
 import express from "express";
 import request from "supertest";
 import { createRouter } from "./router";
@@ -10,11 +11,14 @@ jest.mock("@rwdocs/core");
 
 const mockCreateSite = createSite as jest.MockedFunction<typeof createSite>;
 
+const authorizer = { assertReadable: jest.fn() };
+
 async function makeServer(hub: Hub): Promise<http.Server> {
   const router = await createRouter({
     logger: mockServices.logger.mock(),
     httpAuth: mockServices.httpAuth.mock(),
     hub,
+    authorizer: authorizer as any,
   });
   const app = express().use(router);
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -61,9 +65,83 @@ describe("createRouter", () => {
     mockSite.pagePathFor.mockReset();
     mockSite.getPageMarkdown.mockReset();
     mockCreateSite.mockReturnValue(mockSite as any);
+    authorizer.assertReadable.mockReset();
   });
 
   const prefix = "/site/default/component/test";
+
+  describe("site read authorization", () => {
+    // The gate lives in the site middleware, so it covers every site-scoped route — including any
+    // added later, and including /config, which would otherwise reveal that a site exists to a
+    // caller who may not read it.
+    it.each([
+      ["config", `${prefix}/config`],
+      ["navigation", `${prefix}/navigation`],
+      ["pages root", `${prefix}/pages/`],
+      ["a page", `${prefix}/pages/guide`],
+      ["markdown", `${prefix}/markdown?sectionRef=section:default/root`],
+    ])("404s %s when the caller may not read the site entity", async (_name, path) => {
+      authorizer.assertReadable.mockRejectedValue(
+        new NotFoundError("No documentation site found for entity: default/component/test"),
+      );
+
+      const res = await request(server).get(path);
+
+      expect(res.status).toBe(404);
+      // Byte-identical to the response for a site that does not exist, so the route is not an
+      // existence oracle.
+      expect(res.body.error.message).toBe(
+        "No documentation site found for entity: default/component/test",
+      );
+    });
+
+    it("gives a refused caller the same response for a site that exists and one that does not", async () => {
+      // The gate runs before the Hub lookup, so both paths answer identically — a caller who may
+      // not read a site cannot use the 404 to discover whether it exists.
+      authorizer.assertReadable.mockImplementation(async (_req: unknown, siteRef: string) => {
+        throw new NotFoundError(`No documentation site found for entity: ${siteRef}`);
+      });
+
+      const existing = await request(server).get(`${prefix}/pages/guide`);
+      const missing = await request(server).get("/site/default/component/nonexistent/pages/guide");
+
+      expect(existing.status).toBe(missing.status);
+      expect(existing.body.error.name).toBe(missing.body.error.name);
+      expect(existing.body.error.message).toBe(
+        "No documentation site found for entity: default/component/test",
+      );
+      expect(missing.body.error.message).toBe(
+        "No documentation site found for entity: default/component/nonexistent",
+      );
+    });
+
+    it("does not read the site when the caller is refused", async () => {
+      authorizer.assertReadable.mockRejectedValue(new NotFoundError("No documentation site found"));
+
+      await request(server).get(`${prefix}/pages/guide`);
+
+      expect(mockSite.renderPage).not.toHaveBeenCalled();
+      expect(mockSite.getNavigation).not.toHaveBeenCalled();
+    });
+
+    it("authorizes against the site entity path from the URL", async () => {
+      mockSite.getNavigation.mockResolvedValue({ items: [] });
+
+      await request(server).get(`${prefix}/navigation`);
+
+      expect(authorizer.assertReadable).toHaveBeenCalledWith(
+        expect.anything(),
+        "default/component/test",
+      );
+    });
+
+    it("leaves /health ungated — it is not site-scoped", async () => {
+      const res = await request(server).get("/health");
+
+      expect(res.status).toBe(200);
+      expect(authorizer.assertReadable).not.toHaveBeenCalled();
+    });
+  });
 
   describe("GET /health", () => {
     it("returns ok", async () => {

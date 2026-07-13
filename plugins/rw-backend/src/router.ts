@@ -2,25 +2,33 @@ import Router from "express-promise-router";
 import type { HttpAuthService, LoggerService } from "@backstage/backend-plugin-api";
 import { InputError, NotFoundError, ServiceUnavailableError } from "@backstage/errors";
 import type { RwSite } from "@rwdocs/core";
+import type { SiteAuthorizer } from "./authorizeSite";
 import type { Hub } from "./hub";
 
 export interface RouterOptions {
   logger: LoggerService;
   httpAuth: HttpAuthService;
   hub: Hub;
+  authorizer: SiteAuthorizer;
 }
 
 export async function createRouter(options: RouterOptions) {
-  const { hub } = options;
+  const { hub, authorizer } = options;
   const router = Router();
 
   router.get("/health", (_req, res) => {
     res.json({ status: "ok" });
   });
 
-  router.use("/site/:namespace/:kind/:name", (req, res, next) => {
+  // Every site-scoped route passes through here, so this is where the read gate belongs: a route
+  // added later cannot forget it, and `/config` is covered too, which keeps a caller who may not
+  // read the site from learning whether it exists. Authorization precedes the Hub lookup so a
+  // refused caller never causes a site load.
+  router.use("/site/:namespace/:kind/:name", async (req, res, next) => {
     const { namespace, kind, name } = req.params;
     const siteRef = `${namespace}/${kind}/${name}`.toLowerCase();
+
+    await authorizer.assertReadable(req, siteRef);
 
     const site = hub.getSite(siteRef);
     if (!site) {

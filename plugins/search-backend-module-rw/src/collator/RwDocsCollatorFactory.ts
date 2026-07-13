@@ -47,8 +47,11 @@ export interface RwIndexableDocument extends IndexableDocument {
    *  nearest section at or above it, else the entity hosting the site. A page is
    *  indexed once, for this entity alone, even though the entities above it can
    *  also reach it — the same attribution rw-backend's siteIndex gives comments and
-   *  the changes feed. `location` points into this entity's docs, and it is what
-   *  `authorization.resourceRef` carries (callers can't see that field). */
+   *  the changes feed. `location` points into this entity's docs.
+   *
+   *  This is *attribution*, not access: a hit is filtered by read on `siteRef` (see
+   *  `authorization`), because the site is the repo and therefore the unit of docs
+   *  access. Which entity documents a page and who may read it are different questions. */
   entityRef: string;
 }
 
@@ -192,7 +195,13 @@ export class RwDocsCollatorFactory implements DocumentCollatorFactory {
           subpath: page.subpath,
           entityRef,
           authorization: {
-            resourceRef: entityRef,
+            // The site, not the page's owning entity: a site is one repo, so its entity is the
+            // unit of docs access, and rw-backend's read routes gate on exactly this. Filtering
+            // hits by the *owning* entity instead would hide pages the read route still serves —
+            // a user could read a page they cannot find, and a section claim (which exists to
+            // scope an entity's Docs view, not to restrict it) would look like a security
+            // boundary it is not.
+            resourceRef: claims.siteRef,
           },
         };
       } catch (err) {

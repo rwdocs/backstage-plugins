@@ -22,6 +22,7 @@ import {
   CommentProcessor,
 } from "@rwdocs/backstage-plugin-rw-node";
 import { createRouter } from "./router";
+import { SiteAuthorizer } from "./authorizeSite";
 import { Hub, type HubOptions } from "./hub";
 import { CommentStore } from "./comments/CommentStore";
 import { createCommentsRouter } from "./comments/router";
@@ -55,6 +56,7 @@ export const rwPlugin = createBackendPlugin({
         database: coreServices.database,
         permissions: coreServices.permissions,
         permissionsRegistry: coreServices.permissionsRegistry,
+        auditor: coreServices.auditor,
         userInfo: coreServices.userInfo,
         auth: coreServices.auth,
         catalog: catalogServiceRef,
@@ -68,6 +70,7 @@ export const rwPlugin = createBackendPlugin({
         database,
         permissions,
         permissionsRegistry,
+        auditor,
         userInfo,
         auth,
         catalog,
@@ -185,6 +188,7 @@ export const rwPlugin = createBackendPlugin({
           logger,
           httpAuth,
           hub,
+          authorizer: new SiteAuthorizer({ permissions, httpAuth, auditor }),
         });
         httpRouter.use(router);
         // The inbox router MUST be mounted before the comments router: it owns the

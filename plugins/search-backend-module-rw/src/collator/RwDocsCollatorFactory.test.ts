@@ -263,7 +263,22 @@ describe("RwDocsCollatorFactory", () => {
         sectionRef: "system:default/payment-gateway",
         subpath: "migration",
         entityRef: "system:default/payment-gateway",
-        authorization: { resourceRef: "system:default/payment-gateway" },
+      });
+    });
+
+    it("filters a hit by read on the site, not on the entity it is attributed to", async () => {
+      const catalog = createMockCatalog(entities);
+      mockedCreateSite.mockReturnValue(archSite());
+
+      const docs = await collectDocuments(await makeFactory(catalog).getCollator());
+      const migration = docs.find((doc) => doc.title === "Migration");
+
+      // Attribution and access are different questions. The page is attributed to the system that
+      // claims its section, but it is gated on the site entity — the same entity rw-backend's read
+      // routes gate on, so search can never hide a page the read route would still serve.
+      expect(migration).toMatchObject({
+        entityRef: "system:default/payment-gateway",
+        authorization: { resourceRef: "component:default/arch" },
       });
     });
 

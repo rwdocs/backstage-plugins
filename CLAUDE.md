@@ -135,6 +135,27 @@ extension config if ever needed.)
 Key backend classes:
 - **`Hub`** — Manages multiple `RwSite` instances with LRU eviction. In `projectDir` mode, serves a single pre-configured site. In `s3` mode, creates sites on demand.
 
+**Read authorization.** Every site-scoped route authorizes `catalogEntityReadPermission` on the
+**site entity** — enforced once, in the site middleware, so a route added later cannot forget it,
+and `/config` is covered too. A DENY returns the same 404 as an unknown site, so it is not an
+existence oracle. Like every Backstage permission check, it only bites when `permission.enabled`
+is true (the framework returns ALLOW for everything otherwise, and always for service principals).
+See `authorizeSite.ts`.
+
+Decisions are cached per `(principal, site)` for 5s — a page view is a burst of requests, and
+without it every one of them is a permission-backend round trip (the same trade TechDocs makes in
+`CachedEntityLoader`). A denial is reported to the **auditor** service (`eventId: "site-read"`),
+never to the caller and never to the logger: the 404 must stay indistinguishable, but an operator
+debugging "my docs 404" needs to tell a refusal from a missing site. Only a *fresh* denial is
+audited, so a retrying client cannot flood the audit log.
+
+The site is the unit of access because the site is the repo: everything it serves comes from one
+source tree published under one entity's prefix. A section claim (`rwdocs.org/ref: <site>#<section>`)
+scopes an entity's Docs *view* and drives attribution for search, comments and the changes feed —
+it is **not** an access boundary. Docs needing a narrower audience get their own repo, hence their
+own site and entity to gate on. This is the rule the comments router already applies when it gates
+comment reads on the host site entity, and the one TechDocs applies to its own docs.
+
 `router.ts` exposes entity-scoped endpoints under `/site/:namespace/:kind/:name/`:
 - `GET /health` — unauthenticated health check (not entity-scoped)
 - `GET /site/:namespace/:kind/:name/config` — returns `{ liveReloadEnabled: false }`
@@ -154,6 +175,8 @@ Key classes:
   Pages come from `listPages()`, which carries each page's `path`, `hasContent` and `anchors` (every enclosing section paired with the page's path relative to it). `getNavigation()` is not a substitute: it stops at a section boundary and never yields the pages below one. Ownership per page is `attribution` (see rw-common); each site is loaded once, not once per annotated entity.
 
   Each document carries the page's identity — `siteRef` + `(sectionRef, subpath)` — so a consumer can read it back via rw-backend's `/markdown`. `location` can't serve that (configurable route, relative to the owning entity), and `authorization` can't either (the search backend strips it before results reach callers).
+
+  A hit is filtered by `catalogEntityReadPermission` on the **site** entity (`authorization.resourceRef = siteRef`) — the same rule rw-backend's read routes apply, so search can never hide a page the read route still serves. That is deliberately *not* the entity the page is attributed to: `entityRef` answers "which entity documents this page" (for `location` and ownership), while access is a property of the site, because a site is one repo.
 
 `module.ts` registers the collator with the search index via `searchIndexRegistryExtensionPoint` from `@backstage/plugin-search-backend-node/alpha`.
 
