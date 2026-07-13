@@ -70,11 +70,13 @@ async function buildApp(opts?: { entities?: unknown[] }) {
     ]) as any,
   });
 
-  // Mirror plugin.ts: page router and comments router mounted as siblings.
+  // Mirror plugin.ts: page router and comments router mounted as siblings. The site read gate is
+  // exercised in router.test.ts; here it always allows, so the comment routes are what is under test.
   const router = await createRouter({
     logger: mockServices.logger.mock(),
     httpAuth: mockServices.httpAuth(),
     hub,
+    authorizer: { assertReadable: async () => {} } as any,
   });
   const commentsRouter = createCommentsRouter({
     store,
