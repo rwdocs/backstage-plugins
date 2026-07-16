@@ -1,6 +1,6 @@
 {
   "name": "@rwdocs/backstage-plugin-rw-node",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
