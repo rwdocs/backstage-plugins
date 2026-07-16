@@ -1,3 +1,5 @@
+import { HumanDuration } from "@backstage/types";
+
 export interface Config {
   /** @visibility backend */
   rw?: {
@@ -23,7 +25,7 @@ export interface Config {
      *   reloadInterval: { minutes: 5 }
      * ```
      */
-    reloadInterval?: import("@backstage/types").HumanDuration;
+    reloadInterval?: HumanDuration;
     /**
      * S3 storage configuration. Shared across all entity sites.
      * Mutually exclusive with `projectDir`.
