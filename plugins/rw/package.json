@@ -83,7 +83,7 @@
     "@backstage/plugin-search-react": "^1.11.6",
     "@backstage/test-utils": "^1.7.20",
     "@testing-library/dom": "^10.0.0",
-    "@testing-library/jest-dom": "^6.0.0",
+    "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.0.0",
     "@types/jest": "^30.0.0",
     "@types/react": "^18.0.0",
