@@ -51,8 +51,6 @@ export interface Config {
     diagrams?: {
       /** Kroki server URL for rendering diagrams. */
       krokiUrl?: string;
-      /** Diagram rendering DPI. */
-      dpi?: number;
     };
     /**
      * Inline/page comments in the embedded viewer.

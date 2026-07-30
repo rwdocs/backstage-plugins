@@ -22,6 +22,17 @@ export class Hub {
       entity: options.entity ? toEntityPath(options.entity) : undefined,
     };
     this.maxSize = options.cacheSize ?? 20;
+
+    // Local mode serves exactly one site, fully described by config, so build
+    // it now rather than on the first request. `createSite` throws when
+    // `projectDir` does not exist (@rwdocs/core 0.1.34); built here that
+    // surfaces as a startup failure naming the directory, where building it
+    // lazily would instead 500 every docs request — uncached, so forever.
+    // S3 mode stays lazy: its sites are per-entity and unknown until a request
+    // names one.
+    if (this.options.projectDir && this.options.entity) {
+      this.cache.set(this.options.entity, this.createLocalSite());
+    }
   }
 
   getSite(entityRef: string): RwSite | undefined {
@@ -31,20 +42,17 @@ export class Hub {
     return this.getS3Site(entityRef);
   }
 
-  private getLocalSite(entityRef: string): RwSite | undefined {
-    if (entityRef !== this.options.entity) {
-      return undefined;
-    }
-
-    const cached = this.cache.get(entityRef);
-    if (cached) return cached;
-
-    const site = createSite({
+  private createLocalSite(): RwSite {
+    return createSite({
       projectDir: this.options.projectDir,
       diagrams: this.options.diagrams,
     });
-    this.cache.set(entityRef, site);
-    return site;
+  }
+
+  private getLocalSite(entityRef: string): RwSite | undefined {
+    // Seeded by the constructor, so a miss here means the ref is not this
+    // Hub's one site.
+    return this.cache.get(entityRef);
   }
 
   async reloadAll(logger: LoggerService) {

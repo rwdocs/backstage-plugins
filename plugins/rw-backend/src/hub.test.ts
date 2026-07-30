@@ -147,6 +147,21 @@ describe("Hub", () => {
       expect(logger.info).not.toHaveBeenCalledWith(expect.stringContaining("a/b/two"));
     });
 
+    it("reloads the local site even though nothing has requested it", async () => {
+      // A scheduled `rw.reloadInterval` tick can land before anyone opens the
+      // docs tab. reloadAll only walks the cache, so while the local site was
+      // built on first request this was a silent no-op until then.
+      const site = mockSite();
+      site.reload.mockResolvedValue(true);
+      mockCreateSite.mockReturnValue(site);
+
+      const hub = new Hub({ projectDir: "/path/to/docs", entity: "component:default/arch" });
+
+      await hub.reloadAll(mockServices.logger.mock());
+
+      expect(site.reload).toHaveBeenCalledTimes(1);
+    });
+
     it("logs warning on reload failure and continues", async () => {
       const site1 = mockSite();
       const site2 = mockSite();
@@ -187,6 +202,39 @@ describe("Hub", () => {
         projectDir: "/path/to/docs",
         diagrams: { krokiUrl: "http://kroki:8080" },
       });
+    });
+
+    it("builds the site during construction, before any request", () => {
+      const site = mockSite();
+      mockCreateSite.mockReturnValue(site);
+
+      const hub = new Hub({ projectDir: "/path/to/docs", entity: "component:default/arch" });
+
+      // Asserted before the first getSite call, so only construction can have
+      // built it.
+      expect(mockCreateSite).toHaveBeenCalledTimes(1);
+      expect(hub.getSite("default/component/arch")).toBe(site);
+    });
+
+    it("surfaces a bad projectDir as a construction failure", () => {
+      // See the Hub constructor for why this must not wait for a request.
+      mockCreateSite.mockImplementation(() => {
+        throw new Error("Failed to load configuration: Project directory not found: /gone");
+      });
+
+      expect(() => new Hub({ projectDir: "/gone", entity: "component:default/arch" })).toThrow(
+        "Project directory not found: /gone",
+      );
+    });
+
+    it("caches the local site across getSite calls", () => {
+      mockCreateSite.mockReturnValue(mockSite());
+
+      const hub = new Hub({ projectDir: "/path/to/docs", entity: "component:default/arch" });
+      hub.getSite("default/component/arch");
+      hub.getSite("default/component/arch");
+
+      expect(mockCreateSite).toHaveBeenCalledTimes(1);
     });
 
     it("returns undefined for non-matching entity ref", () => {

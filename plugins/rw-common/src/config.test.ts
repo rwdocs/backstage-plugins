@@ -61,12 +61,11 @@ describe("readRwSiteConfig", () => {
     const config = new ConfigReader({
       rw: {
         s3: { bucket: "my-bucket" },
-        diagrams: { krokiUrl: "https://kroki.example.com", dpi: 150 },
+        diagrams: { krokiUrl: "https://kroki.example.com" },
       },
     });
     expect(readRwSiteConfig(config).diagrams).toEqual({
       krokiUrl: "https://kroki.example.com",
-      dpi: 150,
     });
   });
 
