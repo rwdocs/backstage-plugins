@@ -51,7 +51,13 @@ export interface Config {
     diagrams?: {
       /** Kroki server URL for rendering diagrams. */
       krokiUrl?: string;
-      /** Diagram rendering DPI. */
+      /**
+       * Diagram rendering DPI.
+       *
+       * @deprecated Removed in @rwdocs/core 0.1.34 and no longer read. Setting
+       * it has no effect; delete it. Still declared so an instance running with
+       * `noUndeclaredProperties` keeps starting.
+       */
       dpi?: number;
     };
     /**

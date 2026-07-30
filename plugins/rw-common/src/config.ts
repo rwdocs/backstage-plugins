@@ -11,7 +11,6 @@ export interface S3Config {
 
 export interface RwDiagramsConfig {
   krokiUrl?: string;
-  dpi?: number;
 }
 
 export interface RwSiteConfig {
@@ -47,7 +46,6 @@ export function readRwSiteConfig(config: Config): RwSiteConfig {
   const diagrams = diagramsConfig
     ? {
         krokiUrl: diagramsConfig.getOptionalString("krokiUrl"),
-        dpi: diagramsConfig.getOptionalNumber("dpi"),
       }
     : undefined;
 

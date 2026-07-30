@@ -61,13 +61,22 @@ describe("readRwSiteConfig", () => {
     const config = new ConfigReader({
       rw: {
         s3: { bucket: "my-bucket" },
-        diagrams: { krokiUrl: "https://kroki.example.com", dpi: 150 },
+        diagrams: { krokiUrl: "https://kroki.example.com" },
       },
     });
     expect(readRwSiteConfig(config).diagrams).toEqual({
       krokiUrl: "https://kroki.example.com",
-      dpi: 150,
     });
+  });
+
+  it("ignores the removed dpi setting", () => {
+    // @rwdocs/core 0.1.34 dropped `diagrams.dpi`. The key stays declared (and
+    // deprecated) in the config schema so an instance that still sets it keeps
+    // starting; it must not reach createSite.
+    const config = new ConfigReader({
+      rw: { s3: { bucket: "my-bucket" }, diagrams: { dpi: 150 } },
+    });
+    expect(readRwSiteConfig(config).diagrams).toEqual({ krokiUrl: undefined });
   });
 
   it("throws when neither projectDir nor s3 is set", () => {
