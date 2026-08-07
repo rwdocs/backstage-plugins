@@ -6998,34 +6998,34 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@rwdocs/core-darwin-arm64@npm:0.1.34":
-  version: 0.1.34
-  resolution: "@rwdocs/core-darwin-arm64@npm:0.1.34"
+"@rwdocs/core-darwin-arm64@npm:0.1.35":
+  version: 0.1.35
+  resolution: "@rwdocs/core-darwin-arm64@npm:0.1.35"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@rwdocs/core-linux-x64-gnu@npm:0.1.34":
-  version: 0.1.34
-  resolution: "@rwdocs/core-linux-x64-gnu@npm:0.1.34"
+"@rwdocs/core-linux-x64-gnu@npm:0.1.35":
+  version: 0.1.35
+  resolution: "@rwdocs/core-linux-x64-gnu@npm:0.1.35"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@rwdocs/core-linux-x64-musl@npm:0.1.34":
-  version: 0.1.34
-  resolution: "@rwdocs/core-linux-x64-musl@npm:0.1.34"
+"@rwdocs/core-linux-x64-musl@npm:0.1.35":
+  version: 0.1.35
+  resolution: "@rwdocs/core-linux-x64-musl@npm:0.1.35"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
 "@rwdocs/core@npm:^0.1.34":
-  version: 0.1.34
-  resolution: "@rwdocs/core@npm:0.1.34"
+  version: 0.1.35
+  resolution: "@rwdocs/core@npm:0.1.35"
   dependencies:
-    "@rwdocs/core-darwin-arm64": "npm:0.1.34"
-    "@rwdocs/core-linux-x64-gnu": "npm:0.1.34"
-    "@rwdocs/core-linux-x64-musl": "npm:0.1.34"
+    "@rwdocs/core-darwin-arm64": "npm:0.1.35"
+    "@rwdocs/core-linux-x64-gnu": "npm:0.1.35"
+    "@rwdocs/core-linux-x64-musl": "npm:0.1.35"
   dependenciesMeta:
     "@rwdocs/core-darwin-arm64":
       optional: true
@@ -7033,7 +7033,7 @@ __metadata:
       optional: true
     "@rwdocs/core-linux-x64-musl":
       optional: true
-  checksum: 10c0/c5d48d6dafb44c38048fa40bc0ea875614b08f787c9283eb866926cfee6dbafc7a7b6b10028d0d4100db614e0aa27bc60687cd50f1943040948ab5010d409a09
+  checksum: 10c0/8f0183076a833fc24a04b369d4a6abcbf4e1ec6d6d569e9071e37801bbade05482282c7ee1bb690309bcc195e92919aba2765c2690bbf86bf9a398bb97325a7a
   languageName: node
   linkType: hard
 
