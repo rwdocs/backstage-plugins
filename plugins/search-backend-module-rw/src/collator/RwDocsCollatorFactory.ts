@@ -9,6 +9,7 @@ import { parseEntityRef } from "@backstage/catalog-model";
 import { createSite, type RwSite } from "@rwdocs/core";
 import {
   collectSiteClaims,
+  projectSiteListing,
   rootClaimOf,
   toEntityPath,
   readRwSiteConfig,
@@ -148,7 +149,16 @@ export class RwDocsCollatorFactory implements DocumentCollatorFactory {
 
   private async *indexSite(claims: SiteClaims): AsyncGenerator<RwIndexableDocument> {
     const site = this.createSite(claims.entityPath);
-    const pages = await site.listPages();
+    const [rawSections, rawPages] = await Promise.all([site.listSections(), site.listPages()]);
+    const { pages, diagnostics } = await projectSiteListing(rawSections, rawPages, (ref) =>
+      site.pagePathFor(ref, ""),
+    );
+    if (diagnostics.collidingRefs > 0) {
+      this.logger.warn(`Canonical section identity collisions in site ${claims.siteRef}`, {
+        siteRef: claims.siteRef,
+        ...diagnostics,
+      });
+    }
 
     this.logger.info(`Indexing site ${claims.siteRef} (${pages.length} pages)`);
 

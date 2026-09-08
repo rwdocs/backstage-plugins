@@ -1,6 +1,6 @@
 import pLimit from "p-limit";
 import type { LoggerService } from "@backstage/backend-plugin-api";
-import { toEntityPath } from "@rwdocs/backstage-plugin-rw-common";
+import { projectSiteListing, toEntityPath } from "@rwdocs/backstage-plugin-rw-common";
 import type { RwSite } from "@rwdocs/core";
 import type { SiteRefreshStore } from "./SiteRefreshStore";
 import type { RegistryStore } from "./RegistryStore";
@@ -25,7 +25,7 @@ export async function runWorker(deps: {
   siteRefreshStore: SiteRefreshStore;
   registryStore: RegistryStore;
   sectionOwnershipStore: Pick<SectionOwnershipStore, "listForSite">;
-  makeSite: (entityPath: string) => Pick<RwSite, "listSections" | "listPages">;
+  makeSite: (entityPath: string) => Pick<RwSite, "listSections" | "listPages" | "pagePathFor">;
   now?: () => Date;
   rng?: () => number;
 }): Promise<void> {
@@ -53,12 +53,21 @@ export async function runWorker(deps: {
             site.listPages(),
             sectionOwnershipStore.listForSite(siteRef),
           ]);
+          const projected = await projectSiteListing(rawSections, rawPages, (ref) =>
+            site.pagePathFor(ref, ""),
+          );
+          if (projected.diagnostics.collidingRefs > 0) {
+            logger.warn(`Canonical section identity collisions in site ${siteRef}`, {
+              siteRef,
+              ...projected.diagnostics,
+            });
+          }
           // computeSectionRows folds the effective-ownership rollup into each dense section row.
           // registryHash is order-sensitive (JSON.stringify) and listSections order is unspecified,
           // so sort by section_ref for a stable hash.
-          const sections = sortSections(computeSectionRows(siteRef, rawSections, claims));
+          const sections = sortSections(computeSectionRows(siteRef, projected.sections, claims));
           const pages = sortPages(
-            rawPages.map((p) => ({
+            projected.pages.map((p) => ({
               site_ref: siteRef,
               section_ref: p.sectionRef,
               subpath: p.subpath,

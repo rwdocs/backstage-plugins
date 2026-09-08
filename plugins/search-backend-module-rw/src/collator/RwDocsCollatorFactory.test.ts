@@ -20,6 +20,7 @@ interface MockSection {
 interface MockPage {
   sectionRef: string;
   subpath: string;
+  path?: string;
 }
 
 /** A site that hands out pages the way `@rwdocs/core` does: each page carries its
@@ -34,6 +35,7 @@ function createMockSite(options: {
   sections?: MockSection[];
   pages?: MockPage[];
   documents?: Record<string, { title: string; text: string } | null>;
+  canonicalRoots?: Record<string, string>;
 }) {
   const sections = (options.sections ?? []).map((section) => ({ ancestors: [], ...section }));
   const byRef = new Map(sections.map((section) => [section.sectionRef, section]));
@@ -48,21 +50,30 @@ function createMockSite(options: {
 
   const pages = (options.pages ?? []).map((page) => {
     const section = byRef.get(page.sectionRef)!;
-    const path = join(section.path, page.subpath);
+    const path = page.path ?? join(section.path, page.subpath);
     return {
       ...page,
       path,
       title: "",
       lastModified: "2026-07-12T00:00:00+00:00",
       hasContent: docs[path] !== null,
-      anchors: [section.sectionRef, ...section.ancestors].map((ref) => ({
-        sectionRef: ref,
-        subpath: relativeTo(path, byRef.get(ref)?.path ?? ""),
-      })),
+      anchors: sections
+        .filter((s) => s.path === "" || path === s.path || path.startsWith(`${s.path}/`))
+        .sort((a, b) => b.path.length - a.path.length)
+        .map((s) => ({ sectionRef: s.sectionRef, subpath: relativeTo(path, s.path) })),
     };
   });
 
   return {
+    listSections: jest.fn().mockResolvedValue(sections),
+    pagePathFor: jest.fn(async (ref: string, subpath: string) => {
+      const matches = sections.filter((s) => s.sectionRef === ref);
+      if (!matches.length) return null;
+      const root = options.canonicalRoots?.[ref];
+      if (matches.length > 1 && root === undefined)
+        throw new Error(`Fixture must prescribe canonical root for ${ref}`);
+      return join(root ?? matches[0].path, subpath);
+    }),
     listPages: jest.fn().mockResolvedValue(pages),
     renderSearchDocument: jest.fn().mockImplementation(async (path: string) => docs[path] ?? null),
   } as any;
@@ -194,7 +205,7 @@ describe("RwDocsCollatorFactory", () => {
           },
           {
             sectionRef: "system:default/payment-gateway",
-            path: "domains/billing/systems/payment-gateway",
+            path: "domains/billing/systems/payments-guide",
             ancestors: ["domain:default/billing", "section:default/root"],
           },
         ],
@@ -207,8 +218,8 @@ describe("RwDocsCollatorFactory", () => {
         documents: {
           guide: { title: "Guide", text: "Guide" },
           "domains/billing/overview": { title: "Overview", text: "Overview" },
-          "domains/billing/systems/payment-gateway": { title: "Payment Gateway", text: "PG" },
-          "domains/billing/systems/payment-gateway/migration": {
+          "domains/billing/systems/payments-guide": { title: "Payment Gateway", text: "PG" },
+          "domains/billing/systems/payments-guide/migration": {
             title: "Migration",
             text: "Migration",
           },
@@ -369,6 +380,143 @@ describe("RwDocsCollatorFactory", () => {
 
       expect(mockedCreateSite).toHaveBeenCalledTimes(1);
     });
+  });
+
+  describe("duplicate section identities", () => {
+    const siteRef = "component:default/arch";
+    const root = "section:default/root";
+    const shared = "system:default/shared";
+    const independent = "component:default/independent";
+    const deep = "component:default/deep";
+    const catalog = () =>
+      createMockCatalog([
+        makeEntity("arch", "."),
+        makeEntity("shared", `${siteRef}#${shared}`, "System"),
+      ]);
+    function collisionSite(nested: boolean) {
+      return createMockSite({
+        sections: [
+          { sectionRef: root, path: "" },
+          { sectionRef: shared, path: "a", ancestors: [root] },
+          { sectionRef: shared, path: "a-b", ancestors: [root] },
+          { sectionRef: independent, path: "a-b/unique", ancestors: [shared, root] },
+          ...(nested
+            ? [
+                { sectionRef: shared, path: "a/nested", ancestors: [shared, root] },
+                { sectionRef: deep, path: "a/nested/deep", ancestors: [shared, shared, root] },
+              ]
+            : []),
+        ],
+        pages: [
+          { sectionRef: root, subpath: "", path: "" },
+          { sectionRef: shared, subpath: "", path: "a" },
+          { sectionRef: shared, subpath: "", path: "a-b" },
+          { sectionRef: shared, subpath: "q", path: "a/q" },
+          { sectionRef: shared, subpath: "q", path: "a-b/q" },
+          { sectionRef: shared, subpath: "only", path: "a-b/only" },
+          { sectionRef: independent, subpath: "p", path: "a-b/unique/p" },
+          ...(nested ? [{ sectionRef: deep, subpath: "p", path: "a/nested/deep/p" }] : []),
+        ],
+        canonicalRoots: { [shared]: "a" },
+        documents: {
+          "": { title: "Home", text: "Home" },
+          a: { title: "Winner", text: "Winner" },
+          "a-b": { title: "Loser", text: "Loser" },
+          "a/q": { title: "Winner q", text: "Winner body" },
+          "a-b/q": { title: "Loser q", text: "Loser body" },
+          "a-b/only": { title: "Loser only", text: "Unaddressable" },
+          "a-b/unique/p": { title: "Independent p", text: "Independent" },
+          "a/nested/deep/p": { title: "Deep p", text: "Deep" },
+        },
+      });
+    }
+
+    it.each([false, true])(
+      "indexes exact canonical content with valid attribution (nested=%s)",
+      async (nested) => {
+        const site = collisionSite(nested);
+        mockedCreateSite.mockReturnValue(site);
+        const docs = await collectDocuments(await makeFactory(catalog()).getCollator());
+        expect(docs.map((d) => d.title)).not.toEqual(
+          expect.arrayContaining(["Loser", "Loser q", "Loser only"]),
+        );
+        expect(docs.map((d) => d.title).sort()).toEqual(
+          ["Home", "Winner", "Winner q", "Independent p", ...(nested ? ["Deep p"] : [])].sort(),
+        );
+        expect(docs.find((d) => d.title === "Winner q")).toMatchObject({
+          sectionRef: shared,
+          subpath: "q",
+          entityRef: shared,
+          text: "Winner body",
+          location: "/catalog/default/system/shared/docs/q",
+          authorization: { resourceRef: siteRef },
+        });
+        expect(docs.find((d) => d.title === "Home")).toMatchObject({
+          sectionRef: root,
+          entityRef: siteRef,
+          location: "/catalog/default/component/arch/docs/",
+        });
+        expect(docs.find((d) => d.title === "Independent p")).toMatchObject({
+          sectionRef: independent,
+          subpath: "p",
+          entityRef: siteRef,
+          location: "/catalog/default/component/arch/docs/a-b/unique/p",
+        });
+        expect(docs.filter((d) => d.title === "Deep p")).toMatchObject(
+          nested
+            ? [
+                {
+                  sectionRef: deep,
+                  subpath: "p",
+                  entityRef: shared,
+                  location: "/catalog/default/system/shared/docs/nested/deep/p",
+                },
+              ]
+            : [],
+        );
+        expect(docs.every((d) => d.authorization.resourceRef === siteRef)).toBe(true);
+        expect(site.pagePathFor).toHaveBeenCalledTimes(1);
+        expect(site.pagePathFor).toHaveBeenCalledWith(shared, "");
+        expect(logger.warn).toHaveBeenCalledTimes(1);
+        expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining(siteRef), {
+          siteRef,
+          collidingRefs: 1,
+          omittedSections: nested ? 2 : 1,
+          omittedPages: 3,
+        });
+      },
+    );
+
+    it.each(["null", "rejected"])(
+      "emits no partial site documents on collision resolution failure (%s)",
+      async (failure) => {
+        const site = collisionSite(true);
+        if (failure === "null") site.pagePathFor.mockResolvedValue(null);
+        else site.pagePathFor.mockRejectedValue(new Error("lookup failed"));
+        mockedCreateSite.mockReturnValueOnce(site);
+        mockedCreateSite.mockReturnValue(
+          createFlatSite({ "": { title: "Healthy", text: "Healthy" } }),
+        );
+        const entities = catalog();
+        entities.queryEntities.mockResolvedValue({
+          items: [makeEntity("arch", "."), makeEntity("healthy", ".")],
+          pageInfo: {},
+        });
+        const docs = await collectDocuments(await makeFactory(entities).getCollator());
+        expect(docs.map((d) => d.title)).toEqual(["Healthy"]);
+        expect(site.renderSearchDocument).not.toHaveBeenCalled();
+        expect(logger.warn).toHaveBeenCalledWith(
+          expect.stringContaining(`Failed to index site ${siteRef}:`),
+        );
+        expect(logger.warn).toHaveBeenCalledWith(
+          expect.stringContaining(
+            failure === "null"
+              ? `Cannot resolve canonical section root for ${shared}`
+              : "lookup failed",
+          ),
+        );
+      },
+    );
   });
 
   it("resolves a section claimed by two entities to the same one every run", async () => {

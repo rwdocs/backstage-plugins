@@ -25,6 +25,7 @@ export type {
 export interface RwApi {
   getBaseUrl(): Promise<string>;
   getSiteBaseUrl(entityRef: string): Promise<string>;
+  getSiteRootSectionRef(entityPath: string): Promise<string>;
   getFetch(): typeof fetch;
   getCommentsEnabled(): Promise<boolean>;
   getCommentInbox(query?: InboxQuery): Promise<InboxResponse>;
@@ -50,6 +51,25 @@ export class RwClient implements RwApi {
   async getSiteBaseUrl(entityRef: string): Promise<string> {
     const base = await this.discoveryApi.getBaseUrl("rw");
     return `${base}/site/${entityRef}`;
+  }
+
+  async getSiteRootSectionRef(entityPath: string): Promise<string> {
+    const base = await this.getSiteBaseUrl(entityPath);
+    const res = await this.fetchApi.fetch(`${base}/navigation`);
+    if (!res.ok) throw new Error(`Site navigation request failed: ${res.status}`);
+    const body = await res.json();
+    const scope = body?.scope;
+    const section = scope?.section;
+    if (
+      scope?.path !== "/" ||
+      !section ||
+      ["kind", "namespace", "name"].some(
+        (field) => typeof section[field] !== "string" || section[field].length === 0,
+      )
+    ) {
+      throw new Error("Site navigation is missing a valid root section");
+    }
+    return `${section.kind}:${section.namespace}/${section.name}`;
   }
 
   getFetch(): typeof fetch {

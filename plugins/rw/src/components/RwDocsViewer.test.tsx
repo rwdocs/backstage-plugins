@@ -24,7 +24,9 @@ const TEST_API_BASE_URL = "http://localhost:7007/api/rw/site/default/component/m
 const TEST_SOURCE_ENTITY_REF = "component:default/my-docs";
 
 const mockCatalogApi = {
-  getEntityByRef: jest.fn().mockResolvedValue(undefined),
+  getEntitiesByRefs: jest.fn(async ({ entityRefs }: { entityRefs: string[] }) => ({
+    items: entityRefs.map(() => undefined),
+  })),
 };
 
 function createMockRwApi(overrides?: Partial<RwApi>): RwApi {
@@ -35,6 +37,7 @@ function createMockRwApi(overrides?: Partial<RwApi>): RwApi {
       .mockImplementation((entityRef: string) =>
         Promise.resolve(`http://localhost:7007/api/rw/site/${entityRef}`),
       ),
+    getSiteRootSectionRef: jest.fn().mockResolvedValue("section:commerce/handbook"),
     getFetch: jest.fn().mockReturnValue(jest.fn()),
     getCommentsEnabled: jest.fn().mockResolvedValue(false),
     getCommentInbox: jest.fn().mockResolvedValue({
@@ -63,6 +66,7 @@ function renderViewer(mockApi: RwApi, props?: { sectionRef?: string; sourceEntit
       ]}
     >
       <RwDocsViewer
+        rootSectionRef="section:commerce/handbook"
         apiBaseUrl={TEST_API_BASE_URL}
         sectionRef={props?.sectionRef ?? TEST_SOURCE_ENTITY_REF}
         sourceEntityRef={props?.sourceEntityRef ?? TEST_SOURCE_ENTITY_REF}
@@ -149,7 +153,60 @@ describe("RwDocsViewer", () => {
     expect(result[TEST_SOURCE_ENTITY_REF]).toBe("/");
     // Other ref not in catalog → omitted
     expect(result["component:default/other"]).toBeUndefined();
+    expect(mockCatalogApi.getEntitiesByRefs).toHaveBeenCalledWith({
+      entityRefs: ["component:default/other"],
+    });
   });
+
+  it("maps a named root to the source docs tab while keeping scoped self at the current base", async () => {
+    const scope = "system:commerce/payments-api";
+    await renderViewer(createMockRwApi(), { sectionRef: scope });
+    const options = mockMountRw.mock.calls.at(-1)![1];
+    expect(await options.resolveSectionRefs!(["section:commerce/handbook", scope])).toEqual({
+      "section:commerce/handbook": "/catalog/default/component/my-docs/docs",
+      [scope]: "/",
+    });
+    expect(mockCatalogApi.getEntitiesByRefs).toHaveBeenCalledWith({
+      entityRefs: ["section:commerce/handbook"],
+    });
+  });
+
+  it.each(["source", "root"])(
+    "remounts with a current resolver when only %s changes",
+    async (change) => {
+      const mockApi = createMockRwApi();
+      const element = (source: string, root: string) => (
+        <TestApiProvider
+          apis={[
+            [rwApiRef, mockApi],
+            [catalogApiRef, mockCatalogApi],
+          ]}
+        >
+          <RwDocsViewer
+            apiBaseUrl={TEST_API_BASE_URL}
+            sectionRef="system:commerce/payments-api"
+            sourceEntityRef={source}
+            rootSectionRef={root}
+          />
+        </TestApiProvider>
+      );
+      const { rerender } = await renderInTestApp(
+        element(TEST_SOURCE_ENTITY_REF, "section:commerce/handbook"),
+      );
+      const source = change === "source" ? "component:default/other" : TEST_SOURCE_ENTITY_REF;
+      const root = change === "root" ? "domain:Commerce/Handbook" : "section:commerce/handbook";
+      rerender(element(source, root));
+      expect(mockDestroy).toHaveBeenCalledTimes(1);
+      expect(mockMountRw).toHaveBeenCalledTimes(2);
+      expect(await mockMountRw.mock.calls.at(-1)![1].resolveSectionRefs!([root])).toEqual({
+        [root]:
+          change === "source"
+            ? "/catalog/default/component/other/docs"
+            : "/catalog/default/component/my-docs/docs",
+      });
+      expect(mockCatalogApi.getEntitiesByRefs).toHaveBeenCalledWith({ entityRefs: [root] });
+    },
+  );
 
   it("calls destroy on unmount", async () => {
     const { unmount } = await renderViewer(createMockRwApi());
@@ -178,6 +235,7 @@ describe("RwDocsViewer", () => {
         ]}
       >
         <RwDocsViewer
+          rootSectionRef="section:commerce/handbook"
           apiBaseUrl={TEST_API_BASE_URL}
           sectionRef={TEST_SOURCE_ENTITY_REF}
           sourceEntityRef={TEST_SOURCE_ENTITY_REF}

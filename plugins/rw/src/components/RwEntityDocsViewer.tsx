@@ -9,16 +9,20 @@ import { ANNOTATION_KEY } from "./constants";
 import { RwDocsViewer } from "./RwDocsViewer";
 import type { CommentApiClient } from "@rwdocs/viewer";
 
+type SiteSetup =
+  | {
+      entityPath: string;
+      status: "ready";
+      apiBaseUrl: string;
+      rootSectionRef: string;
+      comments?: CommentApiClient;
+    }
+  | { entityPath: string; status: "error"; error: Error };
+
 export function RwEntityDocsViewer() {
   const { entity } = useEntity();
   const rwApi = useApi(rwApiRef);
-  const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(null);
-  const [fetchError, setFetchError] = useState<Error | null>(null);
-  const [commentClient, setCommentClient] = useState<CommentApiClient | undefined>(undefined);
-  // Two gates before the viewer mounts: apiBaseUrl resolves first, then we wait
-  // for the comments-enabled check so the viewer never mounts and immediately
-  // remounts with a different comments prop.
-  const [commentsReady, setCommentsReady] = useState(false);
+  const [setup, setSetup] = useState<SiteSetup>();
 
   const annotationValue = entity.metadata.annotations?.[ANNOTATION_KEY];
   const selfEntityRef = useMemo(() => toEntityPath(getCompoundEntityRef(entity)), [entity]);
@@ -27,35 +31,43 @@ export function RwEntityDocsViewer() {
   useEffect(() => {
     if (!parsed) return undefined;
 
-    // Reset gate immediately so the viewer unmounts while we fetch the new entity's data.
-    setApiBaseUrl(null);
-    setFetchError(null);
-    setCommentsReady(false);
-    setCommentClient(undefined);
+    const { entityPath, entityRef } = parsed;
+    setSetup(undefined);
 
     let cancelled = false;
-    (async () => {
-      try {
-        const url = await rwApi.getSiteBaseUrl(parsed.entityPath);
-        if (cancelled) return;
-        setApiBaseUrl(url);
-      } catch (err) {
-        if (!cancelled) setFetchError(err instanceof Error ? err : new Error(String(err)));
-        return;
-      }
-
+    const optionalComments = (async (): Promise<CommentApiClient | undefined> => {
       try {
         const enabled = await rwApi.getCommentsEnabled();
-        if (cancelled) return;
-        setCommentClient(enabled ? rwApi.createCommentClient(parsed.entityRef) : undefined);
+        if (cancelled) return undefined;
+        return enabled ? rwApi.createCommentClient(entityRef) : undefined;
       } catch (err) {
-        if (cancelled) return;
-        // eslint-disable-next-line no-console
-        console.warn("rw: comments-enabled probe failed; comments disabled for this view", err);
-        setCommentClient(undefined);
+        if (!cancelled) {
+          // eslint-disable-next-line no-console
+          console.warn("rw: comments-enabled probe failed; comments disabled for this view", err);
+        }
+        return undefined;
       }
+    })();
 
-      if (!cancelled) setCommentsReady(true);
+    (async () => {
+      try {
+        const [apiBaseUrl, rootSectionRef, comments] = await Promise.all([
+          rwApi.getSiteBaseUrl(entityPath),
+          rwApi.getSiteRootSectionRef(entityPath),
+          optionalComments,
+        ]);
+
+        if (!cancelled)
+          setSetup({ entityPath, status: "ready", apiBaseUrl, rootSectionRef, comments });
+      } catch (err) {
+        if (!cancelled) {
+          setSetup({
+            entityPath,
+            status: "error",
+            error: err instanceof Error ? err : new Error(String(err)),
+          });
+        }
+      }
     })();
     return () => {
       cancelled = true;
@@ -67,21 +79,22 @@ export function RwEntityDocsViewer() {
     return <ErrorPanel error={new Error(`Entity is missing the "${ANNOTATION_KEY}" annotation`)} />;
   }
 
-  if (fetchError) {
-    return <ErrorPanel error={fetchError} />;
-  }
-
-  if (!apiBaseUrl || !commentsReady) {
+  if (!setup || setup.entityPath !== parsed.entityPath) {
     return <Progress />;
   }
 
-  const sectionRef = parsed.sectionRef ?? selfEntityRef;
+  if (setup.status === "error") {
+    return <ErrorPanel error={setup.error} />;
+  }
+
+  const sectionRef = parsed.sectionRef ?? setup.rootSectionRef;
   return (
     <RwDocsViewer
-      apiBaseUrl={apiBaseUrl}
+      apiBaseUrl={setup.apiBaseUrl}
       sectionRef={sectionRef}
+      rootSectionRef={setup.rootSectionRef}
       sourceEntityRef={parsed.entityRef}
-      comments={commentClient}
+      comments={setup.comments}
     />
   );
 }

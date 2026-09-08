@@ -22,6 +22,32 @@ yarn --cwd packages/backend add @rwdocs/backstage-plugin-rw-backend
 yarn --cwd packages/backend add @rwdocs/backstage-plugin-search-backend-module-rw
 ```
 
+## RW 0.1.36 compatibility
+
+The viewer requires Node `^22.22.2 || >=24.15.0`. Update the RW backend,
+search collator, and frontend dependencies together to pick up the core and
+viewer fixes in [RW 0.1.36](https://github.com/rwdocs/rw/releases/tag/v0.1.36).
+
+For S3, deploy upgraded **backend and search collator readers before publishing
+bundles that declare `name`**. Older readers accept these bundles but ignore the
+explicit name; upgraded readers can still read existing bundles.
+
+RW metadata can now declare `name` alongside `kind` to choose a section identity
+independently of its URL and title. This does not create catalog entities: align
+catalog annotations and references with the intended section identity. Changing
+an existing identity creates no aliases and does not migrate comments.
+
+Homepage names and kinds are resolved from the site's navigation; they do not
+need to use the implicit `section:<namespace>/root` spelling. Root links prefer a
+matching catalog entity exposing the same site's root. Otherwise they fall back
+to the source entity's Docs tab, which must expose the whole site, either unscoped
+or scoped to the actual homepage root.
+
+Rename legacy RW frontmatter and sidecar `type` fields to `kind`; `type` is now
+ignored there. Unrelated Backstage configuration fields named `type` are unchanged.
+See [RW page metadata](https://github.com/rwdocs/rw/blob/v0.1.36/docs/metadata.md)
+for naming rules and migration details.
+
 ## Backend Setup
 
 Add the plugin to your backend in `packages/backend/src/index.ts`:
@@ -102,3 +128,11 @@ The backend persists its SQLite database (catalog, search index, …) under a
 `.data/` directory at the repo root, so state survives restarts instead of being
 rebuilt from scratch each time. The directory is git-ignored. Delete it
 (`rm -rf .data`) for a clean database.
+
+## Duplicate section identities
+
+Full section refs should be unique. For collisions, registry and search follow
+RW's canonical section-root lookup and log a warning. Pages whose identity
+resolves to another path are omitted from these indexes; independently named
+child sections can remain indexed. Direct site-path reads are unchanged. Fix the
+conflicting metadata to restore omitted pages to identity-based surfaces.
