@@ -4097,17 +4097,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fontsource/jetbrains-mono@npm:^5.2.8":
-  version: 5.2.8
-  resolution: "@fontsource/jetbrains-mono@npm:5.2.8"
-  checksum: 10c0/a51a1ad9cc847ccb3f5986d00b49fcd0eb2061200eb9caf215f968d658806e96e0ee305ab45df3d167f62223e45935cb7e89f984e7fb88fbe6928855a20e044e
+"@fontsource/jetbrains-mono@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "@fontsource/jetbrains-mono@npm:5.3.0"
+  checksum: 10c0/1351b2350e893f5da39559ed90ff0e5e60bcc876b1f40531ad081ad4bf2f3cda3fa9e8940364aef5a7430ae3140685c9cd4819c36d8ad62bcd3fa37e3cc66b1d
   languageName: node
   linkType: hard
 
-"@fontsource/roboto@npm:^5.2.10":
-  version: 5.2.10
-  resolution: "@fontsource/roboto@npm:5.2.10"
-  checksum: 10c0/abadfcaefbe2196bbd36d9258b336063f721894a3624a9639da00792583c565bfd0748ef978f91a38c3c0de8d247615c9be92a763184c085c630fa43f04b1cd9
+"@fontsource/roboto@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "@fontsource/roboto@npm:5.3.0"
+  checksum: 10c0/68420d2c669ba05f0ea466343151c6d2efff85b05cedbf0f990c58635d86035cae5e7c4904db9abc7b9fd21c5ad179788243ec9dff0c30dfab90679ae2d226f9
   languageName: node
   linkType: hard
 
@@ -7005,7 +7005,7 @@ __metadata:
     "@backstage/types": "npm:^1.2.2"
     "@rwdocs/backstage-plugin-rw-common": "workspace:^"
     "@rwdocs/backstage-plugin-rw-node": "workspace:^"
-    "@rwdocs/core": "npm:^0.1.35"
+    "@rwdocs/core": "npm:^0.1.36"
     "@types/express": "npm:^4.17.0"
     "@types/jest": "npm:^30.0.0"
     "@types/supertest": "npm:^7.2.0"
@@ -7073,7 +7073,7 @@ __metadata:
     "@backstage/ui": "npm:^0.17.0"
     "@material-ui/icons": "npm:^4.11.3"
     "@rwdocs/backstage-plugin-rw-common": "workspace:^"
-    "@rwdocs/viewer": "npm:^0.1.35"
+    "@rwdocs/viewer": "npm:^0.1.36"
     "@testing-library/dom": "npm:^10.0.0"
     "@testing-library/jest-dom": "npm:^7.0.0"
     "@testing-library/react": "npm:^16.0.0"
@@ -7114,7 +7114,7 @@ __metadata:
     "@backstage/plugin-search-backend-node": "npm:^1.4.6"
     "@backstage/plugin-search-common": "npm:^1.2.24"
     "@rwdocs/backstage-plugin-rw-common": "workspace:^"
-    "@rwdocs/core": "npm:^0.1.35"
+    "@rwdocs/core": "npm:^0.1.36"
     "@types/jest": "npm:^30.0.0"
     jest: "npm:^30.2.0"
     prettier: "npm:^3.4.2"
@@ -7126,34 +7126,34 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@rwdocs/core-darwin-arm64@npm:0.1.35":
-  version: 0.1.35
-  resolution: "@rwdocs/core-darwin-arm64@npm:0.1.35"
+"@rwdocs/core-darwin-arm64@npm:0.1.36":
+  version: 0.1.36
+  resolution: "@rwdocs/core-darwin-arm64@npm:0.1.36"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@rwdocs/core-linux-x64-gnu@npm:0.1.35":
-  version: 0.1.35
-  resolution: "@rwdocs/core-linux-x64-gnu@npm:0.1.35"
+"@rwdocs/core-linux-x64-gnu@npm:0.1.36":
+  version: 0.1.36
+  resolution: "@rwdocs/core-linux-x64-gnu@npm:0.1.36"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@rwdocs/core-linux-x64-musl@npm:0.1.35":
-  version: 0.1.35
-  resolution: "@rwdocs/core-linux-x64-musl@npm:0.1.35"
+"@rwdocs/core-linux-x64-musl@npm:0.1.36":
+  version: 0.1.36
+  resolution: "@rwdocs/core-linux-x64-musl@npm:0.1.36"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@rwdocs/core@npm:^0.1.35":
-  version: 0.1.35
-  resolution: "@rwdocs/core@npm:0.1.35"
+"@rwdocs/core@npm:^0.1.36":
+  version: 0.1.36
+  resolution: "@rwdocs/core@npm:0.1.36"
   dependencies:
-    "@rwdocs/core-darwin-arm64": "npm:0.1.35"
-    "@rwdocs/core-linux-x64-gnu": "npm:0.1.35"
-    "@rwdocs/core-linux-x64-musl": "npm:0.1.35"
+    "@rwdocs/core-darwin-arm64": "npm:0.1.36"
+    "@rwdocs/core-linux-x64-gnu": "npm:0.1.36"
+    "@rwdocs/core-linux-x64-musl": "npm:0.1.36"
   dependenciesMeta:
     "@rwdocs/core-darwin-arm64":
       optional: true
@@ -7161,18 +7161,18 @@ __metadata:
       optional: true
     "@rwdocs/core-linux-x64-musl":
       optional: true
-  checksum: 10c0/8f0183076a833fc24a04b369d4a6abcbf4e1ec6d6d569e9071e37801bbade05482282c7ee1bb690309bcc195e92919aba2765c2690bbf86bf9a398bb97325a7a
+  checksum: 10c0/31707486913bc8c1b3f751b324869ce3e69953e66a3d0f4b9a59c65b966b2c18f1cb3fdc6ffcc306aedf5347c695b375279afb6de55e121393f1d4abce81ba51
   languageName: node
   linkType: hard
 
-"@rwdocs/viewer@npm:^0.1.35":
-  version: 0.1.35
-  resolution: "@rwdocs/viewer@npm:0.1.35"
+"@rwdocs/viewer@npm:^0.1.36":
+  version: 0.1.36
+  resolution: "@rwdocs/viewer@npm:0.1.36"
   dependencies:
-    "@fontsource/jetbrains-mono": "npm:^5.2.8"
-    "@fontsource/roboto": "npm:^5.2.10"
+    "@fontsource/jetbrains-mono": "npm:^5.3.0"
+    "@fontsource/roboto": "npm:^5.3.0"
     approx-string-match: "npm:^2.0.0"
-  checksum: 10c0/80bf34636056cc8ace8bbcc04f8b3d52ed862d31878282fc8b2d575475eab39b25af6c0d75cd761bccd56ae2c258b2f89d7b6d019a893443013f78c00f39b13a
+  checksum: 10c0/dea2cd5d2f6ad3232cf58d313d9e2c79a1e844b2ef598cdb4fbe695198d434275d2da0970f08844815affd2c81df7c937679ff0edf337e25959dfc45e990db96
   languageName: node
   linkType: hard
 

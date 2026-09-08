@@ -16,3 +16,5 @@ export type {
 export { buildCommentDeepLinkSuffix, buildDocsPageLinkSuffix } from "./commentLink";
 export { stringifySitePageRef, parseSitePageRef } from "./sitePageRef";
 export type { SitePageRef } from "./sitePageRef";
+export { projectSiteListing } from "./siteListing";
+export type { ListingSection, ListingPage } from "./siteListing";

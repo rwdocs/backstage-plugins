@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import { renderInTestApp, TestApiProvider } from "@backstage/test-utils";
 import { catalogApiRef, EntityProvider } from "@backstage/plugin-catalog-react";
 import { Entity } from "@backstage/catalog-model";
@@ -10,7 +10,9 @@ import { mountRw } from "@rwdocs/viewer";
 const mockMountRw = mountRw as jest.MockedFunction<typeof mountRw>;
 
 const mockCatalogApi = {
-  getEntityByRef: jest.fn().mockResolvedValue(undefined),
+  getEntitiesByRefs: jest.fn(async ({ entityRefs }: { entityRefs: string[] }) => ({
+    items: entityRefs.map(() => undefined),
+  })),
 };
 
 jest.mock("@rwdocs/viewer/embed.css", () => ({}));
@@ -29,6 +31,7 @@ function createMockRwApi(overrides?: Partial<RwApi>): RwApi {
       .mockImplementation((entityRef: string) =>
         Promise.resolve(`http://localhost:7007/api/rw/site/${entityRef}`),
       ),
+    getSiteRootSectionRef: jest.fn().mockResolvedValue("section:commerce/handbook"),
     getFetch: jest.fn().mockReturnValue(jest.fn()),
     getCommentsEnabled: jest.fn().mockResolvedValue(false),
     getCommentInbox: jest.fn().mockResolvedValue({
@@ -73,6 +76,16 @@ function makeApisElement(mockApi: RwApi, entity: Entity) {
       </EntityProvider>
     </TestApiProvider>
   );
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
 }
 
 describe("RwEntityDocsViewer", () => {
@@ -127,6 +140,305 @@ describe("RwEntityDocsViewer", () => {
     await waitFor(() => {
       expect(mockApi.getSiteBaseUrl).toHaveBeenCalledWith("default/component/my-service");
     });
+  });
+
+  it.each([
+    [".", "section:commerce/handbook"],
+    [".#system:commerce/payments-api", "system:commerce/payments-api"],
+  ])("mounts %s with scope %s", async (annotation, sectionRef) => {
+    const mockApi = createMockRwApi();
+    await renderInTestApp(makeApisElement(mockApi, makeEntity({ "rwdocs.org/ref": annotation })));
+    await waitFor(() => expect(mockMountRw).toHaveBeenCalled());
+    expect(mockMountRw.mock.calls.at(-1)![1].sectionRef).toBe(sectionRef);
+    expect(mockApi.getSiteRootSectionRef).toHaveBeenCalledWith("default/component/my-service");
+  });
+
+  it("waits for the required root even when URL and comments are available", async () => {
+    let resolveRoot!: (root: string) => void;
+    const mockApi = createMockRwApi({
+      getSiteRootSectionRef: jest.fn().mockReturnValue(
+        new Promise<string>((resolve) => {
+          resolveRoot = resolve;
+        }),
+      ),
+    });
+    await renderInTestApp(makeApisElement(mockApi, makeEntity({ "rwdocs.org/ref": "." })));
+    expect(screen.getByTestId("progress")).toBeInTheDocument();
+    expect(mockMountRw).not.toHaveBeenCalled();
+    await act(async () => {
+      resolveRoot("section:commerce/handbook");
+    });
+    expect(mockMountRw.mock.calls.at(-1)![1].sectionRef).toBe("section:commerce/handbook");
+  });
+
+  it.each(["root", "comments"])(
+    "starts comments while root is pending and gates mounting when %s settles first",
+    async (first) => {
+      const root = deferred<string>();
+      const comments = deferred<boolean>();
+      const client = { list: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() };
+      const mockApi = createMockRwApi({
+        getSiteRootSectionRef: jest.fn().mockReturnValue(root.promise),
+        getCommentsEnabled: jest.fn().mockReturnValue(comments.promise),
+        createCommentClient: jest.fn().mockReturnValue(client),
+      });
+      await renderInTestApp(
+        makeApisElement(
+          mockApi,
+          makeEntity({ "rwdocs.org/ref": ".#system:commerce/payments-api" }),
+        ),
+      );
+      expect(mockApi.getCommentsEnabled).toHaveBeenCalledTimes(1);
+      expect(mockMountRw).not.toHaveBeenCalled();
+      await act(async () => {
+        if (first === "root") root.resolve("domain:commerce/handbook");
+        else comments.resolve(true);
+      });
+      expect(screen.getByTestId("progress")).toBeInTheDocument();
+      expect(mockMountRw).not.toHaveBeenCalled();
+      await act(async () => {
+        if (first === "root") comments.resolve(true);
+        else root.resolve("domain:commerce/handbook");
+      });
+      expect(mockMountRw).toHaveBeenCalledTimes(1);
+      const options = mockMountRw.mock.calls[0][1];
+      expect(options.sectionRef).toBe("system:commerce/payments-api");
+      expect(options.comments).toBe(client);
+      expect(mockApi.createCommentClient).toHaveBeenCalledWith("component:default/my-service");
+      expect(await options.resolveSectionRefs!(["domain:commerce/handbook"])).toEqual({
+        "domain:commerce/handbook": "/catalog/default/component/my-service/docs",
+      });
+      expect(mockCatalogApi.getEntitiesByRefs).toHaveBeenCalledWith({
+        entityRefs: ["domain:commerce/handbook"],
+      });
+    },
+  );
+
+  it("degrades a comments rejection while root is pending, then mounts when root succeeds", async () => {
+    const root = deferred<string>();
+    const comments = deferred<boolean>();
+    const error = new Error("optional probe failed");
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const mockApi = createMockRwApi({
+        getSiteRootSectionRef: jest.fn().mockReturnValue(root.promise),
+        getCommentsEnabled: jest.fn().mockReturnValue(comments.promise),
+      });
+      await renderInTestApp(makeApisElement(mockApi, makeEntity({ "rwdocs.org/ref": "." })));
+      expect(mockApi.getCommentsEnabled).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        comments.reject(error);
+      });
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(
+        "rw: comments-enabled probe failed; comments disabled for this view",
+        error,
+      );
+      expect(mockMountRw).not.toHaveBeenCalled();
+      await act(async () => {
+        root.resolve("domain:commerce/handbook");
+      });
+      expect(mockMountRw).toHaveBeenCalledTimes(1);
+      expect(mockMountRw.mock.calls[0][1].sectionRef).toBe("domain:commerce/handbook");
+      expect(mockMountRw.mock.calls[0][1].comments).toBeUndefined();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it.each(["success", "rejection"])(
+    "retains required root error after late comments %s",
+    async (outcome) => {
+      const root = deferred<string>();
+      const comments = deferred<boolean>();
+      const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+      try {
+        const mockApi = createMockRwApi({
+          getSiteRootSectionRef: jest.fn().mockReturnValue(root.promise),
+          getCommentsEnabled: jest.fn().mockReturnValue(comments.promise),
+        });
+        await renderInTestApp(makeApisElement(mockApi, makeEntity({ "rwdocs.org/ref": "." })));
+        expect(mockApi.getCommentsEnabled).toHaveBeenCalledTimes(1);
+        await act(async () => {
+          root.reject(new Error("required root failed"));
+        });
+        expect(screen.getAllByText(/required root failed/).length).toBeGreaterThan(0);
+        expect(mockMountRw).not.toHaveBeenCalled();
+        await act(async () => {
+          if (outcome === "success") comments.resolve(true);
+          else comments.reject(new Error("late optional failure"));
+        });
+        expect(screen.getAllByText(/required root failed/).length).toBeGreaterThan(0);
+        expect(mockMountRw).not.toHaveBeenCalled();
+      } finally {
+        warn.mockRestore();
+      }
+    },
+  );
+
+  it.each(["success", "rejection"])(
+    "suppresses obsolete comments %s after a site switch",
+    async (outcome) => {
+      const rootA = deferred<string>();
+      const commentsA = deferred<boolean>();
+      const clientB = { list: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() };
+      const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+      try {
+        const mockApi = createMockRwApi({
+          getSiteRootSectionRef: jest
+            .fn()
+            .mockReturnValueOnce(rootA.promise)
+            .mockResolvedValue("domain:commerce/home-b"),
+          getCommentsEnabled: jest
+            .fn()
+            .mockReturnValueOnce(commentsA.promise)
+            .mockResolvedValue(true),
+          createCommentClient: jest.fn().mockReturnValue(clientB),
+        });
+        const { rerender } = await renderInTestApp(
+          makeApisElement(mockApi, makeEntity({ "rwdocs.org/ref": "component:default/site-a" })),
+        );
+        expect(mockApi.getCommentsEnabled).toHaveBeenCalledTimes(1);
+        rerender(
+          makeApisElement(mockApi, makeEntity({ "rwdocs.org/ref": "component:default/site-b" })),
+        );
+        await waitFor(() => expect(mockMountRw).toHaveBeenCalledTimes(1));
+        await act(async () => {
+          if (outcome === "success") commentsA.resolve(true);
+          else commentsA.reject(new Error("obsolete optional failure"));
+          rootA.resolve("domain:commerce/home-a");
+        });
+        expect(warn).not.toHaveBeenCalled();
+        expect(mockApi.createCommentClient).toHaveBeenCalledTimes(1);
+        expect(mockApi.createCommentClient).toHaveBeenCalledWith("component:default/site-b");
+        expect(mockMountRw).toHaveBeenCalledTimes(1);
+        expect(mockMountRw.mock.calls[0][1]).toMatchObject({
+          apiBaseUrl: "http://localhost:7007/api/rw/site/default/component/site-b",
+          sectionRef: "domain:commerce/home-b",
+          comments: clientB,
+        });
+      } finally {
+        warn.mockRestore();
+      }
+    },
+  );
+
+  it("degrades a comment client factory failure", async () => {
+    const error = new Error("client factory failed");
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const mockApi = createMockRwApi({
+        getCommentsEnabled: jest.fn().mockResolvedValue(true),
+        createCommentClient: jest.fn().mockImplementation(() => {
+          throw error;
+        }),
+      });
+      await renderInTestApp(makeApisElement(mockApi, makeEntity({ "rwdocs.org/ref": "." })));
+      expect(mockMountRw).toHaveBeenCalledTimes(1);
+      expect(mockMountRw.mock.calls[0][1].comments).toBeUndefined();
+      expect(warn).toHaveBeenCalledWith(
+        "rw: comments-enabled probe failed; comments disabled for this view",
+        error,
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("shows required root errors without mounting", async () => {
+    const mockApi = createMockRwApi({
+      getSiteRootSectionRef: jest.fn().mockRejectedValue(new Error("root navigation unavailable")),
+    });
+    await renderInTestApp(makeApisElement(mockApi, makeEntity({ "rwdocs.org/ref": "." })));
+    expect(screen.getAllByText(/root navigation unavailable/).length).toBeGreaterThan(0);
+    expect(mockMountRw).not.toHaveBeenCalled();
+  });
+
+  it("ignores site A's late root after site B has mounted", async () => {
+    let resolveA!: (root: string) => void;
+    let resolveB!: (root: string) => void;
+    const mockApi = createMockRwApi({
+      getSiteRootSectionRef: jest
+        .fn()
+        .mockReturnValueOnce(
+          new Promise<string>((resolve) => {
+            resolveA = resolve;
+          }),
+        )
+        .mockReturnValueOnce(
+          new Promise<string>((resolve) => {
+            resolveB = resolve;
+          }),
+        ),
+    });
+    const { rerender } = await renderInTestApp(
+      makeApisElement(mockApi, makeEntity({ "rwdocs.org/ref": "component:default/site-a" })),
+    );
+    rerender(
+      makeApisElement(
+        mockApi,
+        makeEntity({ "rwdocs.org/ref": "component:default/site-b#system:commerce/payments-api" }),
+      ),
+    );
+    await waitFor(() =>
+      expect(mockApi.getSiteRootSectionRef).toHaveBeenCalledWith("default/component/site-b"),
+    );
+    await act(async () => {
+      resolveB("section:commerce/home-b");
+    });
+    const callsAfterB = mockMountRw.mock.calls.length;
+    await act(async () => {
+      resolveA("section:commerce/home-a");
+    });
+    expect(mockMountRw).toHaveBeenCalledTimes(callsAfterB);
+    const options = mockMountRw.mock.calls.at(-1)![1];
+    expect(options.apiBaseUrl).toBe("http://localhost:7007/api/rw/site/default/component/site-b");
+    expect(options.sectionRef).toBe("system:commerce/payments-api");
+    expect(await options.resolveSectionRefs!(["section:commerce/home-b"])).toEqual({
+      "section:commerce/home-b": "/catalog/default/component/site-b/docs",
+    });
+    expect(mockCatalogApi.getEntitiesByRefs).toHaveBeenCalledWith({
+      entityRefs: ["section:commerce/home-b"],
+    });
+  });
+
+  it("never mounts site A's ready URL with site B's scope during a switch", async () => {
+    let resolveB!: (root: string) => void;
+    const mockApi = createMockRwApi({
+      getSiteRootSectionRef: jest
+        .fn()
+        .mockResolvedValueOnce("section:commerce/home-a")
+        .mockReturnValueOnce(
+          new Promise<string>((resolve) => {
+            resolveB = resolve;
+          }),
+        ),
+    });
+    const { rerender } = await renderInTestApp(
+      makeApisElement(mockApi, makeEntity({ "rwdocs.org/ref": "component:default/site-a" })),
+    );
+    await waitFor(() => expect(mockMountRw).toHaveBeenCalled());
+    const callsAfterA = mockMountRw.mock.calls.length;
+    rerender(
+      makeApisElement(
+        mockApi,
+        makeEntity({ "rwdocs.org/ref": "component:default/site-b#system:commerce/payments-api" }),
+      ),
+    );
+    expect(screen.getByTestId("progress")).toBeInTheDocument();
+    expect(mockMountRw).toHaveBeenCalledTimes(callsAfterA);
+    await act(async () => {
+      resolveB("section:commerce/home-b");
+    });
+    expect(
+      mockMountRw.mock.calls.map(([, options]) => [options.apiBaseUrl, options.sectionRef]),
+    ).toEqual([
+      ["http://localhost:7007/api/rw/site/default/component/site-a", "section:commerce/home-a"],
+      [
+        "http://localhost:7007/api/rw/site/default/component/site-b",
+        "system:commerce/payments-api",
+      ],
+    ]);
   });
 
   it("resolves base URL using source entity ref from annotation", async () => {

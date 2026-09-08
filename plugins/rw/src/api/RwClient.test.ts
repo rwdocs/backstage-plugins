@@ -190,3 +190,57 @@ describe("RwClient comment methods", () => {
     expect(body.documentId).toBe("section:default/root#guide");
   });
 });
+
+describe("RwClient.getSiteRootSectionRef", () => {
+  it.each([
+    [{ kind: "section", namespace: "default", name: "root" }, "section:default/root"],
+    [{ kind: "section", namespace: "commerce", name: "root" }, "section:commerce/root"],
+    [{ kind: "domain", namespace: "Commerce", name: "Handbook" }, "domain:Commerce/Handbook"],
+  ])("reads the exact root identity %j", async (section, expected) => {
+    const { client, fetchMock } = makeClient();
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ scope: { path: "/", section } }),
+    });
+    await expect(client.getSiteRootSectionRef("default/component/arch")).resolves.toBe(expected);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://backstage/api/rw/site/default/component/arch/navigation",
+    );
+  });
+
+  it("rejects non-ok navigation responses", async () => {
+    const { client, fetchMock } = makeClient();
+    fetchMock.mockResolvedValue({ ok: false, status: 404 });
+    await expect(client.getSiteRootSectionRef("default/component/arch")).rejects.toThrow(
+      "Site navigation request failed: 404",
+    );
+  });
+
+  it.each([
+    null,
+    {},
+    { scope: { path: "/child", section: { kind: "section", namespace: "default", name: "root" } } },
+    { scope: { path: "/" } },
+    ...["kind", "namespace", "name"].flatMap((field) =>
+      [undefined, "", 42].map((value) => ({
+        scope: {
+          path: "/",
+          section: { kind: "section", namespace: "default", name: "root", [field]: value },
+        },
+      })),
+    ),
+  ])("rejects invalid root navigation %j", async (body) => {
+    const { client, fetchMock } = makeClient();
+    fetchMock.mockResolvedValue({ ok: true, json: async () => body });
+    await expect(client.getSiteRootSectionRef("default/component/arch")).rejects.toThrow(
+      "Site navigation is missing a valid root section",
+    );
+  });
+
+  it("propagates fetch rejection", async () => {
+    const { client, fetchMock } = makeClient();
+    const error = new Error("network timeout");
+    fetchMock.mockRejectedValue(error);
+    await expect(client.getSiteRootSectionRef("default/component/arch")).rejects.toBe(error);
+  });
+});

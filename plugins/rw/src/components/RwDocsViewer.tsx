@@ -13,6 +13,7 @@ interface RwDocsViewerProps {
   apiBaseUrl: string;
   sectionRef: string;
   sourceEntityRef: string;
+  rootSectionRef: string;
   comments?: CommentApiClient;
 }
 
@@ -20,13 +21,14 @@ export function RwDocsViewer({
   apiBaseUrl,
   sectionRef,
   sourceEntityRef,
+  rootSectionRef,
   comments,
 }: RwDocsViewerProps) {
   const ref = useRef<HTMLDivElement>(null);
   const rwApi = useApi(rwApiRef);
   const theme = useTheme();
   const [error, setError] = useState<Error | null>(null);
-  const catalogResolver = useSectionRefResolver(sourceEntityRef);
+  const catalogResolver = useSectionRefResolver(sourceEntityRef, rootSectionRef);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -92,7 +94,7 @@ export function RwDocsViewer({
       instanceRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiBaseUrl, sectionRef, comments]);
+  }, [apiBaseUrl, sectionRef, comments, sourceEntityRef, rootSectionRef]);
 
   useEffect(() => {
     instanceRef.current?.setColorScheme(theme.palette.type);
