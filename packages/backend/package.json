@@ -24,7 +24,7 @@
     "@backstage/plugin-notifications-backend": "^0.6.7",
     "@backstage/plugin-permission-backend": "^0.7.14",
     "@backstage/plugin-permission-backend-module-allow-all-policy": "^0.2.21",
-    "@backstage/plugin-search-backend": "^2.1.4",
+    "@backstage/plugin-search-backend": "^2.1.6",
     "@backstage/plugin-search-backend-module-catalog": "^0.3.17",
     "@backstage/plugin-signals-backend": "^0.3.17",
     "@rwdocs/backstage-plugin-rw-backend": "workspace:*",
