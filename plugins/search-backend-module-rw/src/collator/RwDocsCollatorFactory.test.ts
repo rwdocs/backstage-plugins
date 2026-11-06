@@ -631,9 +631,25 @@ describe("RwDocsCollatorFactory", () => {
     expect(factory.type).toBe("techdocs");
   });
 
+  it("encodes the location without changing the raw page identity", async () => {
+    const path = "nested/c#";
+    const catalog = createMockCatalog([makeEntity("my-docs", ".")]);
+    const site = createFlatSite({ [path]: { title: "Page", text: "text" } });
+    mockedCreateSite.mockReturnValue(site);
+
+    const docs = await collectDocuments(await makeFactory(catalog).getCollator());
+
+    expect(docs).toHaveLength(1);
+    expect(docs[0].location).toBe("/catalog/default/component/my-docs/docs/nested/c%23");
+    expect(docs[0].subpath).toBe(path);
+    expect(site.renderSearchDocument).toHaveBeenCalledWith(path);
+  });
+
   it("uses custom locationTemplate from config", async () => {
     const catalog = createMockCatalog([makeEntity("my-docs", ".")]);
-    mockedCreateSite.mockReturnValue(createFlatSite({ index: { title: "Home", text: "text" } }));
+    mockedCreateSite.mockReturnValue(
+      createFlatSite({ "nested/c#": { title: "Home", text: "text" } }),
+    );
 
     const factory = makeFactory(catalog, {
       rw: { s3: { bucket: "docs" } },
@@ -641,7 +657,8 @@ describe("RwDocsCollatorFactory", () => {
     });
     const docs = await collectDocuments(await factory.getCollator());
 
-    expect(docs[0].location).toBe("/docs/default/component/my-docs/index");
+    expect(docs[0].location).toBe("/docs/default/component/my-docs/nested/c%23");
+    expect(docs[0].subpath).toBe("nested/c#");
   });
 
   it("lowercases kind in location URL", async () => {

@@ -60,13 +60,11 @@ function applyLocationTemplate(
   template: string,
   params: { namespace: string; kind: string; name: string; path: string },
 ): string {
-  // Function replacers: a page path is author-controlled, and `$&` (or `$1`) in a
-  // string replacement is a substitution pattern, not a literal.
   return template
     .replace(":namespace", () => encodeURIComponent(params.namespace))
     .replace(":kind", () => encodeURIComponent(params.kind))
     .replace(":name", () => encodeURIComponent(params.name))
-    .replace(":path", () => params.path);
+    .replace(":path", () => params.path.split("/").map(encodeURIComponent).join("/"));
 }
 
 export class RwDocsCollatorFactory implements DocumentCollatorFactory {
