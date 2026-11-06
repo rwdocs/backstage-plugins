@@ -1,7 +1,11 @@
 import { memo, useEffect, useRef } from "react";
 import { useRouteRef } from "@backstage/core-plugin-api";
-import { entityRouteRef, useEntityPresentation } from "@backstage/plugin-catalog-react";
-import { parseEntityRef } from "@backstage/catalog-model";
+import {
+  EntityRefLink,
+  entityRouteParams,
+  entityRouteRef,
+  useEntityPresentation,
+} from "@backstage/plugin-catalog-react";
 import { buildCommentDeepLinkSuffix } from "@rwdocs/backstage-plugin-rw-common";
 import { Button, Flex, Text, ToggleButton, ToggleButtonGroup } from "@backstage/ui";
 import { EmptyState, ErrorPanel, Link, Progress } from "@backstage/core-components";
@@ -43,13 +47,16 @@ function Dot() {
  * Used for the author — the one navigable facet here (handy when you don't
  * recognise who left the comment); the doc title and entity are plain labels.
  */
-function MetaLink({ to, label }: { to: string; label: string }) {
+function MetaLink({ entityRef, label }: { entityRef: string; label: string }) {
   return (
-    <Link to={to} style={{ color: "var(--bui-fg-secondary)", textDecorationColor: "currentColor" }}>
+    <EntityRefLink
+      entityRef={entityRef}
+      style={{ color: "var(--bui-fg-secondary)", textDecorationColor: "currentColor" }}
+    >
       <Text variant="body-small" color="secondary">
         {label}
       </Text>
-    </Link>
+    </EntityRefLink>
   );
 }
 
@@ -137,12 +144,11 @@ const CommentInboxRow = memo(function CommentInboxRow({
   entityRoute: EntityRoute;
   isLast: boolean;
 }) {
-  const authorHref = entityRoute(parseEntityRef(item.author.id));
   const authorName = useEntityPresentation(item.author.id).primaryTitle;
 
   const entityTitle = useEntityPresentation(item.entityRef).primaryTitle;
 
-  const href = `${entityRoute(parseEntityRef(item.entityRef))}${buildCommentDeepLinkSuffix({ viewerPath: item.viewerPath, commentId: item.commentId })}`;
+  const href = `${entityRoute(entityRouteParams(item.entityRef, { encodeParams: true }))}${buildCommentDeepLinkSuffix({ viewerPath: item.viewerPath, commentId: item.commentId })}`;
   const needsReply = item.replyCount <= 0;
 
   return (
@@ -204,7 +210,7 @@ const CommentInboxRow = memo(function CommentInboxRow({
             {entityTitle}
           </Text>
           <Dot />
-          <MetaLink to={authorHref} label={authorName} />
+          <MetaLink entityRef={item.author.id} label={authorName} />
         </Flex>
       </Flex>
       {/* Right rail — fixed width, right-aligned: reply state over recency, so

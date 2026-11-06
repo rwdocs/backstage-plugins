@@ -1,7 +1,10 @@
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouteRef } from "@backstage/core-plugin-api";
-import { entityRouteRef, useEntityPresentation } from "@backstage/plugin-catalog-react";
-import { parseEntityRef } from "@backstage/catalog-model";
+import {
+  entityRouteParams,
+  entityRouteRef,
+  useEntityPresentation,
+} from "@backstage/plugin-catalog-react";
 import { buildDocsPageLinkSuffix } from "@rwdocs/backstage-plugin-rw-common";
 import { Button, Flex, Text } from "@backstage/ui";
 import { EmptyState, ErrorPanel, Link, Progress } from "@backstage/core-components";
@@ -26,7 +29,7 @@ const HAIRLINE = "1px solid var(--bui-border, rgba(0,0,0,0.08))";
  *  viewer path — the same location the comment inbox links to, via the shared
  *  suffix builder so the two can't drift on the `/docs` segment. */
 function pageHref(entityRoute: EntityRoute, item: LatestChangeItem): string {
-  return `${entityRoute(parseEntityRef(item.entityRef))}${buildDocsPageLinkSuffix(
+  return `${entityRoute(entityRouteParams(item.entityRef, { encodeParams: true }))}${buildDocsPageLinkSuffix(
     item.viewerPath,
   )}`;
 }

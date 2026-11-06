@@ -88,7 +88,7 @@ describe("useSectionRefResolver", () => {
     const { result } = renderWithCatalog(catalogApi, "section:default/root");
 
     expect(await result.current(refs)).toEqual({
-      "domain:default/billing+legacy": "/catalog/default/domain/billing+legacy/docs",
+      "domain:default/billing+legacy": "/catalog/default/domain/billing%2Blegacy/docs",
       "domain:default/ok": "/catalog/default/domain/ok/docs",
     });
     expect(catalogApi.getEntitiesByRefs).toHaveBeenCalledWith({ entityRefs: refs });
@@ -101,7 +101,7 @@ describe("useSectionRefResolver", () => {
     });
     const { result, rerender } = renderWithCatalog(catalogApi);
     expect(await result.current([ref])).toEqual({
-      [ref]: "/catalog/default/domain/billing+legacy/docs",
+      [ref]: "/catalog/default/domain/billing%2Blegacy/docs",
     });
     rerender({ source: SOURCE_ENTITY_REF, root: ref });
     expect(await result.current([ref])).toEqual({
