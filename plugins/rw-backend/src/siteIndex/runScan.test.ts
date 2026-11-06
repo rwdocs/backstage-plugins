@@ -1,4 +1,5 @@
 import type { Knex } from "knex";
+import type { CatalogService } from "@backstage/plugin-catalog-node";
 import { createTestDb } from "./__testUtils__/testDb";
 import { SectionOwnershipStore } from "./SectionOwnershipStore";
 import { SiteRefreshStore } from "./SiteRefreshStore";
@@ -14,7 +15,7 @@ function ent(name: string, ref: string, owner?: string) {
   } as any;
 }
 
-function catalogReturning(items: any[]) {
+function catalogReturning(items: any[]): Pick<CatalogService, "streamEntities"> {
   return {
     async *streamEntities() {
       yield items;
@@ -22,7 +23,7 @@ function catalogReturning(items: any[]) {
   };
 }
 
-const deps = (knex: Knex, catalog: any) => ({
+const deps = (knex: Knex, catalog: Pick<CatalogService, "streamEntities">) => ({
   catalog,
   auth: { getOwnServiceCredentials: async () => ({}) } as any,
   logger: { warn() {}, info() {} } as any,

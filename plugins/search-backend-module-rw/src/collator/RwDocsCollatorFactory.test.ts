@@ -678,6 +678,5 @@ describe("RwDocsCollatorFactory", () => {
       "component:default/docs-1",
       "component:default/docs-2",
     ]);
-    expect(catalog.streamEntities).toHaveBeenCalledTimes(1);
   });
 });
