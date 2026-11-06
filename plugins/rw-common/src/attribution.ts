@@ -115,7 +115,7 @@ function pickClaim(
  * every annotated site is served.
  */
 export async function collectSiteClaims(args: {
-  catalog: Pick<CatalogService, "queryEntities">;
+  catalog: Pick<CatalogService, "streamEntities">;
   credentials: BackstageCredentials;
   onlySiteEntityPath?: string;
   /** Reports a catalog-data problem rw cannot resolve: a doubly-claimed section,

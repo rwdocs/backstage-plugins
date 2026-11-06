@@ -93,10 +93,8 @@ function createFlatSite(documents: Record<string, { title: string; text: string 
 
 function createMockCatalog(entities: any[] = []) {
   return {
-    queryEntities: jest.fn().mockResolvedValue({
-      items: entities,
-      totalItems: entities.length,
-      pageInfo: {},
+    streamEntities: jest.fn(async function* batches() {
+      yield entities;
     }),
   } as any;
 }
@@ -498,9 +496,8 @@ describe("RwDocsCollatorFactory", () => {
           createFlatSite({ "": { title: "Healthy", text: "Healthy" } }),
         );
         const entities = catalog();
-        entities.queryEntities.mockResolvedValue({
-          items: [makeEntity("arch", "."), makeEntity("healthy", ".")],
-          pageInfo: {},
+        entities.streamEntities.mockImplementation(async function* batches() {
+          yield [makeEntity("arch", "."), makeEntity("healthy", ".")];
         });
         const docs = await collectDocuments(await makeFactory(entities).getCollator());
         expect(docs.map((d) => d.title)).toEqual(["Healthy"]);
@@ -681,35 +678,6 @@ describe("RwDocsCollatorFactory", () => {
       "component:default/docs-1",
       "component:default/docs-2",
     ]);
-    expect(catalog.queryEntities).toHaveBeenCalledTimes(1);
-  });
-
-  it("paginates through multiple pages of entities", async () => {
-    const catalog = {
-      queryEntities: jest
-        .fn()
-        .mockResolvedValueOnce({
-          items: [makeEntity("docs-1", ".")],
-          totalItems: 2,
-          pageInfo: { nextCursor: "cursor-1" },
-        })
-        .mockResolvedValueOnce({
-          items: [makeEntity("docs-2", ".")],
-          totalItems: 2,
-          pageInfo: {},
-        }),
-    } as any;
-
-    mockedCreateSite.mockReturnValue(createFlatSite({ index: { title: "Home", text: "text" } }));
-
-    const docs = await collectDocuments(await makeFactory(catalog).getCollator());
-
-    expect(docs).toHaveLength(2);
-    expect(catalog.queryEntities).toHaveBeenCalledTimes(2);
-    expect(catalog.queryEntities).toHaveBeenNthCalledWith(
-      2,
-      { cursor: "cursor-1" },
-      expect.anything(),
-    );
+    expect(catalog.streamEntities).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,3 +1,4 @@
+import { CATALOG_FILTER_EXISTS } from "@backstage/catalog-client";
 import { iterateAnnotatedEntities, RW_ANNOTATION } from "./iterateAnnotatedEntities";
 
 function entity(name: string) {
@@ -5,38 +6,26 @@ function entity(name: string) {
 }
 
 describe("iterateAnnotatedEntities", () => {
-  it("pages through the catalog via cursor", async () => {
-    const calls: { req: any; opts: any }[] = [];
+  it("passes the annotation filter and credentials and flattens batches", async () => {
+    const a = entity("a");
+    const b = entity("b");
+    const credentials = { principal: "test" } as any;
     const catalog = {
-      queryEntities: async (req: any, opts: any) => {
-        calls.push({ req, opts });
-        if (!("cursor" in req)) {
-          return { items: [entity("a")], pageInfo: { nextCursor: "c1" }, totalItems: 2 };
-        }
-        return { items: [entity("b")], pageInfo: {}, totalItems: 2 };
-      },
+      streamEntities: jest.fn(async function* batches() {
+        yield [a];
+        yield [];
+        yield [b];
+      }),
     };
-    const seen: string[] = [];
-    for await (const { entity: e } of iterateAnnotatedEntities(catalog as any, {} as any)) {
-      seen.push(e.metadata.name);
+    const seen = [];
+    for await (const item of iterateAnnotatedEntities(catalog, credentials)) {
+      seen.push(item);
     }
-    expect(seen).toEqual(["a", "b"]);
-    expect(calls[0].req.filter).toEqual({
-      [`metadata.annotations.${RW_ANNOTATION}`]: expect.anything(),
-    });
-    expect(calls[1].req).toEqual({ cursor: "c1" });
-    expect(calls[0].opts).toEqual({ credentials: {} });
-  });
-
-  it("yields nothing and stops after one page when the catalog is empty", async () => {
-    const catalog = {
-      queryEntities: jest.fn().mockResolvedValue({ items: [], pageInfo: {} }),
-    };
-    const out: string[] = [];
-    for await (const { entity: e } of iterateAnnotatedEntities(catalog as any, {} as any)) {
-      out.push(e.metadata.name);
-    }
-    expect(out).toEqual([]);
-    expect(catalog.queryEntities).toHaveBeenCalledTimes(1);
+    expect(seen).toEqual([{ entity: a }, { entity: b }]);
+    expect(catalog.streamEntities).toHaveBeenCalledTimes(1);
+    expect(catalog.streamEntities).toHaveBeenCalledWith(
+      { filter: { [`metadata.annotations.${RW_ANNOTATION}`]: CATALOG_FILTER_EXISTS } },
+      { credentials },
+    );
   });
 });

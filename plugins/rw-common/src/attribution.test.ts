@@ -18,11 +18,9 @@ function entity(name: string, annotation: string, owner?: string, kind = "compon
 
 function catalogOf(entities: Entity[]) {
   return {
-    queryEntities: jest.fn().mockResolvedValue({
-      items: entities,
-      totalItems: entities.length,
-      pageInfo: {},
-    }),
+    async *streamEntities() {
+      yield entities;
+    },
   } as any;
 }
 

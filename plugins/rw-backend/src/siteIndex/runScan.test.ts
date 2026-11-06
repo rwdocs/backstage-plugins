@@ -15,7 +15,11 @@ function ent(name: string, ref: string, owner?: string) {
 }
 
 function catalogReturning(items: any[]) {
-  return { queryEntities: async () => ({ items, pageInfo: {}, totalItems: items.length }) };
+  return {
+    async *streamEntities() {
+      yield items;
+    },
+  };
 }
 
 const deps = (knex: Knex, catalog: any) => ({
@@ -71,7 +75,7 @@ describe("runScan", () => {
   it("does NOT prune when iteration fails", async () => {
     await runScan(deps(knex, catalogReturning([ent("docs", ".", "group:default/o")])));
     const failing = {
-      queryEntities: async () => {
+      async *streamEntities() {
         throw new Error("catalog down");
       },
     };
