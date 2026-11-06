@@ -6,7 +6,8 @@
  *  assumption leaks into shared/backend code.
  *
  *  This is the single source of truth for that path so the comment deep link and
- *  the Latest Changes feed can't drift on the `/docs` tab segment. */
+ *  the Latest Changes feed can't drift on the `/docs` tab segment.
+ *  `viewerPath` is a raw page path, not an already encoded URL. */
 export function buildDocsPageLinkSuffix(viewerPath: string): string {
   const seg = viewerPath ? `/${viewerPath.split("/").map(encodeURIComponent).join("/")}` : "";
   return `/docs${seg}`;

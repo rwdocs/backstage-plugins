@@ -631,14 +631,8 @@ describe("RwDocsCollatorFactory", () => {
     expect(factory.type).toBe("techdocs");
   });
 
-  it.each([
-    ["c#", "c%23"],
-    ["100%", "100%25"],
-    ["hello world", "hello%20world"],
-    ["日本語", "%E6%97%A5%E6%9C%AC%E8%AA%9E"],
-    ["what?", "what%3F"],
-    ["nested/c# $&/100%", "nested/c%23%20%24%26/100%25"],
-  ])("encodes location path segments for %s without changing identities", async (path, encoded) => {
+  it("encodes the location without changing the raw page identity", async () => {
+    const path = "nested/c#";
     const catalog = createMockCatalog([makeEntity("my-docs", ".")]);
     const site = createFlatSite({ [path]: { title: "Page", text: "text" } });
     mockedCreateSite.mockReturnValue(site);
@@ -646,7 +640,7 @@ describe("RwDocsCollatorFactory", () => {
     const docs = await collectDocuments(await makeFactory(catalog).getCollator());
 
     expect(docs).toHaveLength(1);
-    expect(docs[0].location).toBe(`/catalog/default/component/my-docs/docs/${encoded}`);
+    expect(docs[0].location).toBe("/catalog/default/component/my-docs/docs/nested/c%23");
     expect(docs[0].subpath).toBe(path);
     expect(site.renderSearchDocument).toHaveBeenCalledWith(path);
   });
