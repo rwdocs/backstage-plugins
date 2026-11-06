@@ -5,11 +5,6 @@
   ],
   "packageRules": [
     {
-      "matchManagers": ["npm"],
-      "matchDepTypes": ["dependencies", "devDependencies", "optionalDependencies"],
-      "rangeStrategy": "pin"
-    },
-    {
       "matchManagers": ["github-actions"],
       "pinDigests": true
     },
