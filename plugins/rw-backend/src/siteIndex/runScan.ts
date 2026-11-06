@@ -10,7 +10,7 @@ import type { SiteRefreshStore } from "./SiteRefreshStore";
 import type { SectionOwnershipRow } from "./types";
 
 export async function runScan(deps: {
-  catalog: Pick<CatalogService, "queryEntities">;
+  catalog: Pick<CatalogService, "streamEntities">;
   auth: AuthService;
   logger: LoggerService;
   siteConfig: RwSiteConfig;

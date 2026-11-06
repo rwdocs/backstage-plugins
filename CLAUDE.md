@@ -170,7 +170,7 @@ Middleware resolves the entity path from URL params to look up the corresponding
 Backstage backend module (`pluginId: "search"`, `moduleId: "rw-collator"`) that indexes RW documentation for search.
 
 Key classes:
-- **`RwDocsCollatorFactory`** — Implements `DocumentCollatorFactory`. Discovers entities annotated with `rwdocs.org/ref` via `catalogServiceRef` (paginated with `queryEntities`), creates `RwSite` instances to render pages, and emits `RwIndexableDocument` entries. Supports configurable result type (`search.collators.rw.type`, default `"rw"`), location URL template, and schedule.
+- **`RwDocsCollatorFactory`** — Implements `DocumentCollatorFactory`. Discovers entities annotated with `rwdocs.org/ref` via `catalogServiceRef` (streamed with `streamEntities`), creates `RwSite` instances to render pages, and emits `RwIndexableDocument` entries. Supports configurable result type (`search.collators.rw.type`, default `"rw"`), location URL template, and schedule.
 
   Pages come from `listPages()`, which carries each page's `path`, `hasContent` and `anchors` (every enclosing section paired with the page's path relative to it). `getNavigation()` is not a substitute: it stops at a section boundary and never yields the pages below one. Ownership per page is `attribution` (see rw-common); each site is loaded once, not once per annotated entity.
 

@@ -1,4 +1,5 @@
 import type { Knex } from "knex";
+import type { CatalogService } from "@backstage/plugin-catalog-node";
 import { createTestDb } from "./__testUtils__/testDb";
 import { SectionOwnershipStore } from "./SectionOwnershipStore";
 import { SiteRefreshStore } from "./SiteRefreshStore";
@@ -14,11 +15,15 @@ function ent(name: string, ref: string, owner?: string) {
   } as any;
 }
 
-function catalogReturning(items: any[]) {
-  return { queryEntities: async () => ({ items, pageInfo: {}, totalItems: items.length }) };
+function catalogReturning(items: any[]): Pick<CatalogService, "streamEntities"> {
+  return {
+    async *streamEntities() {
+      yield items;
+    },
+  };
 }
 
-const deps = (knex: Knex, catalog: any) => ({
+const deps = (knex: Knex, catalog: Pick<CatalogService, "streamEntities">) => ({
   catalog,
   auth: { getOwnServiceCredentials: async () => ({}) } as any,
   logger: { warn() {}, info() {} } as any,
@@ -71,7 +76,7 @@ describe("runScan", () => {
   it("does NOT prune when iteration fails", async () => {
     await runScan(deps(knex, catalogReturning([ent("docs", ".", "group:default/o")])));
     const failing = {
-      queryEntities: async () => {
+      async *streamEntities() {
         throw new Error("catalog down");
       },
     };
