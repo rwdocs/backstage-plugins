@@ -8,7 +8,7 @@
  *  This is the single source of truth for that path so the comment deep link and
  *  the Latest Changes feed can't drift on the `/docs` tab segment. */
 export function buildDocsPageLinkSuffix(viewerPath: string): string {
-  const seg = viewerPath ? `/${viewerPath}` : "";
+  const seg = viewerPath ? `/${viewerPath.split("/").map(encodeURIComponent).join("/")}` : "";
   return `/docs${seg}`;
 }
 
