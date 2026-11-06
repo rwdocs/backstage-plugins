@@ -5,6 +5,15 @@
   ],
   "packageRules": [
     {
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["dependencies", "devDependencies", "optionalDependencies"],
+      "rangeStrategy": "pin"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "pinDigests": true
+    },
+    {
       "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"],
       "allowedVersions": "<19.0.0",
       "description": "Backstage requires React 18"

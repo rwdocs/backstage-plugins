@@ -45,7 +45,7 @@
     "postpack": "backstage-cli package postpack"
   },
   "dependencies": {
-    "@backstage/catalog-model": "^1.10.2",
+    "@backstage/catalog-model": "1.10.2",
     "@rwdocs/backstage-plugin-rw-common": "workspace:^",
     "@rwdocs/backstage-plugin-rw-node": "workspace:^"
   },
@@ -54,13 +54,13 @@
     "@backstage/plugin-notifications-node": "^0.2.31"
   },
   "devDependencies": {
-    "@backstage/backend-plugin-api": "^1.11.0",
-    "@backstage/backend-test-utils": "^1.11.8",
-    "@backstage/cli": "^0.36.7",
-    "@backstage/plugin-notifications-node": "^0.2.31",
-    "@types/jest": "^30.0.0",
-    "jest": "^30.2.0",
-    "prettier": "^3.4.2",
-    "typescript": "^5.7.0"
+    "@backstage/backend-plugin-api": "1.11.0",
+    "@backstage/backend-test-utils": "1.11.8",
+    "@backstage/cli": "0.36.7",
+    "@backstage/plugin-notifications-node": "0.2.31",
+    "@types/jest": "30.0.0",
+    "jest": "30.5.2",
+    "prettier": "3.9.10",
+    "typescript": "5.9.3"
   }
 }
