@@ -1,4 +1,5 @@
 import { createApiRef } from "@backstage/core-plugin-api";
+import { ResponseError } from "@backstage/errors";
 import type { DiscoveryApi, FetchApi } from "@backstage/core-plugin-api";
 import type {
   InboxQuery,
@@ -56,7 +57,7 @@ export class RwClient implements RwApi {
   async getSiteRootSectionRef(entityPath: string): Promise<string> {
     const base = await this.getSiteBaseUrl(entityPath);
     const res = await this.fetchApi.fetch(`${base}/navigation`);
-    if (!res.ok) throw new Error(`Site navigation request failed: ${res.status}`);
+    if (!res.ok) throw await ResponseError.fromResponse(res);
     const body = await res.json();
     const scope = body?.scope;
     const section = scope?.section;
@@ -95,7 +96,7 @@ export class RwClient implements RwApi {
     if (query.limit) params.set("limit", String(query.limit));
     const qs = params.toString();
     const res = await this.fetchApi.fetch(`${base}/comments/inbox${qs ? `?${qs}` : ""}`);
-    if (!res.ok) throw new Error(`Inbox request failed: ${res.status}`);
+    if (!res.ok) throw await ResponseError.fromResponse(res);
     return res.json();
   }
 
@@ -106,13 +107,13 @@ export class RwClient implements RwApi {
     if (query.limit) params.set("limit", String(query.limit));
     const qs = params.toString();
     const res = await this.fetchApi.fetch(`${base}/pages/latest${qs ? `?${qs}` : ""}`);
-    if (!res.ok) throw new Error(`Latest changes request failed: ${res.status}`);
+    if (!res.ok) throw await ResponseError.fromResponse(res);
     return res.json();
   }
 
   createCommentClient(siteRef: string): CommentApiClient {
     const json = async (res: Response) => {
-      if (!res.ok) throw new Error(`Comment request failed: ${res.status}`);
+      if (!res.ok) throw await ResponseError.fromResponse(res);
       return res.json();
     };
     const baseUrl = () => this.discoveryApi.getBaseUrl("rw");
