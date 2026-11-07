@@ -21,7 +21,7 @@ describe("entityDocsPath", () => {
     ).toBe("/catalog/default/component/my-docs/docs");
   });
 
-  it("accepts entity refs without inventing a separate route representation", () => {
+  it("builds a docs URL from a string entity ref", () => {
     expect(entityDocsPath(entityRoute, "System:Payments/gateway")).toBe(
       "/catalog/payments/system/gateway/docs",
     );

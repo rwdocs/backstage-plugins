@@ -49,10 +49,7 @@ function Dot() {
  */
 function MetaLink({ entityRef, label }: { entityRef: string; label: string }) {
   return (
-    <EntityRefLink
-      entityRef={entityRef}
-      style={{ color: "var(--bui-fg-secondary)", textDecorationColor: "currentColor" }}
-    >
+    <EntityRefLink entityRef={entityRef} style={{ color: "var(--bui-fg-secondary)" }}>
       <Text variant="body-small" color="secondary">
         {label}
       </Text>

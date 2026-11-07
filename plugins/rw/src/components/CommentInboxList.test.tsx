@@ -307,7 +307,7 @@ describe("CommentInboxList", () => {
     expect(authorLink).toBeDefined();
   });
 
-  it("uses stock catalog encoding for author links", async () => {
+  it("escapes a hash in the author's entity name", async () => {
     const item = makeItem({ author: { id: "User:Development/alice#ops", name: "Alice" } });
     await renderList([item]);
 
