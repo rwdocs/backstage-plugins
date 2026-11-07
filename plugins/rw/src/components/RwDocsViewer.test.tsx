@@ -1,5 +1,8 @@
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
+import { Route, Routes, useNavigate } from "react-router-dom";
+import type { NavigateFunction } from "react-router-dom";
 import { renderInTestApp, TestApiProvider } from "@backstage/test-utils";
+import { CookieAuthRefreshProvider } from "@backstage/plugin-auth-react";
 import { RwDocsViewer } from "./RwDocsViewer";
 import { rwApiRef } from "../api/RwClient";
 import type { RwApi } from "../api/RwClient";
@@ -12,6 +15,10 @@ jest.mock("@rwdocs/viewer", () => ({
 
 jest.mock("@rwdocs/viewer/embed.css", () => ({}));
 
+jest.mock("@backstage/plugin-auth-react", () => ({
+  CookieAuthRefreshProvider: jest.fn(({ children }: { children: React.ReactNode }) => children),
+}));
+
 jest.mock("@backstage/core-plugin-api", () => ({
   ...jest.requireActual("@backstage/core-plugin-api"),
   useRouteRef: () =>
@@ -19,7 +26,6 @@ jest.mock("@backstage/core-plugin-api", () => ({
 }));
 
 const mockMountRw = mountRw as jest.MockedFunction<typeof mountRw>;
-
 const TEST_API_BASE_URL = "http://localhost:7007/api/rw/site/default/component/my-docs";
 const TEST_SOURCE_ENTITY_REF = "component:default/my-docs";
 
@@ -80,6 +86,7 @@ describe("RwDocsViewer", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(CookieAuthRefreshProvider).mockImplementation(({ children }) => <>{children}</>);
     mockMountRw.mockReturnValue({
       destroy: mockDestroy,
       navigateTo: jest.fn(),
@@ -90,6 +97,14 @@ describe("RwDocsViewer", () => {
   it("renders a container element", async () => {
     await renderViewer(createMockRwApi());
     expect(document.querySelector(".rw-root")).toBeInTheDocument();
+  });
+
+  it("gates the viewer on RW cookie authentication", async () => {
+    jest.mocked(CookieAuthRefreshProvider).mockReturnValue(<></>);
+    await renderViewer(createMockRwApi());
+
+    expect(jest.mocked(CookieAuthRefreshProvider).mock.calls[0][0].pluginId).toBe("rw");
+    expect(mockMountRw).not.toHaveBeenCalled();
   });
 
   it("calls mountRw with correct options", async () => {
@@ -108,9 +123,64 @@ describe("RwDocsViewer", () => {
     expect(container).toBeInstanceOf(HTMLDivElement);
     expect(options.apiBaseUrl).toBe(TEST_API_BASE_URL);
     expect(options.fetchFn).toBe(mockFetch);
-    expect(options.initialPath).toBe("/");
+    expect(options.basePath).toBe("/");
+    expect(options.location).toBe("/");
     expect(options.sectionRef).toBe(TEST_SOURCE_ENTITY_REF);
     expect(typeof options.onNavigate).toBe("function");
+  });
+
+  it("syncs encoded locations and history in both directions without remounting", async () => {
+    const basePath = "/catalog/default/component/my-docs/docs";
+    const initial = `${basePath}/c%23?view=full#intro`;
+    let navigate!: NavigateFunction;
+    function ViewerRoute() {
+      navigate = useNavigate();
+      return (
+        <RwDocsViewer
+          rootSectionRef="section:commerce/handbook"
+          apiBaseUrl={TEST_API_BASE_URL}
+          sectionRef={TEST_SOURCE_ENTITY_REF}
+          sourceEntityRef={TEST_SOURCE_ENTITY_REF}
+        />
+      );
+    }
+    await renderInTestApp(
+      <TestApiProvider
+        apis={[
+          [rwApiRef, createMockRwApi()],
+          [catalogApiRef, mockCatalogApi],
+        ]}
+      >
+        <Routes>
+          <Route path={`${basePath}/*`} element={<ViewerRoute />} />
+        </Routes>
+      </TestApiProvider>,
+      { routeEntries: [initial] },
+    );
+    const options = mockMountRw.mock.calls[0][1];
+    const instance = mockMountRw.mock.results[0].value;
+    expect(options).toMatchObject({ basePath, location: initial });
+    expect(await options.resolveSectionRefs!([TEST_SOURCE_ENTITY_REF])).toEqual({
+      [TEST_SOURCE_ENTITY_REF]: basePath,
+    });
+
+    const hash = `${basePath}/c%23?view=full#details`;
+    const query = `${basePath}/c%23?view=compact#details`;
+    const other = `${basePath}/other`;
+    await act(async () => options.onNavigate!(hash));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(hash);
+    await act(async () => navigate(query));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(query);
+    await act(async () => navigate(other));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(other);
+    await act(async () => navigate(-1));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(query);
+    await act(async () => navigate(1));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(other);
+    await act(async () => navigate(basePath));
+    await act(async () => options.onNavigate!(`${basePath}/#intro`));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(`${basePath}/#intro`);
+    expect(mockMountRw).toHaveBeenCalledTimes(1);
   });
 
   it("passes colorScheme matching the Backstage theme to mountRw", async () => {

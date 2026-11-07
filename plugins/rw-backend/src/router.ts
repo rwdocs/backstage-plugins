@@ -33,7 +33,11 @@ export async function createRouter(options: RouterOptions) {
     // validate — and a cached authorization decision skips that call entirely.
     const siteRef = toEntityPath({ namespace, kind, name });
 
-    await authorizer.assertReadable(req, siteRef);
+    if (req.path.startsWith("/files/")) {
+      await authorizer.assertReadable(req, siteRef, { allowLimitedAccess: true });
+    } else {
+      await authorizer.assertReadable(req, siteRef);
+    }
 
     const site = hub.getSite(siteRef);
     if (!site) {
@@ -46,6 +50,17 @@ export async function createRouter(options: RouterOptions) {
 
   router.get("/site/:namespace/:kind/:name/config", (_req, res) => {
     res.json({ liveReloadEnabled: false });
+  });
+
+  router.get("/site/:namespace/:kind/:name/files/:path(*)", async (req, res) => {
+    const site: RwSite = res.locals.rwSite;
+    const file = await getFileOrThrow(site, req.params.path);
+    if (file === null) {
+      throw new NotFoundError("File not found");
+    }
+
+    res.set(file.headers);
+    res.send(file.content);
   });
 
   router.get("/site/:namespace/:kind/:name/navigation", async (req, res) => {
@@ -118,6 +133,14 @@ export async function createRouter(options: RouterOptions) {
   });
 
   return router;
+}
+
+async function getFileOrThrow(site: RwSite, path: string) {
+  try {
+    return await site.getFile(path);
+  } catch (err) {
+    throw toStorageError(err);
+  }
 }
 
 async function getNavigationOrThrow(site: RwSite, sectionRef: string | null) {

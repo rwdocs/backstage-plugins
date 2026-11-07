@@ -20,7 +20,12 @@ async function makeServer(hub: Hub): Promise<http.Server> {
     hub,
     authorizer: authorizer as any,
   });
-  const app = express().use(router);
+  const app = express();
+  app.use((_req, res, next) => {
+    res.set("Content-Security-Policy", "default-src 'self'");
+    next();
+  });
+  app.use(router);
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const statusByName: Record<string, number> = {
       InputError: 400,
@@ -41,18 +46,20 @@ describe("createRouter", () => {
     renderPage: jest.fn(),
     pagePathFor: jest.fn(),
     getPageMarkdown: jest.fn(),
+    getFile: jest.fn(),
     reload: jest.fn(),
   };
 
   let server: http.Server;
+  let siteHub: Hub;
 
   beforeAll(async () => {
     mockCreateSite.mockReturnValue(mockSite as any);
-    const hub = new Hub({
+    siteHub = new Hub({
       projectDir: "/test/docs",
       entity: "component:default/test",
     });
-    server = await makeServer(hub);
+    server = await makeServer(siteHub);
   });
 
   afterAll(async () => {
@@ -64,6 +71,7 @@ describe("createRouter", () => {
     mockSite.renderPage.mockReset();
     mockSite.pagePathFor.mockReset();
     mockSite.getPageMarkdown.mockReset();
+    mockSite.getFile.mockReset();
     mockCreateSite.mockReturnValue(mockSite as any);
     authorizer.assertReadable.mockReset();
   });
@@ -76,6 +84,7 @@ describe("createRouter", () => {
     // caller who may not read it.
     it.each([
       ["config", `${prefix}/config`],
+      ["file", `${prefix}/files/docs/img/flow.png`],
       ["navigation", `${prefix}/navigation`],
       ["pages root", `${prefix}/pages/`],
       ["a page", `${prefix}/pages/guide`],
@@ -115,14 +124,24 @@ describe("createRouter", () => {
       );
     });
 
-    it("does not read the site when the caller is refused", async () => {
-      authorizer.assertReadable.mockRejectedValue(new NotFoundError("No documentation site found"));
-
-      await request(server).get(`${prefix}/pages/guide`);
-
-      expect(mockSite.renderPage).not.toHaveBeenCalled();
-      expect(mockSite.getNavigation).not.toHaveBeenCalled();
-    });
+    it.each(["pages/guide", "files/docs/report.zip"])(
+      "denies %s before loading the site",
+      async (path) => {
+        const getSite = jest.spyOn(siteHub, "getSite");
+        authorizer.assertReadable.mockRejectedValue(
+          new NotFoundError("No documentation site found"),
+        );
+        try {
+          expect((await request(server).get(`${prefix}/${path}`)).status).toBe(404);
+          expect(getSite).not.toHaveBeenCalled();
+          expect(mockSite.renderPage).not.toHaveBeenCalled();
+          expect(mockSite.getNavigation).not.toHaveBeenCalled();
+          expect(mockSite.getFile).not.toHaveBeenCalled();
+        } finally {
+          getSite.mockRestore();
+        }
+      },
+    );
 
     it("authorizes against the site entity path from the URL", async () => {
       mockSite.getNavigation.mockResolvedValue({ items: [] });
@@ -170,6 +189,59 @@ describe("createRouter", () => {
       const res = await request(server).get(`${prefix}/config`);
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ liveReloadEnabled: false });
+    });
+  });
+
+  describe(`GET ${prefix}/files`, () => {
+    const content = Buffer.from([0, 255]);
+    const headers = {
+      "content-type": "application/octet-stream",
+      "content-disposition": 'attachment; filename="report.zip"',
+      etag: '"file-hash"',
+      "cache-control": "no-cache",
+      "x-content-type-options": "nosniff",
+      "content-security-policy": "sandbox",
+    };
+
+    beforeEach(() => {
+      mockSite.getFile.mockResolvedValue({ content, headers });
+    });
+
+    it("serves the binary file and headers with limited-access site authorization", async () => {
+      const res = await request(server)
+        .get(`${prefix}/files/docs/a%20b%23%2520.zip`)
+        .set("If-None-Match", 'W/"old"');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual(content);
+      expect(res.headers).toMatchObject(headers);
+      expect(mockSite.getFile).toHaveBeenCalledWith("docs/a b#%20.zip");
+      expect(authorizer.assertReadable).toHaveBeenCalledWith(
+        expect.anything(),
+        "default/component/test",
+        { allowLimitedAccess: true },
+      );
+    });
+
+    it("keeps the sandbox when a matching ETag returns 304", async () => {
+      const res = await request(server)
+        .get(`${prefix}/files/docs/report.zip`)
+        .set("If-None-Match", 'W/"file-hash"');
+
+      expect(res.status).toBe(304);
+      expect(res.headers).toMatchObject({
+        etag: headers.etag,
+        "cache-control": "no-cache",
+        "content-security-policy": "sandbox",
+      });
+    });
+
+    it("returns 404 for refused files but 503 for storage failures", async () => {
+      mockSite.getFile.mockResolvedValue(null);
+      expect((await request(server).get(`${prefix}/files/docs/report.zip`)).status).toBe(404);
+
+      mockSite.getFile.mockRejectedValue(new Error("Storage error: Content not found in bucket"));
+      expect((await request(server).get(`${prefix}/files/docs/report.zip`)).status).toBe(503);
     });
   });
 

@@ -17,6 +17,10 @@ const mockCatalogApi = {
 
 jest.mock("@rwdocs/viewer/embed.css", () => ({}));
 
+jest.mock("@backstage/plugin-auth-react", () => ({
+  CookieAuthRefreshProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 jest.mock("@backstage/core-plugin-api", () => ({
   ...jest.requireActual("@backstage/core-plugin-api"),
   useRouteRef: () =>

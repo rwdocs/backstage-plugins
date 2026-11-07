@@ -226,6 +226,10 @@ export const rwPlugin = createBackendPlugin({
           }),
         );
         httpRouter.addAuthPolicy({
+          path: "/site/:namespace/:kind/:name/files",
+          allow: "user-cookie",
+        });
+        httpRouter.addAuthPolicy({
           path: "/health",
           allow: "unauthenticated",
         });
