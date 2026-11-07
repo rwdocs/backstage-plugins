@@ -60,8 +60,12 @@ export class SiteAuthorizer {
    * Throws the same {@link NotFoundError} an unknown site throws, so a caller cannot tell a site
    * they may not read from one that does not exist.
    */
-  async assertReadable(req: ExpressRequest, siteEntityPath: string): Promise<void> {
-    const credentials = await this.deps.httpAuth.credentials(req);
+  async assertReadable(
+    req: ExpressRequest,
+    siteEntityPath: string,
+    options?: { allowLimitedAccess: true },
+  ): Promise<void> {
+    const credentials = await this.deps.httpAuth.credentials(req, options);
     const key = `${principalKey(credentials)}|${siteEntityPath}`;
 
     const cached = this.decisions.get(key);

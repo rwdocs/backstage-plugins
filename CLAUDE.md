@@ -90,7 +90,7 @@ Defines two Backstage extensions in `plugin.tsx`:
 2. **rwEntityContent** — Catalog entity tab ("Documentation") via `EntityContentBlueprint`, renders `RwEntityDocsViewer` (filtered by `rwdocs.org/ref` annotation)
 
 Two viewer components:
-- **`RwDocsViewer`** — Core component that mounts `@rwdocs/viewer` into a DOM ref, maintains two-way navigation sync between React Router and the RW viewer instance, and resolves cross-entity section refs. A `rwNavigatingRef` flag prevents infinite nav loops.
+- **`RwDocsViewer`** — Wraps the viewer in Backstage's `CookieAuthRefreshProvider` (`pluginId: "rw"`) before mounting `@rwdocs/viewer` into a DOM ref. Passes the mount's `basePath` and encoded host `location`, forwards every router location change, and resolves cross-entity section refs. RW 0.2's `navigateTo` does not call `onNavigate`, so no navigation-loop flag is needed.
 - **`RwEntityDocsViewer`** — Wrapper for catalog entity pages. Reads the entity's `rwdocs.org/ref` annotation via `parseAnnotation` and passes the resolved API base URL and section ref to `RwDocsViewer`.
 
 #### Docs page (standalone, tabbed)

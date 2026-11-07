@@ -1,8 +1,9 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useApi } from "@backstage/core-plugin-api";
 import { ErrorPanel } from "@backstage/core-components";
+import { CookieAuthRefreshProvider } from "@backstage/plugin-auth-react";
 import { useTheme } from "@material-ui/core/styles";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useResolvedPath } from "react-router-dom";
 import { rwApiRef } from "../api/RwClient";
 import { useSectionRefResolver } from "./useSectionRefResolver";
 import { mountRw } from "@rwdocs/viewer";
@@ -17,7 +18,15 @@ interface RwDocsViewerProps {
   comments?: CommentApiClient;
 }
 
-export function RwDocsViewer({
+export function RwDocsViewer(props: RwDocsViewerProps) {
+  return (
+    <CookieAuthRefreshProvider pluginId="rw">
+      <RwDocsViewerInner {...props} />
+    </CookieAuthRefreshProvider>
+  );
+}
+
+function RwDocsViewerInner({
   apiBaseUrl,
   sectionRef,
   sourceEntityRef,
@@ -34,9 +43,10 @@ export function RwDocsViewer({
   const navigate = useNavigate();
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
-  const { "*": subPath = "" } = useParams();
-
-  const basePath = subPath ? location.pathname.slice(0, -(subPath.length + 1)) : location.pathname;
+  const basePath = useResolvedPath(".").pathname;
+  const hostLocation = `${location.pathname}${location.search}${location.hash}`;
+  const locationRef = useRef(hostLocation);
+  locationRef.current = hostLocation;
   const basePathRef = useRef(basePath);
   basePathRef.current = basePath;
 
@@ -53,8 +63,6 @@ export function RwDocsViewer({
   );
 
   const instanceRef = useRef<RwInstance | null>(null);
-  const prevSubPathRef = useRef(subPath);
-  const rwNavigatingRef = useRef(false);
 
   useEffect(() => {
     if (!ref.current) {
@@ -62,24 +70,16 @@ export function RwDocsViewer({
     }
 
     try {
-      let initialPath = "/";
-      if (subPath) {
-        initialPath = `/${subPath}`;
-      }
-      if (location.hash) {
-        initialPath += location.hash;
-      }
-
       instanceRef.current = mountRw(ref.current, {
         apiBaseUrl,
-        initialPath,
+        basePath,
+        location: locationRef.current,
         sectionRef,
         fetchFn: rwApi.getFetch(),
         colorScheme: theme.palette.type,
         resolveSectionRefs,
         onNavigate: (href: string) => {
-          if (window.location.pathname !== href) {
-            rwNavigatingRef.current = true;
+          if (locationRef.current !== href) {
             navigateRef.current(href, { replace: false });
           }
         },
@@ -94,24 +94,15 @@ export function RwDocsViewer({
       instanceRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiBaseUrl, sectionRef, comments, sourceEntityRef, rootSectionRef]);
+  }, [apiBaseUrl, basePath, sectionRef, comments, sourceEntityRef, rootSectionRef]);
 
   useEffect(() => {
     instanceRef.current?.setColorScheme(theme.palette.type);
   }, [theme.palette.type]);
 
   useEffect(() => {
-    if (subPath === prevSubPathRef.current) return;
-    prevSubPathRef.current = subPath;
-
-    if (rwNavigatingRef.current) {
-      rwNavigatingRef.current = false;
-      return;
-    }
-
-    const rwPath = subPath ? `/${subPath}` : "/";
-    instanceRef.current?.navigateTo(rwPath);
-  }, [subPath]);
+    instanceRef.current?.navigateTo(hostLocation);
+  }, [hostLocation]);
 
   if (error) {
     return <ErrorPanel error={error} />;

@@ -1,5 +1,8 @@
-import { screen, waitFor } from "@testing-library/react";
-import { renderInTestApp, TestApiProvider } from "@backstage/test-utils";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import { discoveryApiRef, fetchApiRef } from "@backstage/core-plugin-api";
+import { Route, Routes, useNavigate } from "react-router-dom";
+import type { NavigateFunction } from "react-router-dom";
+import { renderInTestApp as renderApp, TestApiProvider } from "@backstage/test-utils";
 import { RwDocsViewer } from "./RwDocsViewer";
 import { rwApiRef } from "../api/RwClient";
 import type { RwApi } from "../api/RwClient";
@@ -19,6 +22,30 @@ jest.mock("@backstage/core-plugin-api", () => ({
 }));
 
 const mockMountRw = mountRw as jest.MockedFunction<typeof mountRw>;
+const cookieFetch = jest.fn();
+const cookieDiscovery = { getBaseUrl: jest.fn().mockResolvedValue("http://localhost:7007/api/rw") };
+const cookieResponse = () => ({
+  ok: true,
+  json: async () => ({ expiresAt: new Date(Date.now() + 3600000).toISOString() }),
+});
+
+async function renderInTestApp(
+  element: React.ReactElement,
+  options?: Parameters<typeof renderApp>[1],
+) {
+  const wrap = (child: React.ReactElement) => (
+    <TestApiProvider
+      apis={[
+        [discoveryApiRef, cookieDiscovery],
+        [fetchApiRef, { fetch: cookieFetch }],
+      ]}
+    >
+      {child}
+    </TestApiProvider>
+  );
+  const result = await renderApp(wrap(element), options);
+  return { ...result, rerender: (child: React.ReactElement) => result.rerender(wrap(child)) };
+}
 
 const TEST_API_BASE_URL = "http://localhost:7007/api/rw/site/default/component/my-docs";
 const TEST_SOURCE_ENTITY_REF = "component:default/my-docs";
@@ -80,6 +107,7 @@ describe("RwDocsViewer", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    cookieFetch.mockReset().mockResolvedValue(cookieResponse());
     mockMountRw.mockReturnValue({
       destroy: mockDestroy,
       navigateTo: jest.fn(),
@@ -90,6 +118,34 @@ describe("RwDocsViewer", () => {
   it("renders a container element", async () => {
     await renderViewer(createMockRwApi());
     expect(document.querySelector(".rw-root")).toBeInTheDocument();
+  });
+
+  it("waits for the auth cookie before mounting a viewer that can request files", async () => {
+    let resolveCookie!: (value: ReturnType<typeof cookieResponse>) => void;
+    cookieFetch.mockReturnValue(
+      new Promise((resolve) => {
+        resolveCookie = resolve;
+      }),
+    );
+    await renderViewer(createMockRwApi());
+    expect(cookieDiscovery.getBaseUrl).toHaveBeenCalledWith("rw");
+    expect(cookieFetch).toHaveBeenCalledWith(
+      "http://localhost:7007/api/rw/.backstage/auth/v1/cookie",
+      { credentials: "include" },
+    );
+    expect(mockMountRw).not.toHaveBeenCalled();
+    await act(async () => resolveCookie(cookieResponse()));
+    expect(mockMountRw).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a cookie authentication failure and retries before mounting", async () => {
+    cookieFetch.mockRejectedValueOnce(new Error("Cookie unavailable"));
+    await renderViewer(createMockRwApi());
+    expect(screen.getAllByText(/Cookie unavailable/).length).toBeGreaterThan(0);
+    expect(mockMountRw).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /Cookie unavailable/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(mockMountRw).toHaveBeenCalledTimes(1));
   });
 
   it("calls mountRw with correct options", async () => {
@@ -108,9 +164,65 @@ describe("RwDocsViewer", () => {
     expect(container).toBeInstanceOf(HTMLDivElement);
     expect(options.apiBaseUrl).toBe(TEST_API_BASE_URL);
     expect(options.fetchFn).toBe(mockFetch);
-    expect(options.initialPath).toBe("/");
+    expect(options.basePath).toBe("/");
+    expect(options.location).toBe("/");
     expect(options.sectionRef).toBe(TEST_SOURCE_ENTITY_REF);
     expect(typeof options.onNavigate).toBe("function");
+  });
+
+  it("syncs full encoded host locations, including hashes, queries and history, without remounting", async () => {
+    const basePath = "/catalog/default/component/my-docs/docs";
+    let navigate!: NavigateFunction;
+    function ViewerRoute() {
+      navigate = useNavigate();
+      return (
+        <RwDocsViewer
+          rootSectionRef="section:commerce/handbook"
+          apiBaseUrl={TEST_API_BASE_URL}
+          sectionRef={TEST_SOURCE_ENTITY_REF}
+          sourceEntityRef={TEST_SOURCE_ENTITY_REF}
+        />
+      );
+    }
+    await renderInTestApp(
+      <TestApiProvider
+        apis={[
+          [rwApiRef, createMockRwApi()],
+          [catalogApiRef, mockCatalogApi],
+        ]}
+      >
+        <Routes>
+          <Route path={`${basePath}/*`} element={<ViewerRoute />} />
+        </Routes>
+      </TestApiProvider>,
+      { routeEntries: [`${basePath}/getting%20started?view=full#intro`] },
+    );
+
+    expect(mockMountRw).toHaveBeenCalledTimes(1);
+    const options = mockMountRw.mock.calls[0][1];
+    const instance = mockMountRw.mock.results[0].value;
+    expect(options.basePath).toBe(basePath);
+    expect(options.location).toBe(`${basePath}/getting%20started?view=full#intro`);
+    expect(await options.resolveSectionRefs!([TEST_SOURCE_ENTITY_REF])).toEqual({
+      [TEST_SOURCE_ENTITY_REF]: basePath,
+    });
+
+    const next = `${basePath}/getting%20started?view=full#details`;
+    await act(async () => options.onNavigate!(next));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(next);
+    await act(async () => navigate(`${basePath}/getting%20started?view=compact#details`));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(
+      `${basePath}/getting%20started?view=compact#details`,
+    );
+    await act(async () => navigate(`${basePath}/other`));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(`${basePath}/other`);
+    await act(async () => navigate(-1));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(
+      `${basePath}/getting%20started?view=compact#details`,
+    );
+    await act(async () => navigate(1));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(`${basePath}/other`);
+    expect(mockMountRw).toHaveBeenCalledTimes(1);
   });
 
   it("passes colorScheme matching the Backstage theme to mountRw", async () => {

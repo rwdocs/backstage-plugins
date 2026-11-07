@@ -22,31 +22,21 @@ yarn --cwd packages/backend add @rwdocs/backstage-plugin-rw-backend
 yarn --cwd packages/backend add @rwdocs/backstage-plugin-search-backend-module-rw
 ```
 
-## RW 0.1.36 compatibility
+## Compatibility and upgrades
 
-The viewer requires Node `^22.22.2 || >=24.15.0`. Update the RW backend,
-search collator, and frontend dependencies together to pick up the core and
-viewer fixes in [RW 0.1.36](https://github.com/rwdocs/rw/releases/tag/v0.1.36).
+Requires Node `^22.22.2 || ^24.15.0 || >=26.0.0`. Upgrade the frontend, backend
+and search collator together. For S3, deploy upgraded readers **before publishing
+RW 0.2 bundles**. See the [RW 0.2 release notes](https://github.com/rwdocs/rw/releases/tag/v0.2.0)
+for documentation syntax and content migrations.
 
-For S3, deploy upgraded **backend and search collator readers before publishing
-bundles that declare `name`**. Older readers accept these bundles but ignore the
-explicit name; upgraded readers can still read existing bundles.
+Project images and downloads use Backstage's auth cookie. Cross-origin
+installations must allow credentialed requests and cookies between frontend and
+backend. Local sites need `rw.reloadInterval` to discover newly linked downloads.
 
-RW metadata can now declare `name` alongside `kind` to choose a section identity
-independently of its URL and title. This does not create catalog entities: align
-catalog annotations and references with the intended section identity. Changing
-an existing identity creates no aliases and does not migrate comments.
-
-Homepage names and kinds are resolved from the site's navigation; they do not
-need to use the implicit `section:<namespace>/root` spelling. Root links prefer a
-matching catalog entity exposing the same site's root. Otherwise they fall back
-to the source entity's Docs tab, which must expose the whole site, either unscoped
-or scoped to the actual homepage root.
-
-Rename legacy RW frontmatter and sidecar `type` fields to `kind`; `type` is now
-ignored there. Unrelated Backstage configuration fields named `type` are unchanged.
-See [RW page metadata](https://github.com/rwdocs/rw/blob/v0.1.36/docs/metadata.md)
-for naming rules and migration details.
+Folder README URLs and corrected `#` filenames can change existing comment keys;
+comments are not automatically migrated. Review the
+[comment migration guidance](https://github.com/rwdocs/rw/blob/v0.2.0/docs/embedding.md#what-it-does-and-does-not-survive)
+before upgrading documentation with existing comments.
 
 ## Backend Setup
 

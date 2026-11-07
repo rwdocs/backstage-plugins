@@ -54,7 +54,7 @@
     "@backstage/plugin-permission-common": "^0.9.12",
     "@backstage/plugin-search-common": "^1.2.26",
     "@rwdocs/backstage-plugin-rw-common": "workspace:^",
-    "@rwdocs/core": "^0.1.36"
+    "@rwdocs/core": "^0.2.0"
   },
   "peerDependencies": {
     "@backstage/backend-plugin-api": "^1.11.0",

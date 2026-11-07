@@ -20,7 +20,12 @@ async function makeServer(hub: Hub): Promise<http.Server> {
     hub,
     authorizer: authorizer as any,
   });
-  const app = express().use(router);
+  const app = express();
+  app.use((_req, res, next) => {
+    res.set("Content-Security-Policy", "default-src 'self'");
+    next();
+  });
+  app.use(router);
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const statusByName: Record<string, number> = {
       InputError: 400,
@@ -41,6 +46,7 @@ describe("createRouter", () => {
     renderPage: jest.fn(),
     pagePathFor: jest.fn(),
     getPageMarkdown: jest.fn(),
+    getFile: jest.fn(),
     reload: jest.fn(),
   };
 
@@ -64,6 +70,7 @@ describe("createRouter", () => {
     mockSite.renderPage.mockReset();
     mockSite.pagePathFor.mockReset();
     mockSite.getPageMarkdown.mockReset();
+    mockSite.getFile.mockReset();
     mockCreateSite.mockReturnValue(mockSite as any);
     authorizer.assertReadable.mockReset();
   });
@@ -76,6 +83,7 @@ describe("createRouter", () => {
     // caller who may not read it.
     it.each([
       ["config", `${prefix}/config`],
+      ["file", `${prefix}/files/docs/img/flow.png`],
       ["navigation", `${prefix}/navigation`],
       ["pages root", `${prefix}/pages/`],
       ["a page", `${prefix}/pages/guide`],
@@ -170,6 +178,131 @@ describe("createRouter", () => {
       const res = await request(server).get(`${prefix}/config`);
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ liveReloadEnabled: false });
+    });
+  });
+
+  describe(`GET ${prefix}/files`, () => {
+    const content = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0xff]);
+    const headers = {
+      "content-type": "image/png",
+      etag: '"file-hash"',
+      "cache-control": "no-cache",
+      "x-content-type-options": "nosniff",
+      "content-security-policy": "sandbox",
+    };
+
+    beforeEach(() => {
+      mockSite.getFile.mockResolvedValue({
+        content,
+        contentType: headers["content-type"],
+        etag: headers.etag,
+        headers,
+      });
+    });
+
+    it("serves binary content with core headers, overriding the host CSP", async () => {
+      const res = await request(server).get(`${prefix}/files/docs/img/flow.png`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual(content);
+      expect(res.headers).toMatchObject(headers);
+      expect(mockSite.getFile).toHaveBeenCalledWith("docs/img/flow.png");
+    });
+
+    it("preserves download disposition", async () => {
+      const disposition = "attachment; filename=\"report.zip\"; filename*=UTF-8''report.zip";
+      mockSite.getFile.mockResolvedValue({
+        content,
+        headers: {
+          ...headers,
+          "content-type": "application/zip",
+          "content-disposition": disposition,
+        },
+      });
+
+      const res = await request(server).get(`${prefix}/files/docs/report.zip`);
+
+      expect(res.status).toBe(200);
+      expect(res.headers["content-disposition"]).toBe(disposition);
+      expect(res.headers["content-type"]).toBe("application/zip");
+    });
+
+    it.each(['W/"file-hash"', '"other", W/"file-hash"', "*"])(
+      "revalidates %s with 304 and keeps the sandbox",
+      async (etag) => {
+        const res = await request(server)
+          .get(`${prefix}/files/docs/img/flow.png`)
+          .set("If-None-Match", etag);
+
+        expect(res.status).toBe(304);
+        expect(res.body).toEqual(Buffer.alloc(0));
+        expect(res.headers).toMatchObject({
+          etag: headers.etag,
+          "cache-control": "no-cache",
+          "content-security-policy": "sandbox",
+        });
+      },
+    );
+
+    it("returns content for a nonmatching etag", async () => {
+      const res = await request(server)
+        .get(`${prefix}/files/docs/img/flow.png`)
+        .set("If-None-Match", 'W/"old"');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual(content);
+    });
+
+    it.each([
+      ["docs/img/a%20b%23%2520.png", "docs/img/a b#%20.png"],
+      ["docs%2F..%2Fsecret.txt", "docs/../secret.txt"],
+    ])("passes the decoded path %s to core without normalizing it", async (url, path) => {
+      await request(server).get(`${prefix}/files/${url}`);
+      expect(mockSite.getFile).toHaveBeenCalledWith(path);
+    });
+
+    it("allows limited credentials only for the files route", async () => {
+      await request(server).get(`${prefix}/files/docs/img/flow.png`);
+      expect(authorizer.assertReadable).toHaveBeenLastCalledWith(
+        expect.anything(),
+        "default/component/test",
+        { allowLimitedAccess: true },
+      );
+
+      await request(server).get(`${prefix}/config`);
+      expect(authorizer.assertReadable).toHaveBeenLastCalledWith(
+        expect.anything(),
+        "default/component/test",
+      );
+    });
+
+    it("denies before loading the site or reading a file", async () => {
+      const hub = new Hub({ projectDir: "/test/docs", entity: "component:default/test" });
+      const getSite = jest.spyOn(hub, "getSite");
+      const deniedServer = await makeServer(hub);
+      authorizer.assertReadable.mockRejectedValue(new NotFoundError("No documentation site found"));
+      try {
+        const res = await request(deniedServer).get(`${prefix}/files/docs/img/flow.png`);
+        expect(res.status).toBe(404);
+        expect(getSite).not.toHaveBeenCalled();
+        expect(mockSite.getFile).not.toHaveBeenCalled();
+      } finally {
+        await new Promise<void>((r) => deniedServer.close(() => r()));
+      }
+    });
+
+    it("returns 404 for a missing or refused file", async () => {
+      mockSite.getFile.mockResolvedValue(null);
+      const res = await request(server).get(`${prefix}/files/docs/private.txt`);
+      expect(res.status).toBe(404);
+      expect(res.body.error.message).toBe("File not found");
+    });
+
+    it("returns 503 when file storage fails, even with not-found text", async () => {
+      mockSite.getFile.mockRejectedValue(new Error("Storage error: Content not found in bucket"));
+      const res = await request(server).get(`${prefix}/files/docs/img/flow.png`);
+      expect(res.status).toBe(503);
+      expect(res.body.error.name).toBe("ServiceUnavailableError");
     });
   });
 

@@ -49,6 +49,31 @@ describe("SiteAuthorizer", () => {
     );
   });
 
+  it("uses the default credential policy for ordinary reads", async () => {
+    const { authorizer, credentials } = makeAuthorizer();
+    await authorizer.assertReadable(req, SITE);
+    expect(credentials).toHaveBeenCalledWith(req, undefined);
+  });
+
+  it("accepts limited file credentials and forwards them to permissions", async () => {
+    const { authorizer, credentials, authorize } = makeAuthorizer();
+    await authorizer.assertReadable(req, SITE, { allowLimitedAccess: true });
+    expect(credentials).toHaveBeenCalledWith(req, { allowLimitedAccess: true });
+    expect(authorize).toHaveBeenCalledWith(expect.anything(), { credentials: alice });
+  });
+
+  it("checks credential access even when a file read cached an allow", async () => {
+    const { authorizer, credentials, authorize } = makeAuthorizer();
+    await authorizer.assertReadable(req, SITE, { allowLimitedAccess: true });
+    credentials.mockRejectedValue(new Error("Limited credentials not allowed"));
+
+    await expect(authorizer.assertReadable(req, SITE)).rejects.toThrow(
+      "Limited credentials not allowed",
+    );
+    expect(credentials).toHaveBeenLastCalledWith(req, undefined);
+    expect(authorize).toHaveBeenCalledTimes(1);
+  });
+
   it.each([
     ["DENY", [{ result: AuthorizeResult.DENY }]],
     ["CONDITIONAL", [{ result: AuthorizeResult.CONDITIONAL }]],
