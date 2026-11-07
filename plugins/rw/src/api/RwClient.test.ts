@@ -36,6 +36,31 @@ function makeClient() {
   return { client, fetchMock };
 }
 
+describe("RwClient HTTP errors", () => {
+  it.each([
+    ["navigation", (client: RwClient) => client.getSiteRootSectionRef("default/component/arch")],
+    ["inbox", (client: RwClient) => client.getCommentInbox()],
+    ["latest changes", (client: RwClient) => client.getLatestChanges()],
+    ["comments", (client: RwClient) => client.createCommentClient("site").list("doc")],
+  ])("%s rejects HTTP failures with the server reason", async (_name, request) => {
+    const { client, fetchMock } = makeClient();
+    const payload = {
+      error: { name: "NotAllowedError", message: "Access denied" },
+      response: { statusCode: 403 },
+    };
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify(payload), {
+        status: 403,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    await expect(request(client)).rejects.toMatchObject({
+      statusCode: 403,
+      cause: { message: "Access denied" },
+    });
+  });
+});
+
 describe("RwClient comment methods", () => {
   it("getCommentsEnabled reads /comments/config", async () => {
     const { client, fetchMock } = makeClient();
@@ -46,7 +71,7 @@ describe("RwClient comment methods", () => {
 
   it("getCommentsEnabled returns false (not throws) on a non-ok response", async () => {
     const { client, fetchMock } = makeClient();
-    fetchMock.mockResolvedValue({ ok: false, status: 503 });
+    fetchMock.mockResolvedValue(new Response(null, { status: 503 }));
     await expect(client.getCommentsEnabled()).resolves.toBe(false);
   });
 
@@ -93,13 +118,6 @@ describe("RwClient comment methods", () => {
     expect(fetchMock.mock.calls[1][1].method).toBe("DELETE");
   });
 
-  it("throws on a non-ok response", async () => {
-    const { client, fetchMock } = makeClient();
-    fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
-    const cc = client.createCommentClient("component:default/arch");
-    await expect(cc.list("d#p")).rejects.toThrow();
-  });
-
   it("getCommentInbox() GETs /comments/inbox and returns InboxResponse", async () => {
     const { client, fetchMock } = makeClient();
     const payload = {
@@ -109,16 +127,10 @@ describe("RwClient comment methods", () => {
       openCount: 1,
       unansweredCount: 0,
     };
-    fetchMock.mockResolvedValue({ ok: true, json: async () => payload });
+    fetchMock.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
     const result = await client.getCommentInbox();
     expect(fetchMock).toHaveBeenCalledWith("http://backstage/api/rw/comments/inbox");
     expect(result).toEqual(payload);
-  });
-
-  it("getCommentInbox() throws on non-ok response", async () => {
-    const { client, fetchMock } = makeClient();
-    fetchMock.mockResolvedValue({ ok: false, status: 503 });
-    await expect(client.getCommentInbox()).rejects.toThrow("Inbox request failed: 503");
   });
 
   it("getCommentInbox({ filter, sort }) encodes both params and no cursor", async () => {
@@ -146,7 +158,7 @@ describe("RwClient comment methods", () => {
     it("GETs /pages/latest with no params", async () => {
       const { client, fetchMock } = makeClient();
       const payload = { hasAnyDated: true, items: [], pageInfo: {} };
-      fetchMock.mockResolvedValue({ ok: true, json: async () => payload });
+      fetchMock.mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
       const result = await client.getLatestChanges();
       expect(fetchMock).toHaveBeenCalledWith("http://backstage/api/rw/pages/latest");
       expect(result).toEqual(payload);
@@ -161,12 +173,6 @@ describe("RwClient comment methods", () => {
       expect(url).toContain("/pages/latest?");
       expect(url).toContain("cursor=ABC123");
       expect(url).toContain("limit=25");
-    });
-
-    it("throws when the response is not ok", async () => {
-      const { client, fetchMock } = makeClient();
-      fetchMock.mockResolvedValue({ ok: false, status: 503 });
-      await expect(client.getLatestChanges()).rejects.toThrow("Latest changes request failed: 503");
     });
   });
 
@@ -198,21 +204,10 @@ describe("RwClient.getSiteRootSectionRef", () => {
     [{ kind: "domain", namespace: "Commerce", name: "Handbook" }, "domain:Commerce/Handbook"],
   ])("reads the exact root identity %j", async (section, expected) => {
     const { client, fetchMock } = makeClient();
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ scope: { path: "/", section } }),
-    });
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ scope: { path: "/", section } })));
     await expect(client.getSiteRootSectionRef("default/component/arch")).resolves.toBe(expected);
     expect(fetchMock).toHaveBeenCalledWith(
       "http://backstage/api/rw/site/default/component/arch/navigation",
-    );
-  });
-
-  it("rejects non-ok navigation responses", async () => {
-    const { client, fetchMock } = makeClient();
-    fetchMock.mockResolvedValue({ ok: false, status: 404 });
-    await expect(client.getSiteRootSectionRef("default/component/arch")).rejects.toThrow(
-      "Site navigation request failed: 404",
     );
   });
 
