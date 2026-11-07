@@ -1,7 +1,6 @@
 import { useCallback, useRef } from "react";
 import { useApi, useRouteRef } from "@backstage/core-plugin-api";
 import { catalogApiRef, entityRouteRef } from "@backstage/plugin-catalog-react";
-import { parseEntityRef } from "@backstage/catalog-model";
 import {
   parseAnnotation,
   toEntityPath,
@@ -29,8 +28,7 @@ export function useSectionRefResolver(
             const entity = items[i];
             const annotationValue = entity?.metadata.annotations?.[ANNOTATION_KEY];
             if (annotationValue) {
-              const { kind, namespace, name } = parseEntityRef(ref);
-              const routeUrl = entityDocsPath(entityRoute, { kind, namespace, name });
+              const routeUrl = entityDocsPath(entityRoute, ref);
               let annotation: ParsedAnnotation | undefined;
               try {
                 annotation = parseAnnotation(annotationValue, toEntityPath(ref));
@@ -60,8 +58,7 @@ export function useSectionRefResolver(
           ) {
             result[ref] = cached.url;
           } else {
-            const { kind, namespace, name } = parseEntityRef(sourceEntityRef);
-            result[ref] = entityDocsPath(entityRoute, { kind, namespace, name });
+            result[ref] = entityDocsPath(entityRoute, sourceEntityRef);
           }
         } else if (cached) {
           result[ref] = cached.url;

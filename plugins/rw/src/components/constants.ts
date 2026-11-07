@@ -1,3 +1,6 @@
+import type { CompoundEntityRef, Entity } from "@backstage/catalog-model";
+import { entityRouteParams } from "@backstage/plugin-catalog-react";
+
 export const ANNOTATION_KEY = "rwdocs.org/ref";
 
 /** The entity content-tab path segment that mounts the RW docs viewer (the
@@ -9,7 +12,7 @@ export const DOCS_PATH_SUFFIX = "/docs";
  *  the cross-section resolver, and the docs icon-link all build on it. */
 export function entityDocsPath(
   entityRoute: (ref: { kind: string; namespace: string; name: string }) => string,
-  ref: { kind: string; namespace: string; name: string },
+  ref: Entity | CompoundEntityRef | string,
 ): string {
-  return entityRoute(ref) + DOCS_PATH_SUFFIX;
+  return entityRoute(entityRouteParams(ref, { encodeParams: true })) + DOCS_PATH_SUFFIX;
 }

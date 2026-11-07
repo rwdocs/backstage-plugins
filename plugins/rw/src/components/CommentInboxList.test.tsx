@@ -307,6 +307,16 @@ describe("CommentInboxList", () => {
     expect(authorLink).toBeDefined();
   });
 
+  it("escapes a hash in the author's entity name", async () => {
+    const item = makeItem({ author: { id: "User:Development/alice#ops", name: "Alice" } });
+    await renderList([item]);
+
+    expect(screen.getByRole("link", { name: "alice#ops" })).toHaveAttribute(
+      "href",
+      "/catalog/development/user/alice%23ops",
+    );
+  });
+
   it("shows the resolved entity name, not the raw ref", async () => {
     const item = makeItem({ entityRef: "domain:default/billing" });
     await renderList([item]);
