@@ -43,7 +43,7 @@ function RwDocsViewerInner({
   const navigate = useNavigate();
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
-  const basePath = useResolvedPath(".").pathname;
+  const basePath = useResolvedPath(".").pathname.replace(/\/+$/, "") || "/";
   const hostLocation = `${location.pathname}${location.search}${location.hash}`;
   const locationRef = useRef(hostLocation);
   locationRef.current = hostLocation;

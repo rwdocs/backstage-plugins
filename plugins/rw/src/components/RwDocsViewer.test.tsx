@@ -177,6 +177,9 @@ describe("RwDocsViewer", () => {
     expect(instance.navigateTo).toHaveBeenLastCalledWith(query);
     await act(async () => navigate(1));
     expect(instance.navigateTo).toHaveBeenLastCalledWith(other);
+    await act(async () => navigate(basePath));
+    await act(async () => options.onNavigate!(`${basePath}/#intro`));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(`${basePath}/#intro`);
     expect(mockMountRw).toHaveBeenCalledTimes(1);
   });
 
