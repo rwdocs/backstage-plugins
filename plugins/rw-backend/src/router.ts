@@ -60,11 +60,6 @@ export async function createRouter(options: RouterOptions) {
     }
 
     res.set(file.headers);
-    // Keep sandbox on revalidation: a 304 replaces the cached response headers.
-    if (req.fresh) {
-      res.status(304).end();
-      return;
-    }
     res.send(file.content);
   });
 

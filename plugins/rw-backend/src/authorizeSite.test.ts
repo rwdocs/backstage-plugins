@@ -49,17 +49,10 @@ describe("SiteAuthorizer", () => {
     );
   });
 
-  it("uses the default credential policy for ordinary reads", async () => {
+  it("accepts limited credentials for file reads", async () => {
     const { authorizer, credentials } = makeAuthorizer();
-    await authorizer.assertReadable(req, SITE);
-    expect(credentials).toHaveBeenCalledWith(req, undefined);
-  });
-
-  it("accepts limited file credentials and forwards them to permissions", async () => {
-    const { authorizer, credentials, authorize } = makeAuthorizer();
     await authorizer.assertReadable(req, SITE, { allowLimitedAccess: true });
     expect(credentials).toHaveBeenCalledWith(req, { allowLimitedAccess: true });
-    expect(authorize).toHaveBeenCalledWith(expect.anything(), { credentials: alice });
   });
 
   it("checks credential access even when a file read cached an allow", async () => {

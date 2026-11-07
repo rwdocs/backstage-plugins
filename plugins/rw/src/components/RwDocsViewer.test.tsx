@@ -1,8 +1,8 @@
-import { act, fireEvent, screen, waitFor } from "@testing-library/react";
-import { discoveryApiRef, fetchApiRef } from "@backstage/core-plugin-api";
+import { act, screen, waitFor } from "@testing-library/react";
 import { Route, Routes, useNavigate } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
-import { renderInTestApp as renderApp, TestApiProvider } from "@backstage/test-utils";
+import { renderInTestApp, TestApiProvider } from "@backstage/test-utils";
+import { CookieAuthRefreshProvider } from "@backstage/plugin-auth-react";
 import { RwDocsViewer } from "./RwDocsViewer";
 import { rwApiRef } from "../api/RwClient";
 import type { RwApi } from "../api/RwClient";
@@ -15,6 +15,10 @@ jest.mock("@rwdocs/viewer", () => ({
 
 jest.mock("@rwdocs/viewer/embed.css", () => ({}));
 
+jest.mock("@backstage/plugin-auth-react", () => ({
+  CookieAuthRefreshProvider: jest.fn(({ children }: { children: React.ReactNode }) => children),
+}));
+
 jest.mock("@backstage/core-plugin-api", () => ({
   ...jest.requireActual("@backstage/core-plugin-api"),
   useRouteRef: () =>
@@ -22,31 +26,6 @@ jest.mock("@backstage/core-plugin-api", () => ({
 }));
 
 const mockMountRw = mountRw as jest.MockedFunction<typeof mountRw>;
-const cookieFetch = jest.fn();
-const cookieDiscovery = { getBaseUrl: jest.fn().mockResolvedValue("http://localhost:7007/api/rw") };
-const cookieResponse = () => ({
-  ok: true,
-  json: async () => ({ expiresAt: new Date(Date.now() + 3600000).toISOString() }),
-});
-
-async function renderInTestApp(
-  element: React.ReactElement,
-  options?: Parameters<typeof renderApp>[1],
-) {
-  const wrap = (child: React.ReactElement) => (
-    <TestApiProvider
-      apis={[
-        [discoveryApiRef, cookieDiscovery],
-        [fetchApiRef, { fetch: cookieFetch }],
-      ]}
-    >
-      {child}
-    </TestApiProvider>
-  );
-  const result = await renderApp(wrap(element), options);
-  return { ...result, rerender: (child: React.ReactElement) => result.rerender(wrap(child)) };
-}
-
 const TEST_API_BASE_URL = "http://localhost:7007/api/rw/site/default/component/my-docs";
 const TEST_SOURCE_ENTITY_REF = "component:default/my-docs";
 
@@ -107,7 +86,7 @@ describe("RwDocsViewer", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    cookieFetch.mockReset().mockResolvedValue(cookieResponse());
+    jest.mocked(CookieAuthRefreshProvider).mockImplementation(({ children }) => <>{children}</>);
     mockMountRw.mockReturnValue({
       destroy: mockDestroy,
       navigateTo: jest.fn(),
@@ -120,32 +99,12 @@ describe("RwDocsViewer", () => {
     expect(document.querySelector(".rw-root")).toBeInTheDocument();
   });
 
-  it("waits for the auth cookie before mounting a viewer that can request files", async () => {
-    let resolveCookie!: (value: ReturnType<typeof cookieResponse>) => void;
-    cookieFetch.mockReturnValue(
-      new Promise((resolve) => {
-        resolveCookie = resolve;
-      }),
-    );
+  it("gates the viewer on RW cookie authentication", async () => {
+    jest.mocked(CookieAuthRefreshProvider).mockReturnValue(<></>);
     await renderViewer(createMockRwApi());
-    expect(cookieDiscovery.getBaseUrl).toHaveBeenCalledWith("rw");
-    expect(cookieFetch).toHaveBeenCalledWith(
-      "http://localhost:7007/api/rw/.backstage/auth/v1/cookie",
-      { credentials: "include" },
-    );
-    expect(mockMountRw).not.toHaveBeenCalled();
-    await act(async () => resolveCookie(cookieResponse()));
-    expect(mockMountRw).toHaveBeenCalledTimes(1);
-  });
 
-  it("shows a cookie authentication failure and retries before mounting", async () => {
-    cookieFetch.mockRejectedValueOnce(new Error("Cookie unavailable"));
-    await renderViewer(createMockRwApi());
-    expect(screen.getAllByText(/Cookie unavailable/).length).toBeGreaterThan(0);
+    expect(jest.mocked(CookieAuthRefreshProvider).mock.calls[0][0].pluginId).toBe("rw");
     expect(mockMountRw).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: /Cookie unavailable/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-    await waitFor(() => expect(mockMountRw).toHaveBeenCalledTimes(1));
   });
 
   it("calls mountRw with correct options", async () => {
@@ -170,8 +129,9 @@ describe("RwDocsViewer", () => {
     expect(typeof options.onNavigate).toBe("function");
   });
 
-  it("syncs full encoded host locations, including hashes, queries and history, without remounting", async () => {
+  it("syncs encoded locations and history in both directions without remounting", async () => {
     const basePath = "/catalog/default/component/my-docs/docs";
+    const initial = `${basePath}/c%23?view=full#intro`;
     let navigate!: NavigateFunction;
     function ViewerRoute() {
       navigate = useNavigate();
@@ -195,33 +155,28 @@ describe("RwDocsViewer", () => {
           <Route path={`${basePath}/*`} element={<ViewerRoute />} />
         </Routes>
       </TestApiProvider>,
-      { routeEntries: [`${basePath}/getting%20started?view=full#intro`] },
+      { routeEntries: [initial] },
     );
-
-    expect(mockMountRw).toHaveBeenCalledTimes(1);
     const options = mockMountRw.mock.calls[0][1];
     const instance = mockMountRw.mock.results[0].value;
-    expect(options.basePath).toBe(basePath);
-    expect(options.location).toBe(`${basePath}/getting%20started?view=full#intro`);
+    expect(options).toMatchObject({ basePath, location: initial });
     expect(await options.resolveSectionRefs!([TEST_SOURCE_ENTITY_REF])).toEqual({
       [TEST_SOURCE_ENTITY_REF]: basePath,
     });
 
-    const next = `${basePath}/getting%20started?view=full#details`;
-    await act(async () => options.onNavigate!(next));
-    expect(instance.navigateTo).toHaveBeenLastCalledWith(next);
-    await act(async () => navigate(`${basePath}/getting%20started?view=compact#details`));
-    expect(instance.navigateTo).toHaveBeenLastCalledWith(
-      `${basePath}/getting%20started?view=compact#details`,
-    );
-    await act(async () => navigate(`${basePath}/other`));
-    expect(instance.navigateTo).toHaveBeenLastCalledWith(`${basePath}/other`);
+    const hash = `${basePath}/c%23?view=full#details`;
+    const query = `${basePath}/c%23?view=compact#details`;
+    const other = `${basePath}/other`;
+    await act(async () => options.onNavigate!(hash));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(hash);
+    await act(async () => navigate(query));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(query);
+    await act(async () => navigate(other));
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(other);
     await act(async () => navigate(-1));
-    expect(instance.navigateTo).toHaveBeenLastCalledWith(
-      `${basePath}/getting%20started?view=compact#details`,
-    );
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(query);
     await act(async () => navigate(1));
-    expect(instance.navigateTo).toHaveBeenLastCalledWith(`${basePath}/other`);
+    expect(instance.navigateTo).toHaveBeenLastCalledWith(other);
     expect(mockMountRw).toHaveBeenCalledTimes(1);
   });
 
