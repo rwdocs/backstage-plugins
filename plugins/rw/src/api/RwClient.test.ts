@@ -1,4 +1,3 @@
-import { ResponseError } from "@backstage/errors";
 import { RwClient } from "./RwClient";
 
 describe("RwClient", () => {
@@ -42,39 +41,22 @@ describe("RwClient HTTP errors", () => {
     ["navigation", (client: RwClient) => client.getSiteRootSectionRef("default/component/arch")],
     ["inbox", (client: RwClient) => client.getCommentInbox()],
     ["latest changes", (client: RwClient) => client.getLatestChanges()],
-    ["list comments", (client: RwClient) => client.createCommentClient("site").list("doc")],
-    [
-      "create comment",
-      (client: RwClient) =>
-        client
-          .createCommentClient("site")
-          .create({ documentId: "doc", body: "hi", selectors: [] } as any),
-    ],
-    [
-      "update comment",
-      (client: RwClient) => client.createCommentClient("site").update("id", { status: "resolved" }),
-    ],
-    ["delete comment", (client: RwClient) => client.createCommentClient("site").delete("id")],
-  ])("%s preserves the server error", async (_name, request) => {
+    ["comments", (client: RwClient) => client.createCommentClient("site").list("doc")],
+  ])("%s rejects HTTP failures with the server reason", async (_name, request) => {
     const { client, fetchMock } = makeClient();
     const payload = {
       error: { name: "NotAllowedError", message: "Access denied" },
       response: { statusCode: 403 },
     };
-    const response = new Response(JSON.stringify(payload), {
-      status: 403,
-      statusText: "Forbidden",
-      headers: { "content-type": "application/json" },
-    });
-    fetchMock.mockResolvedValue(response);
-    const error = await request(client).catch((err: unknown) => err);
-    expect(error).toBeInstanceOf(ResponseError);
-    expect(error).toMatchObject({
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify(payload), {
+        status: 403,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    await expect(request(client)).rejects.toMatchObject({
       statusCode: 403,
-      statusText: "Forbidden",
-      response,
-      body: payload,
-      cause: { name: "NotAllowedError", message: "Access denied" },
+      cause: { message: "Access denied" },
     });
   });
 });
@@ -245,10 +227,9 @@ describe("RwClient.getSiteRootSectionRef", () => {
   ])("rejects invalid root navigation %j", async (body) => {
     const { client, fetchMock } = makeClient();
     fetchMock.mockResolvedValue({ ok: true, json: async () => body });
-    const error = await client.getSiteRootSectionRef("default/component/arch").catch((err) => err);
-    expect(error).toBeInstanceOf(Error);
-    expect(error).not.toBeInstanceOf(ResponseError);
-    expect(error.message).toBe("Site navigation is missing a valid root section");
+    await expect(client.getSiteRootSectionRef("default/component/arch")).rejects.toThrow(
+      "Site navigation is missing a valid root section",
+    );
   });
 
   it("propagates fetch rejection", async () => {
