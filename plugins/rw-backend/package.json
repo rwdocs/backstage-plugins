@@ -73,7 +73,7 @@
     "@backstage/backend-plugin-api": "^1.11.0"
   },
   "devDependencies": {
-    "@backstage/backend-defaults": "^0.18.1",
+    "@backstage/backend-defaults": "^0.19.0",
     "@backstage/backend-plugin-api": "^1.11.0",
     "@backstage/backend-test-utils": "^1.11.8",
     "@backstage/cli": "^0.36.7",
